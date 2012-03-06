@@ -4,7 +4,7 @@ function Device:initialize(x,y)
   self.x=x
   self.y=y
   self.health=self.maxhealth
-  self.conns=List:new()
+  self.links=list()
 end
 
 function Device:draw_bar(p)
@@ -37,12 +37,26 @@ function Device:draw_bar(p)
   end
 end
 
-function Device:draw_conns()
-end
-
 function Device:draw()
   self:draw_bar(((time/5)%1.00))
   --self:draw_bar(1.00)
+end
+
+function Device:move(x,y)
+  local len,s
+  local vx,vy
+  for l in self.links:iter() do
+    d=l.d1==self and l.d2 or l.d1
+    vx,vy=x-d.x,y-d.y
+    len=math.sqrt(vx*vx+vy*vy)
+    if len>200 then
+      s=(len-200)/len
+      vx,vy=vx*s,vy*s
+      x,y=x-vx,y-vy
+    end
+  end
+  self.x=x
+  self.y=y
 end
 
 function Device:is_pointed(x,y)
@@ -51,13 +65,51 @@ function Device:is_pointed(x,y)
   return r<=self.r and math.abs(tx)<=r and math.abs(ty)<=r and true or false
 end
 
+function Device:connect(d)
+  if self.links:count()>=self.maxlinks then
+    return
+  end
+  if d.links:count()>=d.maxlinks then
+    return
+  end
+  if vec.len(self.x,self.y,d.x,d.y)>200 then
+    return
+  end
+  l=Link:new(self,d)
+  links:add(l)
+  self.links:add(l)
+  d.links:add(l)
+end
+
+class "Link"
+
+function Link:initialize(d1,d2)
+  self.d1=d1
+  self.d2=d2
+end
+
+function Link:draw()
+  if eye.in_view(self.d1.x,self.d1.y,self.d1.r) or eye.in_view(self.d2.x,self.d2.y,self.d2.r) then
+    graph.setColor(200,200,200)
+    graph.line(self.d1.x,self.d1.y,self.d2.x,self.d2.y)
+  end
+end
+
+class "Packet"
+
+function Packet:initialize()
+end
+
 class "Generator" : extends(Device) {
 r=10;
 maxhealth=20;
+maxlinks=1;
 }
 
 function Generator:draw()
-  graph.setColor(0,0,255)
-  graph.circle("fill",self.x,self.y,self.r,24)
-  self:super("draw")
+  if eye.in_view(self.x,self.y,self.r) then
+    graph.setColor(0,0,255)
+    graph.circle("fill",self.x,self.y,self.r,24)
+    self:super("draw")
+  end
 end

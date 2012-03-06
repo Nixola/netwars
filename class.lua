@@ -61,78 +61,84 @@ function class(name)
   return setmetatable(newclass,{__call=newclass.define})
 end
 
-class "List"
-
-function List:add(o)
-  local t={}
-  o.__link=t
-  t._obj=o
-  if not self._tail then
-    self._head=t
-    self._tail=t
-    t._prev=nil
-    t._next=nil
-    return
-  end
-  t._next=nil
-  t._prev=self._tail
-  self._tail._next=t
-  self._tail=t
-end
-
-function List:del(o)
-  local t=o.__link
-  o.__link=nil
-  t._obj=nil
-  if self._tail==t then
-    if self._head==t then
-      self._head=nil
-      self._tail=nil
+local lnum=0
+function list()
+  local object={}
+  lnum=lnum+1
+  object._idx=lnum
+  function object:add(o)
+    local t={}
+    if not o.__link then
+      o.__link={}
+    end
+    o.__link[self._idx]=t
+    t._list=self
+    t._obj=o
+    if not self._tail then
+      self._head=t
+      self._tail=t
       return
     end
-    t=self._tail._prev
-    t._next=nil
+    t._prev=self._tail
+    self._tail._next=t
     self._tail=t
-    return
   end
-  if t._prev then
-    t._prev._next=t._next
+  function object:del(o)
+    local t=o.__link[self._idx]
+    o.__link[self._idx]=nil
+    t._obj=nil
+    if self._tail==t then
+      if self._head==t then
+        self._head=nil
+        self._tail=nil
+        return
+      end
+      t=self._tail._prev
+      t._next=nil
+      self._tail=t
+      return
+    end
+    if t._prev then
+      t._prev._next=t._next
+    end
+    if t._next then
+      t._next._prev=t._prev
+    end
   end
-  if t._next then
-    t._next._prev=t._prev
+  function object:wipe(o)
+    for k,v in pairs(o.__link) do
+      v._list:del(o)
+    end
   end
-end
-
-function List:count()
-  local i=self._head
-  local cnt=0
-  while i do
-    cnt=cnt+1
-    i=i._next
-  end
-  return cnt
-end
-
-function List:iter()
-  local i=self._head
-  local o
-  return function ()
-    if i then
-      o=i._obj
+  function object:count()
+    local i=self._head
+    local cnt=0
+    while i do
+      cnt=cnt+1
       i=i._next
-      return o
+    end
+    return cnt
+  end
+  function object:iter()
+    local i=self._head
+    return function()
+      if i then
+        local o=i._obj
+        i=i._next
+        return o
+      end
+      return nil
+    end
+  end
+  function object:find(o)
+    local i=self._head
+    while i do
+      if o==i._obj then
+        return o
+      end
+      i=i._next
     end
     return nil
   end
-end
-
-function List:find(o)
-  local i=self._head
-  while i do
-    if o==i._obj then
-      return o
-    end
-    i=i._next
-  end
-  return nil
+  return object
 end

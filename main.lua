@@ -3,21 +3,43 @@ require "devices"
 
 graph=love.graphics
 time=0
+mox,moy=0,0
 
 eye={vx=0,vy=0,si=4,s=1.0}
 scroll={
 dt=0,run=false;
-x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0}
+x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
+}
 
-function eye.in_view(x,y,r)
-  local sx=eye.cx/eye.s
-  local sy=eye.cy/eye.s
-  local tx=math.abs(eye.x-x)
-  local ty=math.abs(eye.y-y)
-  return tx<sx and ty<sy
+vec={}
+function vec.len(x1,y1,x2,y2)
+  local tx,ty=x2-x1,y2-y1
+  return math.sqrt(tx*tx+ty*ty)
 end
 
-function scroll.exec()
+function eye.in_view(x,y,...)
+  local sx=eye.cx/eye.s
+  local sy=eye.cy/eye.s
+  if arg.n==0 then
+    local tx=math.abs(eye.vx+x)
+    local ty=math.abs(eye.vy+y)
+    return tx<sx and ty<sy
+  end
+  if arg.n==1 then
+    local tx=math.abs(eye.vx+x)-arg[1]
+    local ty=math.abs(eye.vy+y)-arg[1]
+    return tx<sx and ty<sy
+  end
+  if arg.n==2 then
+    local tx1=math.abs(eye.vx+x)
+    local ty1=math.abs(eye.vy+y)
+    local tx2=math.abs(eye.vx+arg[1])
+    local ty2=math.abs(eye.vy+arg[2])
+    return tx1<sx and ty1<sy or tx2<sx and ty2<sy
+  end
+end
+
+function eye.scroll()
   if not scroll.run then
     return
   end
@@ -62,7 +84,8 @@ function scroll.exec()
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
-devices=List:new()
+devices=list()
+links=list()
 
 function love.keypressed(k)
   if k=="escape" then
@@ -114,6 +137,17 @@ end
 local drag=nil
 local hover=nil
 local hover_dt=0
+local conn=nil
+local conn_dt=0
+
+local function get_device(x,y)
+  for o in devices:iter() do
+    if o:is_pointed(x,y) then
+      return o
+    end
+  end
+  return nil
+end
 
 function love.mousepressed(mx,my,b)
   local s={0.3,0.5,0.7,1.0,1.5,3.0}
@@ -137,19 +171,31 @@ function love.mousepressed(mx,my,b)
     return
   end
   if b=="l" then
-    for o in devices:iter() do
-      if o:is_pointed(x,y) then
-        drag=o
-        break
-      end
-    end
+    drag=get_device(x,y)
+    return
+  end
+  if b=="r" then
+    conn=get_device(x,y)
     return
   end
 end
 
 function love.mousereleased(mx,my,mb)
+  local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if mb=="l" then
     drag=nil
+    return
+  end
+  if mb=="r" then
+    if not conn then
+      return
+    end
+    local d=get_device(x,y)
+    if d then
+      conn:connect(d)
+    end
+    conn=nil
+    return
   end
 end
 
@@ -177,10 +223,15 @@ function love.draw()
   graph.translate(eye.cx,eye.cy)
   graph.scale(eye.s)
   graph.translate(eye.vx,eye.vy)
+  for o in links:iter() do
+    o:draw()
+  end
   for o in devices:iter() do
-    if eye.in_view(o.x,o.y,o.r) then
-      o:draw()
-    end
+    o:draw()
+  end
+  if conn then
+    graph.setColor(255,255,255)
+    graph.line(conn.x,conn.y,mox,moy)
   end
   graph.pop()
   graph.setColor(255,255,255)
@@ -193,25 +244,18 @@ end
 function love.update(dt)
   time=time+dt
   scroll.dt=scroll.dt+dt
+  mox=love.mouse.getX()/eye.s-eye.x
+  moy=love.mouse.getY()/eye.s-eye.y
   if scroll.dt>=0.02 then
-    scroll.exec()
+    eye.scroll()
     scroll.dt=0
   end
-  local x=love.mouse.getX()/eye.s-eye.x
-  local y=love.mouse.getY()/eye.s-eye.y
   if drag then
-    drag.x=x
-    drag.y=y
+    drag:move(mox,moy)
   end
   hover_dt=hover_dt+dt
   if hover_dt>=0.1 then
-    hover=nil
-    for o in devices:iter() do
-      if o:is_pointed(x,y) then
-        hover=o
-        break
-      end
-    end
+    hover=get_device(mox,moy)
     hover_dt=0
   end
 end
