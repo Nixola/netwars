@@ -15,8 +15,8 @@ function Device:draw_bar(p)
   --local p=self.health/self.maxhealth
   local n=math.floor(m*p)
   local x,y,s
-  local re=n>=32 and (240-(n-32)*15) or 240
-  local gr=n<=24 and n*10 or 240
+  local re=n>=32 and 250-((n-32)*15) or 250
+  local gr=n<=24 and n*10 or 250
   graph.setColor(re,gr,0)
   for t=0,n-1 do
     s=t
@@ -41,8 +41,14 @@ function Device:draw_conns()
 end
 
 function Device:draw()
-  self:draw_bar(((time/3)%1.00))
+  self:draw_bar(((time/5)%1.00))
   --self:draw_bar(1.00)
+end
+
+function Device:is_pointed(x,y)
+  local tx,ty=self.x-x,self.y-y
+  local r=math.sqrt(tx*tx+ty*ty)
+  return r<=self.r and math.abs(tx)<=r and math.abs(ty)<=r and true or false
 end
 
 class "Generator" : extends(Device) {
