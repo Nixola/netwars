@@ -1,3 +1,5 @@
+-- vim:et
+
 function class(name)
   local newclass={}
   _G[name]=newclass

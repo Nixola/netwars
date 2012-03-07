@@ -1,3 +1,5 @@
+-- vim:et
+
 require "class"
 require "devices"
 

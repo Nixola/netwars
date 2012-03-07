@@ -1,3 +1,5 @@
+-- vim:et
+
 function love.conf(t)
   t.title="NetWars"
   t.author="Borg <borg@uu3.net>"

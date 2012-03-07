@@ -1,3 +1,5 @@
+-- vim:et
+
 class "Device"
 
 function Device:initialize(x,y)
