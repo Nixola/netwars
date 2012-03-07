@@ -85,7 +85,9 @@ function eye.scroll()
 end
 
 devices=list()
+generators=list()
 links=list()
+packets=list()
 
 function love.keypressed(k)
   if k=="escape" then
@@ -209,10 +211,13 @@ function love.load()
   graph.setBackgroundColor(0,0,0)
   o=Generator:new(0,0)
   devices:add(o)
+  generators:add(o)
   o=Generator:new(-50,0)
   devices:add(o)
+  generators:add(o)
   o=Generator:new(-30,-30)
   devices:add(o)
+  generators:add(o)
 end
 
 function love.draw()
@@ -226,21 +231,27 @@ function love.draw()
   for o in links:iter() do
     o:draw()
   end
+  for o in packets:iter() do
+    o:draw()
+  end
   for o in devices:iter() do
     o:draw()
   end
   if conn then
     graph.setColor(255,255,255)
+    graph.setLineWidth(1)
     graph.line(conn.x,conn.y,mox,moy)
   end
   graph.pop()
   graph.setColor(255,255,255)
-  graph.print(string.format("s=%f",eye.s),10,10)
+  graph.print(string.format("fps: %f",love.timer.getFPS()),10,10)
   if hover then
     graph.print(string.format("x=%f,y=%f",hover.x,hover.y),10,20)
   end
 end
 
+local emit_dt=0
+local step_dt=0
 function love.update(dt)
   time=time+dt
   scroll.dt=scroll.dt+dt
@@ -257,5 +268,19 @@ function love.update(dt)
   if hover_dt>=0.1 then
     hover=get_device(mox,moy)
     hover_dt=0
+  end
+  step_dt=step_dt+dt
+  if step_dt>=0.05 then
+    for o in packets:iter() do
+      o:step(step_dt)
+    end
+    step_dt=0
+  end
+  emit_dt=emit_dt+dt
+  if emit_dt>=1 then
+    emit_dt=0
+    for o in generators:iter() do
+      o:emit()
+    end
   end
 end

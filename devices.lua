@@ -91,25 +91,69 @@ end
 function Link:draw()
   if eye.in_view(self.d1.x,self.d1.y,self.d1.r) or eye.in_view(self.d2.x,self.d2.y,self.d2.r) then
     graph.setColor(200,200,200)
+    graph.setLineWidth(1)
     graph.line(self.d1.x,self.d1.y,self.d2.x,self.d2.y)
   end
 end
 
-class "Packet"
+class "Packet" {
+r=3;
+}
 
-function Packet:initialize()
+function Packet:initialize(d1,d2)
+  local vx,vy=d2.x-d1.x,d2.y-d1.y
+  local s=math.sqrt(vx*vx+vy*vy)
+  self.d1=d1
+  self.d2=d2
+  vx,vy=vx/s,vy/s
+  self.x=d1.x+vx*d1.r
+  self.y=d1.y+vy*d1.r
+end
+
+function Packet:draw()
+  if eye.in_view(self.x,self.y,self.r) then
+    graph.setColor(0,255,0)
+    graph.setLineWidth(1)
+    graph.circle("line",self.x,self.y,self.r,8)
+  end
+end
+
+function Packet:step(dt)
+  local vx,vy=self.d2.x-self.d1.x,self.d2.y-self.d1.y
+  local s=math.sqrt(vx*vx+vy*vy)
+  vx,vy=vx/s*2,vy/s*2
+  self.x=self.x+vx
+  self.y=self.y+vy
+  local tx,ty=self.d2.x-self.x,self.d2.y-self.y
+  local r=math.sqrt(tx*tx+ty*ty)
+  if r<=self.d2.r then
+    packets:wipe(self)
+  end
 end
 
 class "Generator" : extends(Device) {
-r=10;
+r=15;
 maxhealth=20;
-maxlinks=1;
+maxlinks=4;
 }
 
 function Generator:draw()
   if eye.in_view(self.x,self.y,self.r) then
     graph.setColor(0,0,255)
     graph.circle("fill",self.x,self.y,self.r,24)
+    if eye.s>0.3 then
+      graph.setColor(255,255,255)
+      graph.setLineWidth(2)
+      graph.rectangle("line",self.x-8,self.y-8,17,17)
+    end
     self:super("draw")
+  end
+end
+
+function Generator:emit()
+  local l=self.links:head()
+  if l then
+    local d2=l.d1==self and l.d2 or l.d1
+    packets:add(Packet:new(self,d2))
   end
 end

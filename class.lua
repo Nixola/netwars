@@ -87,12 +87,18 @@ function list()
     local t=o.__link[self._idx]
     o.__link[self._idx]=nil
     t._obj=nil
-    if self._tail==t then
-      if self._head==t then
+    if self._head==t then
+      if self._tail==t then
         self._head=nil
         self._tail=nil
         return
       end
+      t=self._head._next
+      t._prev=nil
+      self._head=t
+      return
+    end
+    if self._tail==t then
       t=self._tail._prev
       t._next=nil
       self._tail=t
@@ -118,6 +124,12 @@ function list()
       i=i._next
     end
     return cnt
+  end
+  function object:head()
+    return self._head and self._head._obj or nil
+  end
+  function object:tail()
+    return self._tail and self._tail._obj or nil
   end
   function object:iter()
     local i=self._head
