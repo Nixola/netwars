@@ -17,7 +17,7 @@ function Menu:add(s,v)
 end
 
 function Menu:draw()
-  local x,y=self.obj.x+eye.x*eye.s,self.obj.y+eye.y*eye.s
+  local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
   y=y-(#self.items*8)
   graph.setLine(1,"rough")
@@ -43,7 +43,7 @@ function Menu:draw()
 end
 
 function Menu:click()
-  local x,y=self.obj.x+eye.cx+eye.vx*eye.s,self.obj.y+eye.cy+eye.vy*eye.s
+  local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
   y=y-(#self.items*8)
   for k,v in pairs(self.items) do

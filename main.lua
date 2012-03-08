@@ -88,10 +88,9 @@ function eye.scroll()
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
-devices=list()
-generators=list()
-links=list()
-packets=list()
+devices=ctable()
+links=ctable()
+packets=ctable()
 
 drag=nil
 hover=nil
@@ -155,7 +154,7 @@ function love.keyreleased(k)
 end
 
 local function get_device(x,y)
-  for o in devices:iter() do
+  for k,o in pairs(devices) do
     if o:is_pointed(x,y) then
       return o
     end
@@ -226,29 +225,35 @@ function love.load()
   eye.x=eye.vx+eye.cx/eye.s
   eye.y=eye.vy+eye.cy/eye.s
   graph.setBackgroundColor(0,0,0)
-  o=Generator:new(0,0)
+  o=Generator:new(150,170)
   devices:add(o)
-  generators:add(o)
-  o=Generator:new(-50,0)
+  o=Generator:new(-50,-170)
   devices:add(o)
-  generators:add(o)
-  o=Generator:new(-30,-30)
+  o=Generator:new(-170,100)
   devices:add(o)
-  generators:add(o)
+  o=Generator:new(-70,150)
+  devices:add(o)
 end
 
+
+local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
+local lsi=1
 function love.draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
   graph.scale(eye.s)
   graph.translate(eye.vx,eye.vy)
-  for o in links:iter() do
+  graph.setLineStipple(ls[lsi])
+  for k,o in pairs(links) do
     o:draw()
   end
-  for o in packets:iter() do
-    o:draw()
+  graph.setLineStipple()
+  if eye.s>0.4 then
+    for k,o in pairs(packets) do
+      o:draw()
+    end
   end
-  for o in devices:iter() do
+  for k,o in pairs(devices) do
     o:draw()
   end
   if conn then
@@ -289,7 +294,8 @@ function love.update(dt)
   end
   step_dt=step_dt+dt
   if step_dt>=0.05 then
-    for o in packets:iter() do
+    lsi=lsi>7 and 1 or lsi+1
+    for k,o in pairs(packets) do
       o:step(step_dt)
     end
     step_dt=0
@@ -297,8 +303,10 @@ function love.update(dt)
   emit_dt=emit_dt+dt
   if emit_dt>=1 then
     emit_dt=0
-    for o in generators:iter() do
-      o:emit()
+    for k,o in pairs(devices) do
+      if o.class=="Generator" then
+        o:emit()
+      end
     end
   end
 end

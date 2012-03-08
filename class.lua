@@ -156,3 +156,29 @@ function list()
   end
   return object
 end
+
+local mt_table={}
+function mt_table:add(o)
+  local idx=#self+1
+  o.__idx=idx
+  self[idx]=o
+  return idx
+end
+function mt_table:del(o)
+  local idx=o.__idx
+  o.__idx=nil
+  self[idx]=nil
+  return idx
+end
+function mt_table:find(o)
+  local idx=o.__idx
+  if self[idx]==o then
+    return o
+  end
+  return nil
+end
+function ctable()
+  local t={}
+  setmetatable(t,{__index=mt_table})
+  return t
+end

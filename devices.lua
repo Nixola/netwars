@@ -1,5 +1,6 @@
 -- vim:et
 
+
 class "Device"
 
 function Device:initialize(x,y)
@@ -8,7 +9,8 @@ function Device:initialize(x,y)
   self.online=false
   self.off=0
   self.health=self.maxhealth
-  self.links=list()
+  self.links={}
+  self.blinks={}
 end
 
 function Device:draw_bar(p)
@@ -43,20 +45,25 @@ function Device:draw_bar(p)
   end
 end
 
-function Device:draw()
-  self:draw_bar(0.3)
-  --self:draw_bar(1.00)
-end
-
 function Device:move(x,y)
   local len,s
   local vx,vy
-  for l in self.links:iter() do
+  for k,l in pairs(self.links) do
     d=l.d1==self and l.d2 or l.d1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
-    if len>200 then
-      s=(len-200)/len
+    if len>250 then
+      s=(len-250)/len
+      vx,vy=vx*s,vy*s
+      x,y=x-vx,y-vy
+    end
+  end
+  for k,l in pairs(self.blinks) do
+    d=l.d1==self and l.d2 or l.d1
+    vx,vy=x-d.x,y-d.y
+    len=math.sqrt(vx*vx+vy*vy)
+    if len>250 then
+      s=(len-250)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
@@ -72,19 +79,16 @@ function Device:is_pointed(x,y)
 end
 
 function Device:connect(d)
-  if self.links:count()>=self.maxlinks then
+  if #self.links>=self.maxlinks then
     return
   end
-  if d.links:count()>=d.maxlinks then
-    return
-  end
-  if vec.len(self.x,self.y,d.x,d.y)>200 then
+  if vec.len(self.x,self.y,d.x,d.y)>250 then
     return
   end
   l=Link:new(self,d)
   links:add(l)
-  self.links:add(l)
-  d.links:add(l)
+  self.links[#self.links+1]=l
+  d.blinks[#d.blinks+1]=l
 end
 
 function Device:switch()
@@ -143,14 +147,14 @@ function Packet:step(dt)
   local tx,ty=self.d2.x-self.x,self.d2.y-self.y
   local r=math.sqrt(tx*tx+ty*ty)
   if r<=self.d2.r then
-    packets:wipe(self)
+    packets:del(self)
   end
 end
 
 class "Generator" : extends(Device) {
 r=15;
 maxhealth=20;
-maxlinks=4;
+maxlinks=2;
 }
 
 function Generator:initialize(x,y)
@@ -165,17 +169,17 @@ function Generator:draw()
   if eye.in_view(self.x,self.y,self.r) then
     graph.setColor(0,0,255)
     graph.circle("fill",self.x,self.y,self.r,24)
-    if eye.s>0.3 then
+    if eye.s>0.4 then
       graph.setColor(255,255,255)
       graph.setLineWidth(2,"smooth")
       graph.rectangle("line",self.x-8,self.y-8,17,17)
+      self:draw_bar(0.3)
     end
-    self:super("draw")
   end
 end
 
 function Generator:emit()
-  local l=self.links:head()
+  local l=self.links[1]
   if l then
     local d2=l.d1==self and l.d2 or l.d1
     packets:add(Packet:new(self,d2))
