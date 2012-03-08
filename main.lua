@@ -1,10 +1,12 @@
 -- vim:et
 
 require "class"
+require "menu"
 require "devices"
 
 graph=love.graphics
-time=0
+dtime=0
+mrx,mry=0,0
 mox,moy=0,0
 
 eye={vx=0,vy=0,si=4,s=1.0}
@@ -91,6 +93,20 @@ generators=list()
 links=list()
 packets=list()
 
+drag=nil
+hover=nil
+hover_dt=0
+conn=nil
+conn_dt=0
+menu=nil
+
+function mn_dev_conn(d)
+  conn=d
+end
+
+function mn_dev_del(d)
+end
+
 function love.keypressed(k)
   if k=="escape" then
     love.event.push("q")
@@ -138,12 +154,6 @@ function love.keyreleased(k)
   end
 end
 
-local drag=nil
-local hover=nil
-local hover_dt=0
-local conn=nil
-local conn_dt=0
-
 local function get_device(x,y)
   for o in devices:iter() do
     if o:is_pointed(x,y) then
@@ -154,7 +164,7 @@ local function get_device(x,y)
 end
 
 function love.mousepressed(mx,my,b)
-  local s={0.3,0.5,0.7,1.0,1.5,3.0}
+  local s={0.3,0.5,0.7,1.0,1.5,2.5}
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if b=="wu" then
     if eye.si<#s then
@@ -175,11 +185,27 @@ function love.mousepressed(mx,my,b)
     return
   end
   if b=="l" then
+    if menu then
+      menu:click()
+      menu=nil
+      return
+    end
+    if conn then
+      local d=get_device(x,y)
+      if d then
+        conn:connect(d)
+      end
+      conn=nil
+      return
+    end
     drag=get_device(x,y)
     return
   end
-  if b=="r" then
-    conn=get_device(x,y)
+  if b=="r" and not menu then
+    local d=get_device(x,y)
+    if d and d.menu then
+      menu=d.menu
+    end
     return
   end
 end
@@ -188,17 +214,6 @@ function love.mousereleased(mx,my,mb)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if mb=="l" then
     drag=nil
-    return
-  end
-  if mb=="r" then
-    if not conn then
-      return
-    end
-    local d=get_device(x,y)
-    if d then
-      conn:connect(d)
-    end
-    conn=nil
     return
   end
 end
@@ -223,9 +238,6 @@ function love.load()
 end
 
 function love.draw()
-  graph.setColor(150,150,150)
-  graph.line(100,300,700,300)
-  graph.line(400,100,400,500)
   graph.push()
   graph.translate(eye.cx,eye.cy)
   graph.scale(eye.s)
@@ -241,10 +253,13 @@ function love.draw()
   end
   if conn then
     graph.setColor(255,255,255)
-    graph.setLineWidth(1)
+    graph.setLineWidth(1,"rough")
     graph.line(conn.x,conn.y,mox,moy)
   end
   graph.pop()
+  if menu then
+    menu:draw()
+  end
   graph.setColor(255,255,255)
   graph.print(string.format("fps: %f",love.timer.getFPS()),10,10)
   if hover then
@@ -255,10 +270,11 @@ end
 local emit_dt=0
 local step_dt=0
 function love.update(dt)
-  time=time+dt
+  dtime=dt
   scroll.dt=scroll.dt+dt
-  mox=love.mouse.getX()/eye.s-eye.x
-  moy=love.mouse.getY()/eye.s-eye.y
+  mrx,mry=love.mouse.getPosition()
+  mox=mrx/eye.s-eye.x
+  moy=mry/eye.s-eye.y
   if scroll.dt>=0.02 then
     eye.scroll()
     scroll.dt=0
