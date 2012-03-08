@@ -173,7 +173,7 @@ end
 function mt_table:find(o)
   local idx=o.__idx
   if self[idx]==o then
-    return o
+    return idx
   end
   return nil
 end
