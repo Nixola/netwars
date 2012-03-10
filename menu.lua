@@ -23,7 +23,7 @@ function Menu:draw()
   graph.setLine(1,"rough")
   for k,v in pairs(self.items) do
     l=#v.str*9
-    if mrx>x and mrx<x+l and mry>y and mry<y+16 then
+    if msx>x and msx<x+l and msy>y and msy<y+16 then
       graph.setColor(219,159,223)
       graph.rectangle("fill",x,y,#v.str*9,16)
       graph.setColor(255,255,255)
@@ -48,7 +48,7 @@ function Menu:click()
   y=y-(#self.items*8)
   for k,v in pairs(self.items) do
     l=#v.str*8+6
-    if mrx>x and mrx<x+l and mry>y and mry<y+16 then
+    if msx>x and msx<x+l and msy>y and msy<y+16 then
       v.func(self.obj)
       return
     end

@@ -6,7 +6,7 @@ require "devices"
 
 graph=love.graphics
 dtime=0
-mrx,mry=0,0
+msx,msy=0,0
 mox,moy=0,0
 
 eye={vx=0,vy=0,si=4,s=1.0}
@@ -88,11 +88,13 @@ function eye.scroll()
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
+buydevs=ctable()
 devices=ctable()
 links=ctable()
 packets=ctable()
 
 drag=nil
+bdrag=nil
 hover=nil
 hover_dt=0
 conn=nil
@@ -162,6 +164,15 @@ local function get_device(x,y)
   return nil
 end
 
+local function get_buydev(x,y)
+  for k,o in pairs(buydevs) do
+    if o:is_pointed(x,y) then
+      return o
+    end
+  end
+  return nil
+end
+
 function love.mousepressed(mx,my,b)
   local s={0.3,0.5,0.7,1.0,1.5,2.5}
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
@@ -198,6 +209,9 @@ function love.mousepressed(mx,my,b)
       return
     end
     drag=get_device(x,y)
+    if not drag then
+      bdrag=get_buydev(mx,my)
+    end
     return
   end
   if b=="r" and not menu then
@@ -211,8 +225,15 @@ end
 
 function love.mousereleased(mx,my,mb)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
-  if mb=="l" then
+  if drag and mb=="l" then
+    drag:move(mox,moy)
     drag=nil
+    return
+  end
+  if bdrag and mb=="l" then
+    local o=bdrag:new(mox,moy)
+    devices:add(o)
+    bdrag=nil
     return
   end
 end
@@ -225,6 +246,8 @@ function love.load()
   eye.x=eye.vx+eye.cx/eye.s
   eye.y=eye.vy+eye.cy/eye.s
   graph.setBackgroundColor(0,0,0)
+  local o=Generator:new(20,eye.sy-25)
+  buydevs:add(o)
   o=Generator:new(150,170)
   devices:add(o)
   o=Generator:new(-50,-170)
@@ -236,6 +259,17 @@ function love.load()
 end
 
 
+local function draw_hud()
+  graph.setColor(0,0,96)
+  graph.setLine(1,"rough")
+  graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
+  graph.setColor(64,64,192)
+  graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
+  for k,o in pairs(buydevs) do
+    o:draw_sym()
+  end
+end
+
 local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
 local lsi=1
 function love.draw()
@@ -243,6 +277,7 @@ function love.draw()
   graph.translate(eye.cx,eye.cy)
   graph.scale(eye.s)
   graph.translate(eye.vx,eye.vy)
+  graph.setScissor(0,0,eye.sx-1,eye.sy-51)
   graph.setLineStipple(ls[lsi])
   for k,o in pairs(links) do
     o:draw()
@@ -261,7 +296,16 @@ function love.draw()
     graph.setLineWidth(1,"rough")
     graph.line(conn.x,conn.y,mox,moy)
   end
+  if drag then
+    drag:drag(mox,moy)
+  end
+  if bdrag then
+    bdrag:drag(mox,moy)
+  end
+  -- hud display
   graph.pop()
+  graph.setScissor()
+  draw_hud()
   if menu then
     menu:draw()
   end
@@ -277,15 +321,12 @@ local step_dt=0
 function love.update(dt)
   dtime=dt
   scroll.dt=scroll.dt+dt
-  mrx,mry=love.mouse.getPosition()
-  mox=mrx/eye.s-eye.x
-  moy=mry/eye.s-eye.y
+  msx,msy=love.mouse.getPosition()
+  mox=msx/eye.s-eye.x
+  moy=msy/eye.s-eye.y
   if scroll.dt>=0.02 then
     eye.scroll()
     scroll.dt=0
-  end
-  if drag then
-    drag:move(mox,moy)
   end
   hover_dt=hover_dt+dt
   if hover_dt>=0.1 then

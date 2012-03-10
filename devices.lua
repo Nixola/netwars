@@ -1,6 +1,5 @@
 -- vim:et
 
-
 class "Device"
 
 function Device:initialize(x,y)
@@ -13,18 +12,15 @@ function Device:initialize(x,y)
   self.blinks={}
 end
 
-function Device:draw_bar(p)
+function Device:draw_bar()
   local poly={}
   local pi2=math.pi*2
   local m=48
-  --local p=self.health/self.maxhealth
+  local p=self.health/self.maxhealth
   local n=math.floor(m*p)
   local x,y,s
   local re=n>=32 and 250-((n-32)*15) or 250
   local gr=n<=24 and n*10 or 250
-  if self.online then
-    self.off=(self.off+dtime)%pi2
-  end
   graph.setColor(re,gr,0)
   for t=0,n-1 do
     s=t
@@ -45,11 +41,54 @@ function Device:draw_bar(p)
   end
 end
 
-function Device:move(x,y)
+function Device:draw_st()
+  local poly={}
+  local pi2=math.pi*2
+  local m=48
+  if self.online then
+    local off=self.off*3
+    for t=0,4 do
+      s=t
+      graph.setColor(255,255,255)
+      x=math.sin((s/m)*pi2-off)
+      y=math.cos((s/m)*pi2-off)
+      poly[1]=self.x+((self.r+3)*x)
+      poly[2]=self.y+((self.r+3)*y)
+      poly[3]=self.x+((self.r)*x)
+      poly[4]=self.y+((self.r)*y)
+      s=s+1.0
+      x=math.sin((s/m)*pi2-off)
+      y=math.cos((s/m)*pi2-off)
+      poly[5]=self.x+((self.r)*x)
+      poly[6]=self.y+((self.r)*y)
+      poly[7]=self.x+((self.r+3)*x)
+      poly[8]=self.y+((self.r+3)*y)
+      graph.polygon("fill",poly)
+    end
+  end
+end
+
+function Device:draw()
+  if self.online then
+    local pi2=math.pi*2
+    self.off=(self.off+dtime)%pi2
+  end
+  if eye.in_view(self.x,self.y,self.r) then
+    self:draw_sym()
+    if eye.s>0.6 then
+      self:draw_bar()
+    end
+    if eye.s>0.4 then
+      self:draw_st()
+    end
+  end
+end
+
+local function calc_xy(dev,x,y)
   local len,s
   local vx,vy
-  for k,l in pairs(self.links) do
-    d=l.d1==self and l.d2 or l.d1
+  for k,l in pairs(dev.links) do
+    d=l.d1==dev and l.d2 or l.d1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
     if len>250 then
@@ -58,8 +97,8 @@ function Device:move(x,y)
       x,y=x-vx,y-vy
     end
   end
-  for k,l in pairs(self.blinks) do
-    d=l.d1==self and l.d2 or l.d1
+  for k,l in pairs(dev.blinks) do
+    d=l.d1==dev and l.d2 or l.d1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
     if len>250 then
@@ -68,6 +107,16 @@ function Device:move(x,y)
       x,y=x-vx,y-vy
     end
   end
+  return x,y
+end
+
+function Device:drag(x,y)
+  x,y=calc_xy(self,x,y)
+  self:draw_sym(x,y)
+end
+
+function Device:move(x,y)
+  x,y=calc_xy(self,x,y)
   self.x=x
   self.y=y
 end
@@ -165,16 +214,15 @@ function Generator:initialize(x,y)
   self.menu:add("Delete",mn_dev_del)
 end
 
-function Generator:draw()
-  if eye.in_view(self.x,self.y,self.r) then
-    graph.setColor(0,0,255)
-    graph.circle("fill",self.x,self.y,self.r,24)
-    if eye.s>0.4 then
-      graph.setColor(255,255,255)
-      graph.setLineWidth(2,"smooth")
-      graph.rectangle("line",self.x-8,self.y-8,17,17)
-      self:draw_bar(0.3)
-    end
+function Generator:draw_sym(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  graph.setColor(0,0,255)
+  graph.circle("fill",x,y,self.r,24)
+  if hud or eye.s>0.6 then
+    graph.setColor(255,255,255)
+    graph.setLineWidth(2,"smooth")
+    graph.rectangle("line",x-8,y-8,17,17)
   end
 end
 
