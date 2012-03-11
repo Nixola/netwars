@@ -91,3 +91,18 @@ function ctable()
   setmetatable(t,{__index=mt_table})
   return t
 end
+
+function str_split(str,sep)
+  local a={}
+  local l=#str
+  local p=1,q
+  q=string.find(str,sep,1,true)
+  while q do
+    a[#a+1]=string.sub(str,p,q-1)
+    p=q+1
+    q=string.find(str,sep,p,true)
+  end
+  a[#a+1]=string.sub(str,p,l)
+  a.n=#a
+  return a
+end

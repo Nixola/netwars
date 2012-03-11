@@ -1,0 +1,176 @@
+-- vim:et
+
+local function buy_device(s,pl,a)
+  if a.n<4 then
+    return
+  end
+  local x,y=tonumber(a[3]),tonumber(a[4])
+  local cl=devcl[a[2]]
+  if not cl then
+    return
+  end
+  local price=cl.__members.price
+  if pl.cash>=price then
+    pl.cash=pl.cash-price
+    local o=cl:new(pl,x,y)
+    o.idx=devices:add(o)
+    if o.class=="Generator" then
+      generators[o.idx]=o
+    end
+    s:send(string.format("PLc:%d:%d\n",pl.idx,pl.cash))
+    qput("Dn:%d:%s:%d:%.1f:%.1f\n",pl.idx,o.cl,o.idx,o.x,o.y)
+  end
+end
+
+local function packet_flow(s,pl,p)
+  local idx=p.idx
+  local o=p.dev2
+  p:dequeue()
+  if p.pl==o.pl then
+    if o.health<o.maxhealth then
+      o:heal(p.v)
+      qput("Ph:%d:%d:%d\n",idx,o.idx,o.health)
+      packets[idx]=nil
+      return
+    end
+    if o.class=="Mirror" then
+      local l=#o.blinks
+      if o.online and l>0 then
+        local i,d=o.li
+        local c=l
+        while c>0 do
+          c=c-1
+          d=o.blinks[i].dev2
+          i=i<l and i+1 or 1
+          if d.online then
+            p:route(o,d)
+            qput("Pr:%d:%d:%d\n",idx,o.idx,d.idx)
+            break
+          end
+        end
+        o.li=i
+        return
+      end
+      qput("Pd:%d\n",idx)
+      packets[idx]=nil
+      return
+    end
+    local l=#o.links
+    if o.online and l>0 then
+      local i,d=o.li
+      local c=l
+      while c>0 do
+        c=c-1
+        d=o.links[i].dev2
+        i=i<l and i+1 or 1
+        if d.online then
+          p:route(o,d)
+          qput("Pr:%d:%d:%d\n",idx,o.idx,d.idx)
+          break
+        end
+      end
+      o.li=i
+      return
+    end
+    qput("Pd:%d\n",idx)
+    packets[idx]=nil
+    return
+  end
+  -- Attacking enemy device
+  o.health=o.health-p.v
+  if d.health<1 then
+    qput("PD:%d:%d\n",idx,d.idx)
+    d:destroy()
+    packets[idx]=nil
+    return
+  end
+  qput("Ph:%d:%d:%d\n",idx,o.idx,o.health)
+  packets[idx]=nil
+end
+
+function read_client(s,pl)
+  local str=s:receive()
+  if not str then
+    close_client(s,pl)
+    return
+  end
+  print(str)
+  local a=str_split(str,":")
+  if a.n<2 then
+    return
+  end
+  if a[1]=="B" then -- Buy:cl:x:y
+    buy_device(s,pl,a)
+    return
+  end
+  if a[1]=="M" then -- Move:idx:x:y
+    if a.n<4 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local x,y=tonumber(a[3]),tonumber(a[4])
+    local o=devices[idx]
+    if (not o.online) and o.pc<1 then
+      o:move(x,y)
+      qput("Dm:%d:%.1f:%.1f\n",o.idx,x,y)
+    end
+    return
+  end
+  if a[1]=="S" then -- Switch:idx:online
+    if a.n<3 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local b=tonumber(a[3])==1 and true or false
+    local o=devices[idx]
+    o.online=b
+    o.li=1
+    b=b and 1 or 0
+    qput("Ds:%d:%d\n",o.idx,b)
+    return
+  end
+  if a[1]=="L" then -- Link:dev1:dev2
+    if a.n<3 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
+      local l=d1:connect(d2)
+      l.idx=links:add(l)
+      qput("L:%d:%d:%d\n",l.idx,d1.idx,d2.idx)
+    end
+    return
+  end
+  if a[1]=="Pf" then -- Pf:idx
+    if a.n<2 then
+      return
+    end
+    local idx=tonumber(a[2])
+    packet_flow(s,pl,packets[idx])
+    return
+  end
+end
+
+function emit_packets(dt)
+  local i,d,p,l,c
+  for k,o in pairs(generators) do
+    l=#o.links
+    if o.online and l>0 then
+      c=l
+      i=o.li
+      while c>0 do
+        c=c-1
+        d=o.links[i].dev2
+        i=i<l and i+1 or 1
+        if d.online then
+          p=Packet:new(o,d,dt)
+          p.idx=packets:add(p)
+          qput("Pe:%d:%d:%d:%d\n",p.idx,o.idx,d.idx,dt)
+          break
+        end
+      end
+      o.li=i
+    end
+  end
+end

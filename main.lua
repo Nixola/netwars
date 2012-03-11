@@ -3,6 +3,9 @@
 require "class"
 require "menu"
 require "devices"
+require "devices_gui"
+require "devices_net"
+require "client"
 
 graph=love.graphics
 dtime=0
@@ -14,12 +17,6 @@ scroll={
 dt=0,run=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
 }
-
-vec={}
-function vec.len(x1,y1,x2,y2)
-  local tx,ty=x2-x1,y2-y1
-  return math.sqrt(tx*tx+ty*ty)
-end
 
 function eye.in_view(x,y,...)
   local sx=eye.cx/eye.s
@@ -88,10 +85,14 @@ function eye.scroll()
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
-buydevs=ctable()
+ME=nil
+players=ctable()
 devices=ctable()
 links=ctable()
 packets=ctable()
+
+
+local buydevs=ctable()
 
 drag=nil
 bdrag=nil
@@ -203,18 +204,22 @@ function love.mousepressed(mx,my,b)
     if conn then
       local d=get_device(x,y)
       if d then
-        conn:connect(d)
+        conn:net_connect(d)
       end
       conn=nil
       return
     end
     drag=get_device(x,y)
+    if drag and (drag.online or drag.pc>0) then
+      drag=nil
+      return
+    end
     if not drag then
       bdrag=get_buydev(mx,my)
     end
     return
   end
-  if b=="r" and not menu then
+  if b=="r" and (not menu) then
     local d=get_device(x,y)
     if d and d.menu then
       menu=d.menu
@@ -226,17 +231,19 @@ end
 function love.mousereleased(mx,my,mb)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if drag and mb=="l" then
-    drag:move(mox,moy)
+    if (not drag.online) and drag.pc<1 then
+      drag:net_move(mox,moy)
+    end
     drag=nil
     return
   end
   if bdrag and mb=="l" then
-    local o=bdrag:new(mox,moy)
-    devices:add(o)
+    bdrag:net_buy(x,y)
     bdrag=nil
     return
   end
 end
+
 
 function love.load()
   eye.sx=graph.getWidth()
@@ -246,16 +253,14 @@ function love.load()
   eye.x=eye.vx+eye.cx/eye.s
   eye.y=eye.vy+eye.cy/eye.s
   graph.setBackgroundColor(0,0,0)
-  local o=Generator:new(20,eye.sy-25)
+  local o
+  o=Generator:new(nil,20,eye.sy-25)
+  o.hud=true
   buydevs:add(o)
-  o=Generator:new(150,170)
-  devices:add(o)
-  o=Generator:new(-50,-170)
-  devices:add(o)
-  o=Generator:new(-170,100)
-  devices:add(o)
-  o=Generator:new(-70,150)
-  devices:add(o)
+  net_conn("127.0.0.1",6352)
+  if not ME then
+    love.event.push("q")
+  end
 end
 
 
@@ -292,7 +297,13 @@ function love.draw()
     o:draw()
   end
   if conn then
-    graph.setColor(255,255,255)
+    local vx,vy=mox-conn.x,moy-conn.y
+    local len=math.sqrt(vx*vx+vy*vy)
+    if len>240 then
+      graph.setColor(255,0,0)
+    else
+      graph.setColor(255,255,255)
+    end
     graph.setLineWidth(1,"rough")
     graph.line(conn.x,conn.y,mox,moy)
   end
@@ -316,8 +327,7 @@ function love.draw()
   end
 end
 
-local emit_dt=0
-local step_dt=0
+local flow_dt=0
 function love.update(dt)
   dtime=dt
   scroll.dt=scroll.dt+dt
@@ -333,21 +343,54 @@ function love.update(dt)
     hover=get_device(mox,moy)
     hover_dt=0
   end
-  step_dt=step_dt+dt
-  if step_dt>=0.05 then
+  flow_dt=flow_dt+dt
+  if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
     for k,o in pairs(packets) do
-      o:step(step_dt)
+      o:flow(flow_dt)
     end
-    step_dt=0
+    flow_dt=0
   end
-  emit_dt=emit_dt+dt
-  if emit_dt>=1 then
-    emit_dt=0
-    for k,o in pairs(devices) do
-      if o.class=="Generator" then
-        o:emit()
+end
+
+function love.quit()
+  net_close()
+end
+
+function love.run()
+  love.load()
+
+  local dt=0
+  local ret
+  while true do
+    if love.timer then
+      love.timer.step()
+      dt=love.timer.getDelta()
+    end
+    if love.update then
+      love.update(dt)
+    end
+    if love.graphics then
+      love.graphics.clear()
+      love.draw()
+    end
+    if love.event then
+      for e,a,b,c in love.event.poll() do
+        if e=="q" then
+          if love.quit then
+            love.quit()
+          end
+          if love.audio then
+            love.audio.stop()
+          end
+          return
+        end
+        love.handlers[e](a,b,c)
       end
     end
+    if love.graphics then
+      love.graphics.present()
+    end
+    net_proc()
   end
 end
