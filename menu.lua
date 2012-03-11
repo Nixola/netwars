@@ -42,6 +42,15 @@ function Menu:draw()
   end
 end
 
+function Menu:switch(fs,ts)
+  for k,v in pairs(self.items) do
+    if v.str==fs then
+      v.str=ts
+      return
+    end
+  end
+end
+
 function Menu:click()
   local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
@@ -49,9 +58,20 @@ function Menu:click()
   for k,v in pairs(self.items) do
     l=#v.str*8+6
     if msx>x and msx<x+l and msy>y and msy<y+16 then
+      if v.str=="Delete" then
+        v.str="DELETE"
+        return self
+      end
       v.func(self.obj)
-      return
+      break
     end
     y=y+16
   end
+  for k,v in pairs(self.items) do
+    if v.str=="DELETE" then
+      v.str="Delete"
+      break
+    end
+  end
+  return nil
 end

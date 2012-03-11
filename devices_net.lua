@@ -4,6 +4,10 @@ function Device:net_buy(x,y)
   net_send("B:%s:%.1f:%.1f\n",self.cl,x,y)
 end
 
+function Device:net_delete()
+  net_send("D:%d\n",self.idx)
+end
+
 function Device:net_move(x,y)
   x,y=self:calc_xy(x,y)
   net_send("M:%d:%.1f:%1.f\n",self.idx,x,y)

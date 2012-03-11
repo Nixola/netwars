@@ -10,6 +10,7 @@ class "Player"
 
 function Player:initialize(cash)
   self.cash=cash
+  self.pkts=0
 end
 
 function Player:disconnect()
@@ -42,6 +43,15 @@ function Device:initialize(pl,x,y)
   self.health=self.maxhealth
   self.links={}
   self.blinks={}
+end
+
+function Device:delete()
+  for k,o in pairs(packets) do
+    if o.dev1==self or o.dev2==self then
+      packets[k]=nil
+    end
+  end
+  self:del_links()
 end
 
 function Device:calc_xy(x,y)
@@ -91,9 +101,53 @@ function Device:connect(dev)
     return
   end
   local l=Link:new(self,dev)
-  self.links[#self.links+1]=l
-  dev.blinks[#dev.blinks+1]=l
+  table.insert(self.links,l)
+  table.insert(dev.blinks,l)
   return l
+end
+
+function Device:del_link(dev)
+  for i,v in ipairs(self.links) do
+    if v.dev2==dev then
+      table.remove(self.links,i)
+      return
+    end
+  end
+end
+
+function Device:del_blink(dev)
+  for i,v in ipairs(self.blinks) do
+    if v.dev1==dev then
+      table.remove(self.blinks,i)
+      return
+    end
+  end
+end
+
+function Device:del_links()
+  local l=nil
+  for i,v in ipairs(self.links) do
+    if v.dev1==self then
+      l=v
+      break
+    end
+  end
+  if l then
+    self:del_link(l.dev2)
+    l.dev2:del_blink(self)
+    links:del(l)
+  end
+  for i,v in ipairs(self.blinks) do
+    if v.dev2==self then
+      l=v
+      break
+    end
+  end
+  if l then
+    self:del_blink(l.dev1)
+    l.dev1:del_link(self)
+    links:del(l)
+  end
 end
 
 class "Link"
@@ -141,15 +195,35 @@ function Packet:dequeue()
 end
 
 class "Generator" : extends(Device) {
+cl="G";
 r=15;
-maxhealth=20;
-maxlinks=2;
+maxhealth=50;
+maxlinks=3;
 price=50;
 }
 
-function Generator:initialize(p,x,y)
-  self:super("initialize",p,x,y)
-  self.cl="G"
-end
+class "Router" : extends(Device) {
+cl="R";
+r=15;
+maxhealth=10;
+maxlinks=5;
+price=10;
+}
 
-devcl={G=Generator}
+class "DataCenter" : extends(Device) {
+cl="D";
+r=15;
+maxhealth=20;
+maxlinks=0;
+price=20;
+}
+
+class "Mirror" : extends(Device) {
+cl="M";
+r=15;
+maxhealth=10;
+maxlinks=0;
+price=10;
+}
+
+devcl={G=Generator,R=Router,D=DataCenter,M=Mirror}

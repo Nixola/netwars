@@ -46,18 +46,62 @@ function net_read()
     local idx=tonumber(a[2])
     local d1=devices[tonumber(a[3])]
     local d2=devices[tonumber(a[4])]
-    local v=tonumber(a[5])
-    local p=Packet:new(d1,d2,v)
+    local p=Packet:new(d1,d2,tonumber(a[5]))
+    if p.pl==ME then
+      ME.pkts=ME.pkts+1
+    end
     p.idx=idx
     packets[idx]=p
     return
   end
   if a[1]=="Pd" then -- Discard:idx
-    if a.n<1 then
+    if a.n<2 then
       return
     end
     local idx=tonumber(a[2])
     local p=packets[idx]
+    if not p then
+      return
+    end
+    if p.pl==ME then
+      ME.pkts=ME.pkts-1
+    end
+    p:dequeue()
+    packets[idx]=nil
+    return
+  end
+  if a[1]=="PD" then -- Discard:idx:idx
+    if a.n<3 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local o=devices[tonumber(a[3])]
+    local p=packets[idx]
+    o:delete()
+    devices[o.idx]=nil
+    if not p then
+      return
+    end
+    if p.pl==ME then
+      ME.pkts=ME.pkts-1
+    end
+    p:dequeue()
+    packets[idx]=nil
+    return
+  end
+  if a[1]=="Pc" then -- Packet Cash:idx:cash
+    if a.n<3 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local p=packets[idx]
+    if not p then
+      return
+    end
+    if p.pl==ME then
+      p.pl.cash=tonumber(a[3])
+      ME.pkts=ME.pkts-1
+    end
     p:dequeue()
     packets[idx]=nil
     return
@@ -70,6 +114,9 @@ function net_read()
     local d1=devices[tonumber(a[3])]
     local d2=devices[tonumber(a[4])]
     local p=packets[idx]
+    if not p then
+      return
+    end
     p:dequeue()
     p:route(d1,d2)
     return
@@ -82,32 +129,14 @@ function net_read()
     local o=devices[tonumber(a[3])]
     local p=packets[idx]
     o.health=tonumber(a[4])
+    if not p then
+      return
+    end
+    if p.pl==ME then
+      ME.pkts=ME.pkts-1
+    end
     p:dequeue()
     packets[idx]=nil
-    return
-  end
-  if a[1]=="PLa" then -- PLa:idx:cash
-    if a.n<3 then
-      return
-    end
-    local idx=tonumber(a[2])
-    local cash=tonumber(a[3])
-    local pl=Player:new(cash)
-    pl.idx=idx
-    players[idx]=pl
-    if a[4]=="me" then
-      ME=pl
-    end
-    return
-  end
-  if a[1]=="PLd" then -- PLa:idx
-    if a.n<2 then
-      return
-    end
-    local idx=tonumber(a[2])
-    local pl=players[idx]
-    pl:disconnect()
-    players[idx]=nil
     return
   end
   if a[1]=="PLc" then -- PLc:idx:cash
@@ -126,7 +155,7 @@ function net_read()
     local pl=players[tonumber(a[2])]
     local cl=devcl[a[3]]
     local idx=tonumber(a[4])
-    local b=tonumber(a[5])==1 and true or false
+    local b=tonumber(a[5])==1
     if not cl then
       return
     end
@@ -155,6 +184,16 @@ function net_read()
     devices[idx]=o
     return
   end
+  if a[1]=="Dd" then -- Del:idx
+    if a.n<2 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local o=devices[idx]
+    o:delete()
+    devices[idx]=nil
+    return
+  end
   if a[1]=="Dm" then -- Move:idx:x,y
     if a.n<4 then
       return
@@ -170,21 +209,43 @@ function net_read()
       return
     end
     local idx=tonumber(a[2])
-    local b=tonumber(a[3])==1 and true or false
+    local b=tonumber(a[3])==1
     local o=devices[idx]
     o:switch(b)
     return
   end
-  if a[1]=="L" then -- Link:idx:dev1:dev2
+  if a[1]=="L" then -- Link:dev1:dev2
+    if a.n<3 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    local l=d1:connect(d2)
+    links:add(l)
+    return
+  end
+  if a[1]=="PLa" then -- PLa:idx:cash
     if a.n<3 then
       return
     end
     local idx=tonumber(a[2])
-    local d1=devices[tonumber(a[3])]
-    local d2=devices[tonumber(a[4])]
-    local l=d1:connect(d2)
-    l.idx=idx
-    links[idx]=l
+    local cash=tonumber(a[3])
+    local pl=Player:new(cash)
+    pl.idx=idx
+    players[idx]=pl
+    if a[4]=="me" then
+      ME=pl
+    end
+    return
+  end
+  if a[1]=="PLd" then -- PLa:idx
+    if a.n<2 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local pl=players[idx]
+    pl:disconnect()
+    players[idx]=nil
     return
   end
 end

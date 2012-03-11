@@ -93,11 +93,10 @@ packets=ctable()
 
 
 local buydevs=ctable()
+local huddevs={}
 
 drag=nil
 bdrag=nil
-hover=nil
-hover_dt=0
 conn=nil
 conn_dt=0
 menu=nil
@@ -165,6 +164,18 @@ local function get_device(x,y)
   return nil
 end
 
+local function get_my_device(x,y)
+  for k,o in pairs(devices) do
+    if o:is_pointed(x,y) then
+      if o.pl==ME then
+        return o
+      end
+      return nil
+    end
+  end
+  return nil
+end
+
 local function get_buydev(x,y)
   for k,o in pairs(buydevs) do
     if o:is_pointed(x,y) then
@@ -197,8 +208,7 @@ function love.mousepressed(mx,my,b)
   end
   if b=="l" then
     if menu then
-      menu:click()
-      menu=nil
+      menu=menu:click()
       return
     end
     if conn then
@@ -209,7 +219,7 @@ function love.mousepressed(mx,my,b)
       conn=nil
       return
     end
-    drag=get_device(x,y)
+    drag=get_my_device(x,y)
     if drag and (drag.online or drag.pc>0) then
       drag=nil
       return
@@ -220,7 +230,7 @@ function love.mousepressed(mx,my,b)
     return
   end
   if b=="r" and (not menu) then
-    local d=get_device(x,y)
+    local d=get_my_device(x,y)
     if d and d.menu then
       menu=d.menu
     end
@@ -244,6 +254,28 @@ function love.mousereleased(mx,my,mb)
   end
 end
 
+local function set_cl_fonts(imgfont)
+  local function set_alpha(x,y,r,g,b,a)
+    if r==0 and g==0 and b==0 then
+      return 0,0,0,0
+    end
+    return r,g,b,255
+  end
+  imgfont:mapPixel(set_alpha)
+  local img
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,0,8,16,16)
+  devcl.G.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,16,8,16,16)
+  devcl.R.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,32,8,16,16)
+  devcl.M.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,48,8,16,16)
+  devcl.D.__members.img=graph.newImage(img)
+end
 
 function love.load()
   eye.sx=graph.getWidth()
@@ -253,10 +285,24 @@ function love.load()
   eye.x=eye.vx+eye.cx/eye.s
   eye.y=eye.vy+eye.cy/eye.s
   graph.setBackgroundColor(0,0,0)
-  local o
-  o=Generator:new(nil,20,eye.sy-25)
-  o.hud=true
-  buydevs:add(o)
+  local imgfont=love.image.newImageData("imgs/font.png")
+  set_cl_fonts(imgfont)
+  for k,v in pairs(devcl) do
+    o=v:new(nil,0,eye.sy-25)
+    o.hud=true
+    buydevs:add(o)
+  end
+  local devs={"G","R","D","M"}
+  local x=20
+  for i,v in ipairs(devs) do
+    for k,o in pairs(buydevs) do
+      if o.cl==v then
+        huddevs[i]=o
+        o.x=x
+        x=x+40
+      end
+    end
+  end
   net_conn("127.0.0.1",6352)
   if not ME then
     love.event.push("q")
@@ -270,9 +316,12 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
-  for k,o in pairs(buydevs) do
-    o:draw_sym()
+  for i,v in ipairs(huddevs) do
+    v:draw_sym()
   end
+  graph.setColor(255,255,255)
+  graph.print(string.format("Cash: %d",ME.cash),eye.sx-100,eye.sy-40)
+  graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-100,eye.sy-20)
 end
 
 local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
@@ -320,11 +369,6 @@ function love.draw()
   if menu then
     menu:draw()
   end
-  graph.setColor(255,255,255)
-  graph.print(string.format("fps: %f",love.timer.getFPS()),10,10)
-  if hover then
-    graph.print(string.format("x=%f,y=%f",hover.x,hover.y),10,20)
-  end
 end
 
 local flow_dt=0
@@ -337,11 +381,6 @@ function love.update(dt)
   if scroll.dt>=0.02 then
     eye.scroll()
     scroll.dt=0
-  end
-  hover_dt=hover_dt+dt
-  if hover_dt>=0.1 then
-    hover=get_device(mox,moy)
-    hover_dt=0
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then

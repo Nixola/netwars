@@ -56,6 +56,22 @@ function Device:draw_st()
   end
 end
 
+function Device:draw_sym(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if (not self.pl) or self.pl==ME then
+    graph.setColor(0,0,255)
+  else
+    graph.setColor(255,0,0)
+  end
+  graph.circle("fill",x,y,self.r,24)
+  if self.hud or eye.s>0.6 then
+    graph.setColorMode("replace")
+    graph.draw(self.img,x-8,y-8)
+  end
+end
+
+
 function Device:draw()
   if self.online then
     local pi2=math.pi*2
@@ -86,9 +102,9 @@ end
 function Device:switch(b)
   self.online=b
   if b then
-    self.menu.items[2].str="Online"
+    self.menu:switch("Online","Offline")
   else
-    self.menu.items[2].str="Offline"
+    self.menu:switch("Offline","Online")
   end
 end
 
@@ -124,7 +140,9 @@ function Packet:flow(dt)
   local tx,ty=self.dev2.x-self.x,self.dev2.y-self.y
   local r=math.sqrt(tx*tx+ty*ty)
   if r<=self.dev2.r then
-    net_send("Pf:%d\n",self.idx)
+    if self.pl==ME then
+      net_send("Pf:%d\n",self.idx)
+    end
     self.hit=true
   end
 end
@@ -133,22 +151,24 @@ function Generator:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Connect",mn_dev_conn)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",mn_dev_del)
+  self.menu:add("Delete",Device.net_delete)
 end
 
-function Generator:draw_sym(_x,_y)
-  local x=_x or self.x
-  local y=_y or self.y
-  if (not self.pl) or self.pl==ME then
-    graph.setColor(0,0,255)
-  else
-    graph.setColor(255,0,0)
-  end
-  graph.circle("fill",x,y,self.r,24)
-  if self.hud or eye.s>0.6 then
-    graph.setColor(255,255,255)
-    graph.setLineWidth(2,"smooth")
-    graph.rectangle("line",x-8,y-8,17,17)
-  end
+function Router:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Connect",mn_dev_conn)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
 end
 
+function DataCenter:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function Mirror:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end

@@ -33,13 +33,11 @@ local dt=0
 function qput(fmt,...)
   local q={v=string.format(fmt,unpack(arg))}
   queue[#queue+1]=q
-  print(q.v)
 end
 
 function qsput(s,fmt,...)
   local q={s=s,v=string.format(fmt,unpack(arg))}
   queue[#queue+1]=q
-  print(q.v)
 end
 
 local function new_client(s)
@@ -71,7 +69,7 @@ local function new_client(s)
     q[#q+1]=string.format("Da:%d:%s:%d:%d:%.1f:%.1f\n",o.pl.idx,o.cl,o.idx,b,o.x,o.y)
   end
   for k,o in pairs(links) do
-    q[#q+1]=string.format("L:%d:%d:%d\n",o.idx,o.dev1.idx,o.dev2.idx)
+    q[#q+1]=string.format("L:%d:%d\n",o.dev1.idx,o.dev2.idx)
   end
   for k,v in pairs(q) do
     s:send(v)
@@ -86,6 +84,11 @@ function close_client(s,pl)
   s:close()
   socks[si]=nil
   psocks[si]=nil
+  for k,o in pairs(generators) do
+    if o.pl==pl then
+      generators[k]=nil
+    end
+  end
   pl:disconnect()
   players:del(pl)
   allsocks={servsock}
