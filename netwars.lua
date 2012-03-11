@@ -5,6 +5,7 @@ require "class"
 require "devices"
 require "server"
 
+ME=nil
 players=ctable()
 devices=ctable()
 links=ctable()
@@ -17,13 +18,13 @@ psocks={}
 
 local servsock=socket.tcp()
 
-if not servsock:bind("127.0.0.1",6352) then
+if not servsock:bind("0.0.0.0",6352) then
   print("Error: bind() failed")
-  exit()
+  return
 end
 if not servsock:listen() then
   print("Error: listen() failed")
-  exit()
+  return
 end
 allsocks[1]=servsock
 
@@ -45,7 +46,7 @@ local function new_client(s)
   if not s then
     return
   end
-  local pl=Player:new(100)
+  local pl=Player:new(200)
   local si=#socks+1
   local q={}
   local b

@@ -43,11 +43,10 @@ local function packet_flow(s,pl,p)
     end
     if o.cl=="M" then
       local l=#o.blinks
-      if o.online and l>0 then
+      if l>0 then
         local i,d=o.li>l and 1 or o.li
         local c=l
         while c>0 do
-          c=c-1
           d=o.blinks[i].dev1
           i=i<l and i+1 or 1
           if d.online then
@@ -55,20 +54,22 @@ local function packet_flow(s,pl,p)
             qput("Pr:%d:%d:%d\n",idx,o.idx,d.idx)
             break
           end
+          c=c-1
         end
         o.li=i
-        return
+        if c>0 then
+          return
+        end
       end
       qput("Pd:%d\n",idx)
       packets:del(p)
       return
     end
     local l=#o.links
-    if o.online and l>0 then
+    if l>0 then
       local i,d=o.li>l and 1 or o.li
       local c=l
       while c>0 do
-        c=c-1
         d=o.links[i].dev2
         i=i<l and i+1 or 1
         if d.pl~=o.pl or d.online then
@@ -76,9 +77,12 @@ local function packet_flow(s,pl,p)
           qput("Pr:%d:%d:%d\n",idx,o.idx,d.idx)
           break
         end
+        c=c-1
       end
       o.li=i
-      return
+      if c>0 then
+        return
+      end
     end
     qput("Pd:%d\n",idx)
     packets:del(p)
@@ -152,6 +156,7 @@ function read_client(s,pl)
     if o.pl==pl then
       o.online=b
       o.li=1
+      o.dt=0
       b=b and 1 or 0
       qput("Ds:%d:%d\n",o.idx,b)
     end
@@ -183,22 +188,28 @@ end
 function emit_packets(dt)
   local i,d,p,l,c
   for k,o in pairs(generators) do
-    l=#o.links
-    if o.online and l>0 then
-      c=l
-      i=o.li>l and 1 or o.li
-      while c>0 do
-        c=c-1
-        d=o.links[i].dev2
-        i=i<l and i+1 or 1
-        if o.pl~=d.pl or d.online then
-          p=Packet:new(o,d,dt)
-          p.idx=packets:add(p)
-          qput("Pe:%d:%d:%d:%d\n",p.idx,o.idx,d.idx,dt)
-          break
+    if o.online then
+      o.dt=o.dt+dt
+      if o.dt>2 then
+        o.dt=0
+        l=#o.links
+        if l>0 then
+          c=l
+          i=o.li>l and 1 or o.li
+          while c>0 do
+            d=o.links[i].dev2
+            i=i<l and i+1 or 1
+            if o.pl~=d.pl or d.online then
+              p=Packet:new(o,d,1)
+              p.idx=packets:add(p)
+              qput("Pe:%d:%d:%d:%d\n",p.idx,o.idx,d.idx,1)
+              break
+            end
+            c=c-1
+          end
+          o.li=i
         end
       end
-      o.li=i
     end
   end
 end

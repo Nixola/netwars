@@ -95,11 +95,13 @@ packets=ctable()
 local buydevs=ctable()
 local huddevs={}
 
-drag=nil
-bdrag=nil
-conn=nil
-conn_dt=0
-menu=nil
+local drag=nil
+local bdrag=nil
+local hover=nil
+local hover_dt=0
+local conn=nil
+local conn_dt=0
+local menu=nil
 
 function mn_dev_conn(d)
   conn=d
@@ -219,13 +221,14 @@ function love.mousepressed(mx,my,b)
       conn=nil
       return
     end
+    bdrag=get_buydev(mx,my)
+    if bdrag then
+      return
+    end
     drag=get_my_device(x,y)
     if drag and (drag.online or drag.pc>0) then
       drag=nil
       return
-    end
-    if not drag then
-      bdrag=get_buydev(mx,my)
     end
     return
   end
@@ -322,6 +325,10 @@ local function draw_hud()
   graph.setColor(255,255,255)
   graph.print(string.format("Cash: %d",ME.cash),eye.sx-100,eye.sy-40)
   graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-100,eye.sy-20)
+  if hover then
+    graph.print(string.format("Price: %d",hover.price),eye.sx-200,eye.sy-40)
+    graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-200,eye.sy-20)
+  end
 end
 
 local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
@@ -381,6 +388,11 @@ function love.update(dt)
   if scroll.dt>=0.02 then
     eye.scroll()
     scroll.dt=0
+  end
+  hover_dt=hover_dt+dt
+  if hover_dt>=0.1 then
+    hover=get_buydev(msx,msy)
+    hover_dt=0
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then

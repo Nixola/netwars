@@ -38,6 +38,7 @@ function Device:initialize(pl,x,y)
   self.x=x
   self.y=y
   self.online=false
+  self.dt=0
   self.pc=0
   self.off=0
   self.health=self.maxhealth
@@ -48,7 +49,11 @@ end
 function Device:delete()
   for k,o in pairs(packets) do
     if o.dev1==self or o.dev2==self then
+      local p=packets[k]
       packets[k]=nil
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
     end
   end
   self:del_links()
@@ -125,28 +130,27 @@ function Device:del_blink(dev)
 end
 
 function Device:del_links()
-  local l=nil
+  local tmp={}
   for i,v in ipairs(self.links) do
     if v.dev1==self then
-      l=v
-      break
+      tmp[#tmp+1]=v
     end
   end
-  if l then
-    self:del_link(l.dev2)
-    l.dev2:del_blink(self)
-    links:del(l)
+  for k,v in pairs(tmp) do
+    self:del_link(v.dev2)
+    v.dev2:del_blink(self)
+    links:del(v)
   end
+  tmp={}
   for i,v in ipairs(self.blinks) do
     if v.dev2==self then
-      l=v
-      break
+      tmp[#tmp+1]=v
     end
   end
-  if l then
-    self:del_blink(l.dev1)
-    l.dev1:del_link(self)
-    links:del(l)
+  for k,v in pairs(tmp) do
+    self:del_blink(v.dev1)
+    v.dev1:del_link(self)
+    links:del(v)
   end
 end
 
@@ -174,6 +178,9 @@ function Packet:initialize(d1,d2,v)
   vx,vy=vx/s,vy/s
   self.x=d1.x+vx*d1.r
   self.y=d1.y+vy*d1.r
+  if self.pl==ME then
+    ME.pkts=ME.pkts+1
+  end
 end
 
 function Packet:route(d1,d2)
@@ -187,17 +194,23 @@ function Packet:route(d1,d2)
   vx,vy=vx/s,vy/s
   self.x=d1.x+vx*d1.r
   self.y=d1.y+vy*d1.r
+  if self.pl==ME then
+    ME.pkts=ME.pkts+1
+  end
 end
 
 function Packet:dequeue()
   self.dev1.pc=self.dev1.pc-1
   self.dev2.pc=self.dev2.pc-1
+  if self.pl==ME then
+    ME.pkts=ME.pkts-1
+  end
 end
 
 class "Generator" : extends(Device) {
 cl="G";
 r=15;
-maxhealth=50;
+maxhealth=100;
 maxlinks=3;
 price=50;
 }
@@ -205,7 +218,7 @@ price=50;
 class "Router" : extends(Device) {
 cl="R";
 r=15;
-maxhealth=10;
+maxhealth=20;
 maxlinks=5;
 price=10;
 }
@@ -213,7 +226,7 @@ price=10;
 class "DataCenter" : extends(Device) {
 cl="D";
 r=15;
-maxhealth=20;
+maxhealth=40;
 maxlinks=0;
 price=20;
 }
@@ -221,7 +234,7 @@ price=20;
 class "Mirror" : extends(Device) {
 cl="M";
 r=15;
-maxhealth=10;
+maxhealth=20;
 maxlinks=0;
 price=10;
 }

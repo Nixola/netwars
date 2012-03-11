@@ -7,7 +7,7 @@ local allsocks={sock}
 local insync=false
 
 function net_conn(addr,port)
-  if sock:connect("127.0.0.1",6352) then
+  if sock:connect("87.99.63.19",6352) then
     while not insync do
       net_read()
     end
@@ -47,9 +47,6 @@ function net_read()
     local d1=devices[tonumber(a[3])]
     local d2=devices[tonumber(a[4])]
     local p=Packet:new(d1,d2,tonumber(a[5]))
-    if p.pl==ME then
-      ME.pkts=ME.pkts+1
-    end
     p.idx=idx
     packets[idx]=p
     return
@@ -62,9 +59,6 @@ function net_read()
     local p=packets[idx]
     if not p then
       return
-    end
-    if p.pl==ME then
-      ME.pkts=ME.pkts-1
     end
     p:dequeue()
     packets[idx]=nil
@@ -82,9 +76,6 @@ function net_read()
     if not p then
       return
     end
-    if p.pl==ME then
-      ME.pkts=ME.pkts-1
-    end
     p:dequeue()
     packets[idx]=nil
     return
@@ -100,7 +91,6 @@ function net_read()
     end
     if p.pl==ME then
       p.pl.cash=tonumber(a[3])
-      ME.pkts=ME.pkts-1
     end
     p:dequeue()
     packets[idx]=nil
@@ -131,9 +121,6 @@ function net_read()
     o.health=tonumber(a[4])
     if not p then
       return
-    end
-    if p.pl==ME then
-      ME.pkts=ME.pkts-1
     end
     p:dequeue()
     packets[idx]=nil
