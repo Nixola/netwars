@@ -5,11 +5,9 @@ require "class"
 require "devices"
 require "server"
 
-ME=nil
 players=ctable()
 devices=ctable()
 links=ctable()
-packets=ctable()
 generators={}
 
 socks={}
@@ -70,7 +68,7 @@ local function new_client(s)
     q[#q+1]=string.format("Da:%d:%s:%d:%d:%.1f:%.1f\n",o.pl.idx,o.cl,o.idx,b,o.x,o.y)
   end
   for k,o in pairs(links) do
-    q[#q+1]=string.format("L:%d:%d\n",o.dev1.idx,o.dev2.idx)
+    q[#q+1]=string.format("La:%d:%d\n",o.dev1.idx,o.dev2.idx)
   end
   for k,v in pairs(q) do
     s:send(v)

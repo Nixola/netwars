@@ -14,18 +14,9 @@ function Player:initialize(cash)
 end
 
 function Player:disconnect()
-  for k,o in pairs(packets) do
-    if o.dev1.pl==self or o.dev2.pl==self then
-      packets[k]=nil
-    end
-  end
-  for k,o in pairs(links) do
-    if o.dev1.pl==self or o.dev2.pl==self then
-      links[k]=nil
-    end
-  end
   for k,o in pairs(devices) do
     if o.pl==self then
+      o:del_links()
       devices[k]=nil
     end
   end
@@ -38,25 +29,15 @@ function Device:initialize(pl,x,y)
   self.x=x
   self.y=y
   self.online=false
+  self.li=1
+  self.edt=0
   self.dt=0
   self.pc=0
+  self.pkt=0
   self.off=0
   self.health=self.maxhealth
   self.links={}
   self.blinks={}
-end
-
-function Device:delete()
-  for k,o in pairs(packets) do
-    if o.dev1==self or o.dev2==self then
-      local p=packets[k]
-      packets[k]=nil
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
-    end
-  end
-  self:del_links()
 end
 
 function Device:calc_xy(x,y)
@@ -100,15 +81,36 @@ end
 
 function Device:connect(dev)
   if #self.links>=self.maxlinks then
-    return
+    return nil
   end
   if vec.len(self.x,self.y,dev.x,dev.y)>250 then
-    return
+    return nil
   end
-  local l=Link:new(self,dev)
-  table.insert(self.links,l)
-  table.insert(dev.blinks,l)
-  return l
+  local ok=true
+  for i,v in ipairs(self.links) do
+    if v.dev2==dev then
+      ok=false
+      break
+    end
+  end
+  if ok then
+    local l=Link:new(self,dev)
+    table.insert(self.links,l)
+    table.insert(dev.blinks,l)
+    return l
+  end
+  return nil
+end
+
+function Device:unlink(dev)
+  for i,v in ipairs(self.links) do
+    if v.dev2==dev then
+      self:del_link(v.dev2)
+      v.dev2:del_blink(self)
+      return v
+    end
+  end
+  return nil
 end
 
 function Device:del_link(dev)
@@ -172,7 +174,6 @@ function Packet:initialize(d1,d2,v)
   self.dev2=d2
   self.pl=d1.pl
   self.v=v
-  self.hit=false
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
   vx,vy=vx/s,vy/s
@@ -180,30 +181,6 @@ function Packet:initialize(d1,d2,v)
   self.y=d1.y+vy*d1.r
   if self.pl==ME then
     ME.pkts=ME.pkts+1
-  end
-end
-
-function Packet:route(d1,d2)
-  local vx,vy=d2.x-d1.x,d2.y-d1.y
-  local s=math.sqrt(vx*vx+vy*vy)
-  self.dev1=d1
-  self.dev2=d2
-  self.hit=false
-  d1.pc=d1.pc+1
-  d2.pc=d2.pc+1
-  vx,vy=vx/s,vy/s
-  self.x=d1.x+vx*d1.r
-  self.y=d1.y+vy*d1.r
-  if self.pl==ME then
-    ME.pkts=ME.pkts+1
-  end
-end
-
-function Packet:dequeue()
-  self.dev1.pc=self.dev1.pc-1
-  self.dev2.pc=self.dev2.pc-1
-  if self.pl==ME then
-    ME.pkts=ME.pkts-1
   end
 end
 

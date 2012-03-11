@@ -1,5 +1,31 @@
 -- vim:et
 
+function Player:del_packets()
+  for k,p in pairs(packets) do
+    if p.dev1.pl==self or p.dev2.pl==self then
+      packets:del(p)
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
+    end
+  end
+end
+
+function Device:delete()
+  for k,p in pairs(packets) do
+    if p.dev1==self or p.dev2==self then
+      packets:del(p)
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
+    end
+  end
+  self:del_links()
+  if self.pl==ME then
+    mydevs[self.idx]=nil
+  end
+end
+
 function Device:draw_bar()
   local poly={}
   local pi2=math.pi*2
@@ -101,10 +127,61 @@ end
 
 function Device:switch(b)
   self.online=b
+  self.li=1
+  self.dt=0
   if b then
     self.menu:switch("Online","Offline")
   else
     self.menu:switch("Offline","Online")
+  end
+end
+
+function Device:net_buy(x,y)
+  net_send("B:%s:%.1f:%.1f\n",self.cl,x,y)
+end
+
+function Device:net_delete()
+  net_send("D:%d\n",self.idx)
+end
+
+function Device:net_move(x,y)
+  x,y=self:calc_xy(x,y)
+  net_send("M:%d:%.1f:%1.f\n",self.idx,x,y)
+end
+
+function Device:net_connect(dev)
+  if #self.links>=self.maxlinks then
+    return
+  end
+  if vec.len(self.x,self.y,dev.x,dev.y)>250 then
+    return
+  end
+  local ok=true
+  for i,v in ipairs(self.links) do
+    if v.dev2==dev then
+      ok=false
+      break
+    end
+  end
+  if ok then
+    net_send("L:%d:%d\n",self.idx,dev.idx)
+  end
+end
+
+function Device:net_unlink(dev)
+  for i,v in ipairs(self.links) do
+    if v.dev2==dev then
+      net_send("U:%d:%d\n",self.idx,dev.idx)
+      return
+    end
+  end
+end
+
+function Device:net_switch()
+  if self.online then
+    net_send("S:%d:0\n",self.idx)
+  else
+    net_send("S:%d:1\n",self.idx)
   end
 end
 
@@ -113,6 +190,19 @@ function Link:draw()
     graph.setColor(200,200,200)
     graph.setLine(1,"rough")
     graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
+  end
+end
+
+function Link:del_packets()
+  local d1=self.dev1
+  local d2=self.dev2
+  for k,p in pairs(packets) do
+    if (p.dev1==d1 and p.dev2==d2) or (p.dev1==d2 and p.dev2==d1) then
+      packets:del(p)
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
+    end
   end
 end
 
@@ -129,27 +219,30 @@ function Packet:draw()
 end
 
 function Packet:flow(dt)
-  if self.hit then
-    return
-  end
-  local vx,vy=self.dev2.x-self.dev1.x,self.dev2.y-self.dev1.y
+  local d1=self.dev1
+  local d2=self.dev2
+  local vx,vy=d2.x-d1.x,d2.y-d1.y
   local s=math.sqrt(vx*vx+vy*vy)
   vx,vy=vx/s*2,vy/s*2
   self.x=self.x+vx
   self.y=self.y+vy
-  local tx,ty=self.dev2.x-self.x,self.dev2.y-self.y
+  local tx,ty=d2.x-self.x,d2.y-self.y
   local r=math.sqrt(tx*tx+ty*ty)
-  if r<=self.dev2.r then
-    if self.pl==ME then
-      net_send("Pf:%d\n",self.idx)
+  if r<=d2.r then
+    d1.pc=d1.pc-1
+    d2.pc=d2.pc-1
+    if d1.pl==ME then
+      net_send("Pf:%d:%d\n",d2.idx,self.v)
+      ME.pkts=ME.pkts-1
     end
-    self.hit=true
+    packets:del(self)
   end
 end
 
 function Generator:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Connect",mn_dev_conn)
+  self.menu:add("Unlink",mn_dev_unlink)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end
@@ -157,6 +250,7 @@ end
 function Router:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Connect",mn_dev_conn)
+  self.menu:add("Unlink",mn_dev_unlink)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end

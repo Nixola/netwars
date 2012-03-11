@@ -4,7 +4,6 @@ require "class"
 require "menu"
 require "devices"
 require "devices_gui"
-require "devices_net"
 require "client"
 
 graph=love.graphics
@@ -88,9 +87,9 @@ end
 ME=nil
 players=ctable()
 devices=ctable()
+mydevs={}
 links=ctable()
 packets=ctable()
-
 
 local buydevs=ctable()
 local huddevs={}
@@ -100,11 +99,15 @@ local bdrag=nil
 local hover=nil
 local hover_dt=0
 local conn=nil
-local conn_dt=0
+local unlink=nil
 local menu=nil
 
 function mn_dev_conn(d)
   conn=d
+end
+
+function mn_dev_unlink(d)
+  unlink=d
 end
 
 function mn_dev_del(d)
@@ -115,25 +118,25 @@ function love.keypressed(k)
     love.event.push("q")
     return
   end
-  if k=="w" then
+  if k=="w" or k=="up" then
     if scroll.y<0 then
       scroll.y=0
     end
     scroll.ky=1
   end
-  if k=="s" then
+  if k=="s" or k=="down" then
     if scroll.y>0 then
       scroll.y=0
     end
     scroll.ky=-1
   end
-  if k=="a" then
+  if k=="a" or k=="left" then
     if scroll.x<0 then
       scroll.x=0
     end
     scroll.kx=1
   end
-  if k=="d" then
+  if k=="d" or k=="right" then
     if scroll.x>0 then
       scroll.x=0
     end
@@ -143,16 +146,16 @@ function love.keypressed(k)
 end
 
 function love.keyreleased(k)
-  if k=="w" then
+  if k=="w" or k=="up" then
     scroll.ky=0
   end
-  if k=="s" then
+  if k=="s" or k=="down" then
     scroll.ky=0
   end
-  if k=="a" then
+  if k=="a" or k=="left" then
     scroll.kx=0
   end
-  if k=="d" then
+  if k=="d" or k=="right" then
     scroll.kx=0
   end
 end
@@ -219,6 +222,14 @@ function love.mousepressed(mx,my,b)
         conn:net_connect(d)
       end
       conn=nil
+      return
+    end
+    if unlink then
+      local d=get_device(x,y)
+      if d then
+        unlink:net_unlink(d)
+      end
+      unlink=nil
       return
     end
     bdrag=get_buydev(mx,my)
@@ -356,12 +367,23 @@ function love.draw()
     local vx,vy=mox-conn.x,moy-conn.y
     local len=math.sqrt(vx*vx+vy*vy)
     if len>240 then
-      graph.setColor(255,0,0)
+      graph.setColor(150,150,150)
     else
       graph.setColor(255,255,255)
     end
     graph.setLineWidth(1,"rough")
     graph.line(conn.x,conn.y,mox,moy)
+  end
+  if unlink then
+    local vx,vy=mox-unlink.x,moy-unlink.y
+    local len=math.sqrt(vx*vx+vy*vy)
+    if len>240 then
+      graph.setColor(150,0,0)
+    else
+      graph.setColor(255,0,0)
+    end
+    graph.setLineWidth(1,"rough")
+    graph.line(unlink.x,unlink.y,mox,moy)
   end
   if drag then
     drag:drag(mox,moy)
@@ -402,6 +424,7 @@ function love.update(dt)
     end
     flow_dt=0
   end
+  route_packets(dt)
 end
 
 function love.quit()
