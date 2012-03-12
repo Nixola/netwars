@@ -207,7 +207,7 @@ end
 function route_packets(dt)
   local i,d,p,l,c,v
   for k,o in pairs(mydevs) do
-    if o.pkt>0 then
+    if o.cl~="G" and o.pkt>0 then
       o.dt=o.dt+dt
       if o.dt>=0.5 then
         o.dt=0

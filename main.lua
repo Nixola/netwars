@@ -101,6 +101,7 @@ local hover_dt=0
 local conn=nil
 local unlink=nil
 local menu=nil
+local kshift=false
 
 function mn_dev_conn(d)
   conn=d
@@ -116,6 +117,10 @@ end
 function love.keypressed(k)
   if k=="escape" then
     love.event.push("q")
+    return
+  end
+  if k=="lshift" or k=="rshift" then
+    kshift=true
     return
   end
   if k=="w" or k=="up" then
@@ -146,6 +151,10 @@ function love.keypressed(k)
 end
 
 function love.keyreleased(k)
+  if k=="lshift" or k=="rshift" then
+    kshift=false
+    return
+  end
   if k=="w" or k=="up" then
     scroll.ky=0
   end
@@ -212,6 +221,13 @@ function love.mousepressed(mx,my,b)
     return
   end
   if b=="l" then
+    if kshift then
+      local dev=get_my_device(x,y)
+      if dev then
+        dev:net_switch()
+      end
+      return
+    end
     if menu then
       menu=menu:click()
       return

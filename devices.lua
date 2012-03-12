@@ -80,10 +80,16 @@ function Device:move(x,y)
 end
 
 function Device:connect(dev)
+  if self.cl=="G" and dev.cl~="R" then
+    return
+  end
   if #self.links>=self.maxlinks then
     return nil
   end
-  if vec.len(self.x,self.y,dev.x,dev.y)>250 then
+  if #dev.blinks>=dev.maxblinks then
+    return nil
+  end
+  if vec.len(self.x,self.y,dev.x,dev.y)>252 then
     return nil
   end
   local ok=true
@@ -189,6 +195,7 @@ cl="G";
 r=15;
 maxhealth=100;
 maxlinks=3;
+maxblinks=1;
 price=50;
 }
 
@@ -197,6 +204,7 @@ cl="R";
 r=15;
 maxhealth=20;
 maxlinks=5;
+maxblinks=5;
 price=10;
 }
 
@@ -205,6 +213,7 @@ cl="D";
 r=15;
 maxhealth=40;
 maxlinks=0;
+maxblinks=3;
 price=20;
 }
 
@@ -213,6 +222,7 @@ cl="M";
 r=15;
 maxhealth=20;
 maxlinks=0;
+maxblinks=3;
 price=10;
 }
 

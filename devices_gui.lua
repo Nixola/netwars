@@ -3,6 +3,8 @@
 function Player:del_packets()
   for k,p in pairs(packets) do
     if p.dev1.pl==self or p.dev2.pl==self then
+      p.dev1.pc=p.dev1.pc-1
+      p.dev2.pc=p.dev2.pc-1
       packets:del(p)
       if p.pl==ME then
         ME.pkts=ME.pkts-1
@@ -14,6 +16,8 @@ end
 function Device:delete()
   for k,p in pairs(packets) do
     if p.dev1==self or p.dev2==self then
+      p.dev1.pc=p.dev1.pc-1
+      p.dev2.pc=p.dev2.pc-1
       packets:del(p)
       if p.pl==ME then
         ME.pkts=ME.pkts-1
@@ -137,7 +141,9 @@ function Device:switch(b)
 end
 
 function Device:net_buy(x,y)
-  net_send("B:%s:%.1f:%.1f\n",self.cl,x,y)
+  if ME.cash>=self.price then
+    net_send("B:%s:%d:%d\n",self.cl,x,y)
+  end
 end
 
 function Device:net_delete()
@@ -145,13 +151,21 @@ function Device:net_delete()
 end
 
 function Device:net_move(x,y)
-  x,y=self:calc_xy(x,y)
-  net_send("M:%d:%.1f:%1.f\n",self.idx,x,y)
+  if self.pc<=0 then
+    x,y=self:calc_xy(x,y)
+    net_send("M:%d:%d:%d\n",self.idx,x,y)
+  end
 end
 
 function Device:net_connect(dev)
+  if self.cl=="G" and dev.cl~="R" then
+    return
+  end
   if #self.links>=self.maxlinks then
     return
+  end
+  if #dev.blinks>=dev.maxblinks then
+    return nil
   end
   if vec.len(self.x,self.y,dev.x,dev.y)>250 then
     return
@@ -198,6 +212,8 @@ function Link:del_packets()
   local d2=self.dev2
   for k,p in pairs(packets) do
     if (p.dev1==d1 and p.dev2==d2) or (p.dev1==d2 and p.dev2==d1) then
+      d1.pc=d1.pc-1
+      d2.pc=d2.pc-1
       packets:del(p)
       if p.pl==ME then
         ME.pkts=ME.pkts-1

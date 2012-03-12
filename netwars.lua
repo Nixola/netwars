@@ -65,7 +65,7 @@ local function new_client(s)
   end
   for k,o in pairs(devices) do
     b=o.online and 1 or 0
-    q[#q+1]=string.format("Da:%d:%s:%d:%d:%.1f:%.1f\n",o.pl.idx,o.cl,o.idx,b,o.x,o.y)
+    q[#q+1]=string.format("Da:%d:%s:%d:%d:%d:%d\n",o.pl.idx,o.cl,o.idx,b,o.x,o.y)
   end
   for k,o in pairs(links) do
     q[#q+1]=string.format("La:%d:%d\n",o.dev1.idx,o.dev2.idx)

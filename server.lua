@@ -18,7 +18,7 @@ local function buy_device(s,pl,a)
       generators[o.idx]=o
     end
     s:send(string.format("Pc:%d:%d\n",pl.idx,pl.cash))
-    qput("Dn:%d:%s:%d:%.1f:%.1f\n",pl.idx,o.cl,o.idx,o.x,o.y)
+    qput("Dn:%d:%s:%d:%d:%d\n",pl.idx,o.cl,o.idx,o.x,o.y)
   end
 end
 
@@ -51,6 +51,9 @@ function read_client(s,pl)
         qput("Ph:%d:%d\n",o.idx,o.health)
         return
       end
+      if o.cl=="G" then
+        return
+      end
       if o.cl=="D" then
         pl.cash=pl.cash+v
         s:send(string.format("Pc:%d:%d\n",pl.idx,pl.cash))
@@ -60,7 +63,7 @@ function read_client(s,pl)
       if o.pkt>100 then
         o.pkt=100
       end
-      s:send(string.format("Pp:%d:%d\n",o.idx,v))
+      s:send(string.format("Pp:%d:%d\n",o.idx,o.pkt))
       return
     end
     -- Attacking enemy device
@@ -74,13 +77,16 @@ function read_client(s,pl)
     qput("Ph:%d:%d\n",o.idx,o.health)
     return
   end
-  if a[1]=="Pr" then -- Pf:dev1:dev2:val
+  if a[1]=="Pr" then -- Pr:dev1:dev2:val
     if a.n<4 then
       return
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
     local v=tonumber(a[4])
+    if (not d1) or (not d2) then
+      return
+    end
     if v>10 then
       v=10
     end
@@ -100,8 +106,8 @@ function read_client(s,pl)
     end
     local idx=tonumber(a[2])
     local o=devices[idx]
-    if o.pl==pl then
-      o:delete()
+    if o and o.pl==pl then
+      o:del_links()
       devices:del(o)
       if o.cl=="G" then
         generators[idx]=nil
@@ -117,9 +123,9 @@ function read_client(s,pl)
     local idx=tonumber(a[2])
     local x,y=tonumber(a[3]),tonumber(a[4])
     local o=devices[idx]
-    if o.pl==pl and (not o.online) then
+    if o and o.pl==pl and (not o.online) then
       o:move(x,y)
-      qput("Dm:%d:%.1f:%.1f\n",idx,x,y)
+      qput("Dm:%d:%d:%d\n",idx,o.x,o.y)
     end
     return
   end
@@ -130,7 +136,7 @@ function read_client(s,pl)
     local idx=tonumber(a[2])
     local b=tonumber(a[3])==1
     local o=devices[idx]
-    if o.pl==pl then
+    if o and o.pl==pl then
       o.online=b
       o.li=1
       o.edt=0
@@ -145,12 +151,6 @@ function read_client(s,pl)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    if #d1.links>=d1.maxlinks then
-      return
-    end
-    if vec.len(d1.x,d1.y,d2.x,d2.y)>250 then
-      return
-    end
     if d1 and d2 and d1.pl==pl then
       local l=d1:connect(d2)
       if l then
