@@ -92,6 +92,47 @@ function ctable()
   return t
 end
 
+function queue(sz)
+  local object={}
+  object.cnt=0
+  object.size=sz or 100
+  function object:put(str,seq)
+    if cnt>=size then
+      return false
+    end
+    local t={}
+    t.val=str
+    self.cnt=self.cnt+1
+    if not self.tail then
+      self.head=t
+      self.tail=t
+      return true
+    end
+    self.tail.link=t
+    self.tail=t
+    return true
+  end
+  function object:get()
+    if self.head then
+      local t=self.head
+      self.cnt=self.cnt-1
+      if t.link then
+        self.head=t.link
+      else
+        self.head=nil
+        self.tail=nil
+      end
+      return t.val
+    end
+    return nil
+  end
+  function object:clear()
+    self.head=nil
+    self.tail=nil
+    self.cnt=0
+  end
+end
+
 function str_split(str,sep)
   local a={}
   local l=#str
