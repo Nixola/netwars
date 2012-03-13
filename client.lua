@@ -2,15 +2,18 @@
 
 require "socket"
 
-local sock=socket:tcp()
+local sock=socket:udp()
 local allsocks={sock}
 local insync=false
 
 function net_conn(addr,port)
-  if sock:connect("87.99.63.19",6352) then
+  if sock:setpeername("127.0.0.1",6352) then
+    sock:settimeout(5.0)
+    sock:send("PLr")
     while not insync do
       net_read()
     end
+    sock:settimeout()
     return true
   end
   return false
@@ -25,14 +28,8 @@ function net_close()
   sock:close()
 end
 
-function net_read()
-  local str=sock:receive()
-  if not str then
-    love.event.push("q")
-    insync=true
-    return
-  end
-  local a=str_split(str,":")
+local function parse_server(msg)
+  a=str_split(msg,":")
   if a.n==1 then
     if a[1]=="DONE" then
       insync=true
@@ -204,6 +201,19 @@ function net_read()
   end
 end
 
+function net_read()
+  local p=sock:receive()
+  if not p then
+    love.event.push("q")
+    insync=true
+    return
+  end
+  local mt=str_split(p,"|")
+  for i,m in ipairs(mt) do
+    parse_server(m)
+  end
+end
+
 function route_packets(dt)
   local i,d,p,l,c,v
   for k,o in pairs(mydevs) do
@@ -220,7 +230,7 @@ function route_packets(dt)
             d=o.blinks[i].dev1
             i=i<l and i+1 or 1
             if o.pl~=d.pl or d.online then
-              net_send("Pr:%d:%d:%d\n",o.idx,d.idx,v)
+              net_send("Pr:%d:%d:%d",o.idx,d.idx,v)
               break
             end
             c=c-1
@@ -234,7 +244,7 @@ function route_packets(dt)
             d=o.links[i].dev2
             i=i<l and i+1 or 1
             if o.pl~=d.pl or d.online then
-              net_send("Pr:%d:%d:%d\n",o.idx,d.idx,v)
+              net_send("Pr:%d:%d:%d",o.idx,d.idx,v)
               break
             end
             c=c-1

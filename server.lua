@@ -1,6 +1,6 @@
 -- vim:et
 
-local function buy_device(s,pl,a)
+local function buy_device(pl,a)
   if a.n<4 then
     return
   end
@@ -14,21 +14,14 @@ local function buy_device(s,pl,a)
     pl.cash=pl.cash-price
     local o=cl:new(pl,x,y)
     o.idx=devices:add(o)
-    if o.cl=="G" then
-      generators[o.idx]=o
-    end
-    s:send(string.format("Pc:%d:%d\n",pl.idx,pl.cash))
-    qput("Dn:%d:%s:%d:%d:%d\n",pl.idx,o.cl,o.idx,o.x,o.y)
+    --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
+    mput("Pc:%d:%d",pl.idx,pl.cash)
+    mput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
   end
 end
 
-function read_client(s,pl)
-  local str=s:receive()
-  if not str then
-    close_client(s,pl)
-    return
-  end
-  local a=str_split(str,":")
+function parse_client(msg,pl)
+  local a=str_split(msg,":")
   if a.n<2 then
     return
   end
@@ -48,7 +41,7 @@ function read_client(s,pl)
       -- Enqueued at friendly device
       if o.health<o.maxhealth then
         o:heal(v)
-        qput("Ph:%d:%d\n",o.idx,o.health)
+        mput("Ph:%d:%d",o.idx,o.health)
         return
       end
       if o.cl=="G" then
@@ -56,25 +49,27 @@ function read_client(s,pl)
       end
       if o.cl=="D" then
         pl.cash=pl.cash+v
-        s:send(string.format("Pc:%d:%d\n",pl.idx,pl.cash))
+        --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
+        mput("Pc:%d:%d",pl.idx,pl.cash)
         return
       end
       o.pkt=o.pkt+v
       if o.pkt>100 then
         o.pkt=100
       end
-      s:send(string.format("Pp:%d:%d\n",o.idx,o.pkt))
+      --pl.msgq:put(string.format("Pp:%d:%d",o.idx,o.pkt))
+      mput("Pp:%d:%d",o.idx,o.pkt)
       return
     end
     -- Attacking enemy device
     o.health=o.health-v
     if o.health<1 then
-      qput("Dd:%d\n",o.idx)
+      mput("Dd:%d",o.idx)
       o:del_links()
       devices:del(o)
       return
     end
-    qput("Ph:%d:%d\n",o.idx,o.health)
+    mput("Ph:%d:%d",o.idx,o.health)
     return
   end
   if a[1]=="Pr" then -- Pr:dev1:dev2:val
@@ -92,12 +87,12 @@ function read_client(s,pl)
     end
     if d1.pkt>=v then
       d1.pkt=d1.pkt-v
-      qput("Pr:%d:%d:%d:%d\n",d1.idx,d2.idx,v,d1.pkt)
+      mput("Pr:%d:%d:%d:%d",d1.idx,d2.idx,v,d1.pkt)
     end
     return
   end
   if a[1]=="B" then -- Buy:cl:x:y
-    buy_device(s,pl,a)
+    buy_device(pl,a)
     return
   end
   if a[1]=="D" then -- Del:idx
@@ -112,7 +107,7 @@ function read_client(s,pl)
       if o.cl=="G" then
         generators[idx]=nil
       end
-      qput("Dd:%d\n",idx)
+      mput("Dd:%d",idx)
     end
     return
   end
@@ -125,7 +120,7 @@ function read_client(s,pl)
     local o=devices[idx]
     if o and o.pl==pl and (not o.online) then
       o:move(x,y)
-      qput("Dm:%d:%d:%d\n",idx,o.x,o.y)
+      mput("Dm:%d:%d:%d",idx,o.x,o.y)
     end
     return
   end
@@ -141,7 +136,7 @@ function read_client(s,pl)
       o.li=1
       o.edt=0
       b=b and 1 or 0
-      qput("Ds:%d:%d\n",idx,b)
+      mput("Ds:%d:%d",idx,b)
     end
     return
   end
@@ -155,7 +150,7 @@ function read_client(s,pl)
       local l=d1:connect(d2)
       if l then
         links:add(l)
-        qput("La:%d:%d\n",d1.idx,d2.idx)
+        mput("La:%d:%d",d1.idx,d2.idx)
       end
     end
     return
@@ -170,7 +165,7 @@ function read_client(s,pl)
       local l=d1:unlink(d2)
       if l then
         links:del(l)
-        qput("Lu:%d:%d\n",d1.idx,d2.idx)
+        mput("Lu:%d:%d",d1.idx,d2.idx)
       end
     end
     return
@@ -179,8 +174,8 @@ end
 
 function emit_packets(dt)
   local i,d,p,l,c
-  for k,o in pairs(generators) do
-    if o.online then
+  for k,o in pairs(devices) do
+    if o.cl=="G" and o.online then
       o.dt=o.dt+dt
       if o.dt>2 then
         o.dt=0
@@ -191,7 +186,7 @@ function emit_packets(dt)
           d=o.links[i].dev2
           i=i<l and i+1 or 1
           if o.pl~=d.pl or d.online then
-            qput("Pe:%d:%d:%d\n",o.idx,d.idx,1)
+            mput("Pe:%d:%d:%d",o.idx,d.idx,1)
             break
           end
           c=c-1

@@ -142,18 +142,18 @@ end
 
 function Device:net_buy(x,y)
   if ME.cash>=self.price then
-    net_send("B:%s:%d:%d\n",self.cl,x,y)
+    net_send("B:%s:%d:%d",self.cl,x,y)
   end
 end
 
 function Device:net_delete()
-  net_send("D:%d\n",self.idx)
+  net_send("D:%d",self.idx)
 end
 
 function Device:net_move(x,y)
   if self.pc<=0 then
     x,y=self:calc_xy(x,y)
-    net_send("M:%d:%d:%d\n",self.idx,x,y)
+    net_send("M:%d:%d:%d",self.idx,x,y)
   end
 end
 
@@ -178,14 +178,14 @@ function Device:net_connect(dev)
     end
   end
   if ok then
-    net_send("L:%d:%d\n",self.idx,dev.idx)
+    net_send("L:%d:%d",self.idx,dev.idx)
   end
 end
 
 function Device:net_unlink(dev)
   for i,v in ipairs(self.links) do
     if v.dev2==dev then
-      net_send("U:%d:%d\n",self.idx,dev.idx)
+      net_send("U:%d:%d",self.idx,dev.idx)
       return
     end
   end
@@ -193,9 +193,9 @@ end
 
 function Device:net_switch()
   if self.online then
-    net_send("S:%d:0\n",self.idx)
+    net_send("S:%d:0",self.idx)
   else
-    net_send("S:%d:1\n",self.idx)
+    net_send("S:%d:1",self.idx)
   end
 end
 

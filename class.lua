@@ -97,7 +97,7 @@ function queue(sz)
   object.cnt=0
   object.size=sz or 100
   function object:put(str,seq)
-    if cnt>=size then
+    if self.cnt>=self.size then
       return false
     end
     local t={}
@@ -121,16 +121,59 @@ function queue(sz)
       else
         self.head=nil
         self.tail=nil
+        self.cnt=0
       end
       return t.val
     end
     return nil
+  end
+  function object:del()
+    if self.head then
+      local t=self.head
+      self.cnt=self.cnt-1
+      if t.link then
+        self.head=t.link
+      else
+        self.head=nil
+        self.tail=nil
+        self.cnt=0
+      end
+    end
+  end
+  function object:iter()
+    local i=self.head
+    return function()
+      if i then
+        local v=i.val
+        i=i.link
+        return v
+      end
+      return nil
+    end
+  end
+  function object:ited()
+    local q=self
+    local i=self.head
+    return function()
+      if i then
+        local v=i.val
+        i=i.link
+        q.head=i
+        q.cnt=qcnt-1
+        return v
+      end
+      q.head=nil
+      q.tail=nil
+      q.cnt=0
+      return nil
+    end
   end
   function object:clear()
     self.head=nil
     self.tail=nil
     self.cnt=0
   end
+  return object
 end
 
 function str_split(str,sep)
