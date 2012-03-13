@@ -22,73 +22,7 @@ end
 
 function parse_client(msg,pl)
   local a=str_split(msg,":")
-  if a.n<2 then
-    return
-  end
-  if a[1]=="Pf" then -- Pf:dev:val
-    if a.n<3 then
-      return
-    end
-    local o=devices[tonumber(a[2])]
-    local v=tonumber(a[3])
-    if not o then
-      return
-    end
-    if v>10 then
-      v=10
-    end
-    if o.pl==pl then
-      -- Enqueued at friendly device
-      if o.health<o.maxhealth then
-        o:heal(v)
-        mput("Ph:%d:%d",o.idx,o.health)
-        return
-      end
-      if o.cl=="G" then
-        return
-      end
-      if o.cl=="D" then
-        pl.cash=pl.cash+v
-        --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
-        mput("Pc:%d:%d",pl.idx,pl.cash)
-        return
-      end
-      o.pkt=o.pkt+v
-      if o.pkt>100 then
-        o.pkt=100
-      end
-      --pl.msgq:put(string.format("Pp:%d:%d",o.idx,o.pkt))
-      mput("Pp:%d:%d",o.idx,o.pkt)
-      return
-    end
-    -- Attacking enemy device
-    o.health=o.health-v
-    if o.health<1 then
-      mput("Dd:%d",o.idx)
-      o:del_links()
-      devices:del(o)
-      return
-    end
-    mput("Ph:%d:%d",o.idx,o.health)
-    return
-  end
-  if a[1]=="Pr" then -- Pr:dev1:dev2:val
-    if a.n<4 then
-      return
-    end
-    local d1=devices[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    local v=tonumber(a[4])
-    if (not d1) or (not d2) then
-      return
-    end
-    if v>10 then
-      v=10
-    end
-    if d1.pkt>=v then
-      d1.pkt=d1.pkt-v
-      mput("Pr:%d:%d:%d:%d",d1.idx,d2.idx,v,d1.pkt)
-    end
+  if a.n<1 then
     return
   end
   if a[1]=="B" then -- Buy:cl:x:y
@@ -172,27 +106,97 @@ function parse_client(msg,pl)
   end
 end
 
+local function packet_hit(p)
+  local pl=p.pl
+  local o=p.dev2
+  local v=p.v
+  if o.pl==pl then
+    -- Enqueued at friendly device
+    if o.health<o.maxhealth then
+      o:heal(v)
+      mput("Ph:%d:%d",o.idx,o.health)
+      return
+    end
+    if o.cl=="G" then
+      return
+    end
+    if o.cl=="D" then
+      pl.cash=pl.cash+v
+      --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
+      mput("Pc:%d:%d",pl.idx,pl.cash)
+      return
+    end
+    o.pkt=o.pkt+v
+    if o.pkt>100 then
+      o.pkt=100
+    end
+    --pl.msgq:put(string.format("Pp:%d:%d",o.idx,o.pkt))
+    return
+  end
+  -- Attacking enemy device
+  o.health=o.health-v
+  if o.health<1 then
+    mput("Dd:%d",o.idx)
+    o:del_links()
+    devices:del(o)
+    return
+  end
+  mput("Ph:%d:%d",o.idx,o.health)
+end
+
+function flow_packets(dt)
+  local d1,d2,v
+  for k,p in pairs(packets) do
+    if p:flow(dt) then
+      packet_hit(p)
+      packets:del(p)
+    end
+  end
+end
+
 function emit_packets(dt)
-  local i,d,p,l,c
+  local i,d,p,l,c,ok
   for k,o in pairs(devices) do
+    ok=false
     if o.cl=="G" and o.online then
       o.dt=o.dt+dt
-      if o.dt>2 then
+      if o.dt>=3.0 then
         o.dt=0
-        l=#o.links
-        c=l
-        i=o.li>l and 1 or o.li
-        while c>0 do
-          d=o.links[i].dev2
-          i=i<l and i+1 or 1
-          if o.pl~=d.pl or d.online then
-            mput("Pe:%d:%d:%d",o.idx,d.idx,1)
+        ok=true
+        v=nil
+      end
+    end
+    if o.pkt>0 then
+      o.dt=o.dt+dt
+      if o.dt>=0.5 then
+        o.dt=0
+        ok=true
+        v=o.pkt>10 and 10 or o.pkt
+      end
+    end
+    if ok then
+      l=#o.links
+      c=l
+      i=o.li>l and 1 or o.li
+      while c>0 do
+        d=o.links[i].dev2
+        i=i<l and i+1 or 1
+        if o.pl~=d.pl or d.online then
+          if v then
+            o.pkt=o.pkt-v
+            p=Packet:new(o,d,v,true)
+            packets:add(p)
+            mput("Pr:%d:%d:%d:%d",o.idx,d.idx,v,o.pkt)
             break
           end
-          c=c-1
+          p=Packet:new(o,d,1,true)
+          packets:add(p)
+          mput("Pe:%d:%d:%d",o.idx,d.idx,1)
+          break
         end
-        o.li=i
+        c=c-1
       end
+      o.li=i
     end
   end
 end

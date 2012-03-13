@@ -25,6 +25,7 @@ function net_send(fmt,...)
 end
 
 function net_close()
+  sock:send("PLu")
   sock:close()
 end
 
@@ -36,15 +37,7 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="Pp" then -- Processed:dev:pv
-    if a.n<3 then
-      return
-    end
-    local o=devices[tonumber(a[2])]
-    o.pkt=tonumber(a[3])
-    return
-  end
-  if a[1]=="Pr" then -- Routed:dev1:dev2:val:pv
+  if a[1]=="Pr" then -- Routed:dev1:dev2:val:val
     if a.n<5 then
       return
     end
@@ -129,6 +122,9 @@ local function parse_server(msg)
     local o=devices[idx]
     o:delete()
     devices[idx]=nil
+    if o.pl==ME then
+      mydevs[idx]=nil
+    end
     return
   end
   if a[1]=="Dm" then -- Move:idx:x,y
@@ -194,7 +190,6 @@ local function parse_server(msg)
     end
     local idx=tonumber(a[2])
     local pl=players[idx]
-    pl:del_packets()
     pl:disconnect()
     players[idx]=nil
     return
@@ -211,48 +206,6 @@ function net_read()
   local mt=str_split(p,"|")
   for i,m in ipairs(mt) do
     parse_server(m)
-  end
-end
-
-function route_packets(dt)
-  local i,d,p,l,c,v
-  for k,o in pairs(mydevs) do
-    if o.cl~="G" and o.pkt>0 then
-      o.dt=o.dt+dt
-      if o.dt>=0.5 then
-        o.dt=0
-        v=o.pkt>10 and 10 or o.pkt
-        if o.cl=="M" then
-          l=#o.blinks
-          c=l
-          i=o.li>l and 1 or o.li
-          while c>0 do
-            d=o.blinks[i].dev1
-            i=i<l and i+1 or 1
-            if o.pl~=d.pl or d.online then
-              net_send("Pr:%d:%d:%d",o.idx,d.idx,v)
-              break
-            end
-            c=c-1
-          end
-          o.li=i
-        else
-          l=#o.links
-          c=l
-          i=o.li>l and 1 or o.li
-          while c>0 do
-            d=o.links[i].dev2
-            i=i<l and i+1 or 1
-            if o.pl~=d.pl or d.online then
-              net_send("Pr:%d:%d:%d",o.idx,d.idx,v)
-              break
-            end
-            c=c-1
-          end
-          o.li=i
-        end
-      end
-    end
   end
 end
 

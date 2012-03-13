@@ -8,6 +8,7 @@ require "server"
 players=ctable()
 devices=ctable()
 links=ctable()
+packets=ctable()
 
 local sock=socket.udp()
 local iptab={}
@@ -85,18 +86,17 @@ local function new_client(str,ip,port)
       sock:sendto(msg,o.ip,o.port)
     end
   end
-  print("new client done")
+  print("client added")
 end
 
-function close_client(s,pl)
-  local si=pl.si
+function del_client(pl)
   local idx=pl.idx
   local h=pl.ip..":"..pl.port
-  s:close()
   pl:disconnect()
   players:del(pl)
   iptab[h]=nil
   mput("PLd:%d",idx)
+  print("client deleted")
 end
 
 local function read_socket()
@@ -107,10 +107,12 @@ local function read_socket()
   local h=ip..":"..port
   local pl=iptab[h]
   if not pl then
-    new_client(str,ip,port)
-    return
+    return new_client(str,ip,port)
   end
   print("recv client: ",str)
+  if str=="PLu" then
+    return del_client(pl)
+  end
   local pt=str_split(str,"|")
   for i,m in ipairs(pt) do
     parse_client(m,pl)
@@ -140,6 +142,7 @@ while true do
   if tm2>=tm1+0.1 then
     dt=tm2-tm1
     tm1=tm2
+    flow_packets(dt)
     emit_packets(dt)
   end
   flush_msgs()

@@ -278,7 +278,9 @@ function love.mousereleased(mx,my,mb)
     return
   end
   if bdrag and mb=="l" then
-    bdrag:net_buy(x,y)
+    if my<eye.sy-50 then
+      bdrag:net_buy(x,y)
+    end
     bdrag=nil
     return
   end
@@ -300,9 +302,6 @@ local function set_cl_fonts(imgfont)
   img:paste(imgfont,0,0,16,8,16,16)
   devcl.R.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
-  img:paste(imgfont,0,0,32,8,16,16)
-  devcl.M.__members.img=graph.newImage(img)
-  img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
   devcl.D.__members.img=graph.newImage(img)
 end
@@ -322,7 +321,7 @@ function love.load()
     o.hud=true
     buydevs:add(o)
   end
-  local devs={"G","R","D","M"}
+  local devs={"G","R","D"}
   local x=20
   for i,v in ipairs(devs) do
     for k,o in pairs(buydevs) do
@@ -435,12 +434,13 @@ function love.update(dt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
-    for k,o in pairs(packets) do
-      o:flow(flow_dt)
+    for k,p in pairs(packets) do
+      if p:flow(flow_dt) then
+        packets:del(p)
+      end
     end
     flow_dt=0
   end
-  route_packets(dt)
 end
 
 function love.quit()

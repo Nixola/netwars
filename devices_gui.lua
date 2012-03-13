@@ -1,35 +1,5 @@
 -- vim:et
 
-function Player:del_packets()
-  for k,p in pairs(packets) do
-    if p.dev1.pl==self or p.dev2.pl==self then
-      p.dev1.pc=p.dev1.pc-1
-      p.dev2.pc=p.dev2.pc-1
-      packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
-    end
-  end
-end
-
-function Device:delete()
-  for k,p in pairs(packets) do
-    if p.dev1==self or p.dev2==self then
-      p.dev1.pc=p.dev1.pc-1
-      p.dev2.pc=p.dev2.pc-1
-      packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
-    end
-  end
-  self:del_links()
-  if self.pl==ME then
-    mydevs[self.idx]=nil
-  end
-end
-
 function Device:draw_bar()
   local poly={}
   local pi2=math.pi*2
@@ -101,7 +71,6 @@ function Device:draw_sym(_x,_y)
   end
 end
 
-
 function Device:draw()
   if self.online then
     local pi2=math.pi*2
@@ -158,14 +127,17 @@ function Device:net_move(x,y)
 end
 
 function Device:net_connect(dev)
-  if self.cl=="G" and dev.cl~="R" then
-    return
-  end
   if #self.links>=self.maxlinks then
     return
   end
-  if #dev.blinks>=dev.maxblinks then
-    return nil
+  if self.pl==dev.pl then
+    if #dev.blinks>=dev.maxblinks then
+      return nil
+    end
+  else
+    if #dev.elinks>=dev.maxblinks then
+      return nil
+    end
   end
   if vec.len(self.x,self.y,dev.x,dev.y)>250 then
     return
@@ -207,21 +179,6 @@ function Link:draw()
   end
 end
 
-function Link:del_packets()
-  local d1=self.dev1
-  local d2=self.dev2
-  for k,p in pairs(packets) do
-    if (p.dev1==d1 and p.dev2==d2) or (p.dev1==d2 and p.dev2==d1) then
-      d1.pc=d1.pc-1
-      d2.pc=d2.pc-1
-      packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
-    end
-  end
-end
-
 function Packet:draw()
   if (not self.hit) and eye.in_view(self.x,self.y,self.r) then
     if self.pl==ME then
@@ -231,27 +188,6 @@ function Packet:draw()
     end
     graph.setLine(1,"rough")
     graph.circle("line",self.x,self.y,self.r,8)
-  end
-end
-
-function Packet:flow(dt)
-  local d1=self.dev1
-  local d2=self.dev2
-  local vx,vy=d2.x-d1.x,d2.y-d1.y
-  local s=math.sqrt(vx*vx+vy*vy)
-  vx,vy=vx/s*2,vy/s*2
-  self.x=self.x+vx
-  self.y=self.y+vy
-  local tx,ty=d2.x-self.x,d2.y-self.y
-  local r=math.sqrt(tx*tx+ty*ty)
-  if r<=d2.r then
-    d1.pc=d1.pc-1
-    d2.pc=d2.pc-1
-    if d1.pl==ME then
-      net_send("Pf:%d:%d\n",d2.idx,self.v)
-      ME.pkts=ME.pkts-1
-    end
-    packets:del(self)
   end
 end
 
@@ -272,12 +208,6 @@ function Router:init_gui()
 end
 
 function DataCenter:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
-end
-
-function Mirror:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
