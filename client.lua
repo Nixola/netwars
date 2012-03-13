@@ -3,6 +3,8 @@
 require "socket"
 
 local sock=socket:udp()
+local sendq=squeue()
+local seq=0
 local allsocks={sock}
 local insync=false
 
@@ -11,7 +13,8 @@ function net_conn(addr,port)
     sock:settimeout(5.0)
     sock:send("PLr")
     while not insync do
-      net_read()
+      msg=net_read()
+      net_parse(msg)
     end
     sock:settimeout()
     return true
@@ -21,7 +24,7 @@ end
 
 function net_send(fmt,...)
   local str=string.format(fmt,unpack(arg))
-  sock:send(str)
+  sendq:put(str)
 end
 
 function net_close()
@@ -32,8 +35,13 @@ end
 local function parse_server(msg)
   a=str_split(msg,":")
   if a.n==1 then
+    if a[1]=="ACK" then
+      sendq:del(tonumber(a[2]))
+      return
+    end
     if a[1]=="DONE" then
       insync=true
+      net_send("OK")
     end
     return
   end
@@ -196,22 +204,57 @@ local function parse_server(msg)
   end
 end
 
-function net_read()
-  local p=sock:receive()
+function net_parse(msg)
+  local p=recvq:get(seq)
+  local mt
+  if p then
+    mt=str_split(p,"|")
+    for i,m in ipairs(mt) do
+      parse_server(m)
+    end
+  end
+  if msg then
+    mt=str_split(msg,"|")
+    for i,m in ipairs(mt) do
+      parse_server(m)
+    end
+  end
+end
+
+function net_read(ts)
+  local str=sock:receive()
   if not p then
     love.event.push("q")
     insync=true
     return
   end
-  local mt=str_split(p,"|")
-  for i,m in ipairs(mt) do
-    parse_server(m)
+  local ts=socket.gettime()
+  if str:find("!",1,true) then
+    local s=recvq:put(str)
+    if not s then
+      love.event.push("q")
+      insync=true
+      return nil
+    end
+    seq=seq+1
+    timeout=ts+30
+    return nil
   end
+  return str
 end
 
 function net_proc()
+  local ts=socket.gettime()
   ret=socket.select(allsocks,nil,0)
   if ret[sock] then
-    net_read()
+    msg=net_read(ts)
+  end
+  if timeout>=ts then
+    love.event.push("q")
+    return
+  end
+  net_parse(msg)
+  for p in sendq:iter(ts,0.5) do
+    sock:send(p)
   end
 end

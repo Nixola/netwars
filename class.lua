@@ -92,36 +92,51 @@ function ctable()
   return t
 end
 
+function str_split(str,sep)
+  local a={}
+  local l=#str
+  local p=1,q
+  q=string.find(str,sep,1,true)
+  while q do
+    a[#a+1]=string.sub(str,p,q-1)
+    p=q+1
+    q=string.find(str,sep,p,true)
+  end
+  a[#a+1]=string.sub(str,p,l)
+  a.n=#a
+  return a
+end
+
 function queue(sz)
   local object={}
-  object.cnt=0
   object.size=sz or 100
-  function object:put(str,seq)
-    if self.cnt>=self.size then
-      return false
+  object.len=0
+  function object:put(str)
+    if self.len>=self.size then
+      return true
     end
     local t={}
     t.val=str
-    self.cnt=self.cnt+1
+    self.len=self.len+1
     if not self.tail then
       self.head=t
       self.tail=t
-      return true
+      return false
     end
     self.tail.link=t
     self.tail=t
-    return true
+    return false
   end
   function object:get()
     if self.head then
       local t=self.head
-      self.cnt=self.cnt-1
+      self.len=self.len-1
       if t.link then
         self.head=t.link
       else
         self.head=nil
         self.tail=nil
-        self.cnt=0
+        self.len=0
       end
       return t.val
     end
@@ -130,13 +145,13 @@ function queue(sz)
   function object:del()
     if self.head then
       local t=self.head
-      self.cnt=self.cnt-1
+      self.len=self.len-1
       if t.link then
         self.head=t.link
       else
         self.head=nil
         self.tail=nil
-        self.cnt=0
+        self.len=0
       end
     end
   end
@@ -159,34 +174,199 @@ function queue(sz)
         local v=i.val
         i=i.link
         q.head=i
-        q.cnt=qcnt-1
+        q.len=q.len-1
         return v
       end
       q.head=nil
       q.tail=nil
-      q.cnt=0
+      q.len=0
+      return nil
+    end
+  end
+  function object:itfx()
+    if not self.head then
+      self.tail=nil
+      self.tail=nil
+      self.len=0
+    end
+  end
+  function object:clear()
+    self.head=nil
+    self.tail=nil
+    self.len=0
+  end
+  return object
+end
+
+function squeue(sz)
+  local object={}
+  object.size=sz or 100
+  object.len=0
+  object.seq=0
+  function object:put(str)
+    if self.len>=self.size then
+      return true
+    end
+    local t={}
+    self.len=self.len+1
+    self.seq=self.seq+1
+    t.val=self.seq.."!"..str
+    t.seq=self.seq
+    if not self.tail then
+      self.head=t
+      self.tail=t
+      return false
+    end
+    self.tail.link=t
+    self.tail=t
+    return false
+  end
+  function object:del(seq)
+    if self.head then
+      local l=self.head
+      local p=nil
+      while l and l.seq<seq do
+        p=l
+        l=l.link
+      end
+      if not l then
+        return
+      end
+      if l.seq>seq then
+        return
+      end
+      self.len=self.len-1
+      if not p then
+        self.head=l.link
+      else
+        p.link=l.link
+      end
+    end
+  end
+  function object:iter(_ts,_dt)
+    local i=self.head
+    local ts=_ts
+    local dt=_dt
+    return function()
+      while i do
+        if not i.ts or i.ts>=ts then
+          local v=i.val
+          i.ts=ts+dt
+          return v
+        end
+        i=i.link
+      end
       return nil
     end
   end
   function object:clear()
     self.head=nil
     self.tail=nil
-    self.cnt=0
+    self.len=0
   end
   return object
 end
 
-function str_split(str,sep)
-  local a={}
-  local l=#str
-  local p=1,q
-  q=string.find(str,sep,1,true)
-  while q do
-    a[#a+1]=string.sub(str,p,q-1)
-    p=q+1
-    q=string.find(str,sep,p,true)
+function rqueue(sz)
+  local object={}
+  object.size=sz or 100
+  object.len=0
+  object.seq=0
+  function object:put(str)
+    if self.len>=self.size then
+      return nil
+    end
+    local a=str_split(str,"!")
+    if a.n<2 then
+      return nil
+    end
+    local seq=tonumber(a[1])
+    if seq<=self.seq then
+      return seq
+    end
+    if not self.head then
+      local t={seq=seq,val=a[2]}
+      self.head=t
+      self.tail=t
+      self.len=self.len+1
+      return seq
+    end
+    local l=self.head
+    local p=nil
+    while l and seq>=l.seq do
+      p=l
+      l=l.link
+    end
+    if not l then
+      local t={seq=seq,val=a[2]}
+      self.tail.link=t
+      self.tail=t
+      self.len=self.len+1
+      return seq
+    end
+    if seq==l.seq then
+      return seq
+    end
+    if not p then
+      local t={seq=seq,val=a[2]}
+      t.link=self.head
+      self.head=t
+      self.len=self.len+1
+      return seq
+    end
+    local t={seq=seq,val=a[2]}
+    p.link=t
+    t.link=l
+    self.len=self.len+1
+    return seq
   end
-  a[#a+1]=string.sub(str,p,l)
-  a.n=#a
-  return a
+  function object:get(seq)
+    if self.head then
+      local t=self.head
+      if t.seq~=seq then
+        return nil
+      end
+      self.len=self.len-1
+      self.seq=t.seq
+      if t.link then
+        self.head=t.link
+      else
+        self.head=nil
+        self.tail=nil
+        self.len=0
+      end
+      return t.val
+    end
+    return nil
+  end
+  function object:del(seq)
+    if self.head then
+      local t=self.head
+      if t.seq~=seq then
+        return nil
+      end
+      self.len=self.len-1
+      self.seq=t.seq
+      if t.link then
+        self.head=t.link
+      else
+        self.head=nil
+        self.tail=nil
+        self.len=0
+      end
+    end
+  end
+  function object:clear()
+    local i=self.head
+    local s=self.seq
+    while i do
+      s=i.seq
+      i=i.link
+    end
+    self.seq=s
+    self.head=nil
+    self.tail=nil
+    self.len=0
+  end
+  return object
 end
