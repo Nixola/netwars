@@ -445,6 +445,7 @@ end
 
 function love.quit()
   net_close()
+  love.timer.sleep(5000)
 end
 
 function love.run()

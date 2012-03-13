@@ -249,9 +249,10 @@ function squeue(sz)
     local dt=_dt
     return function()
       while i do
-        if not i.ts or i.ts>=ts then
+        if (not i.ts) or ts>=i.ts then
           local v=i.val
           i.ts=ts+dt
+          i=i.link
           return v
         end
         i=i.link

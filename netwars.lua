@@ -60,8 +60,7 @@ local function new_client(str,ts,ip,port)
   pl.port=port
   pl.sendq=squeue()
   pl.recvq=rqueue()
-  pl.dataq=queue()
-  pl.ts=ts
+  pl.ts=ts+30
   pl.seq=0
   pl.insync=false
   pl.idx=players:add(pl)
@@ -120,19 +119,23 @@ local function read_socket(ts)
     if str=="DISCONNECT" then
       return del_client(pl)
     end
+    if str=="OK" then
+      pl.insync=true
+      return
+    end
     local a=str_split(str,":")
     if a.n==2 and a[1]=="ACK" then
       pl.sendq:del(tonumber(a[2]))
     end
     return
   end
-  local seq=pl.recvq:put(str)
-  if not seq then
+  local s=pl.recvq:put(str)
+  if not s then
     return del_client(pl)
   end
   pl.seq=pl.seq+1
   pl.ts=ts+30
-  pl.dataq:put(string.format("ACK:%d",seq))
+  sockd:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
 end
 
 if not sockc:setsockname("*",6352) then
@@ -160,9 +163,9 @@ while true do
     if ts>=o.ts then
       del_client(o)
     else
-      msg=pl.recvq:get(pl.seq)
+      msg=o.recvq:get(o.seq)
       if msg then
-        parse_client(msg,pl)
+        parse_client(msg,o)
       end
     end
   end
@@ -174,19 +177,14 @@ while true do
   end
   for k,o in pairs(players) do
     for p in o.sendq:iter(ts,0.5) do
-      print("sendq: ",p)
+      print("sendq: ",ts,p)
       sockc:sendto(p,o.ip,o.port)
-    end
-  end
-  for k,o in pairs(players) do
-    for p in o.dataq:ited() do
-      print("dataq: ",p)
-      sockd:sendto(p,o.ip,o.port)
     end
   end
   enqueue(q,msgq)
   msgq:clear()
   for p in q:ited() do
+    print("msgq: ",p)
     for k,o in pairs(players) do
       if o.insync then
         sockd:sendto(p,o.ip,o.port)

@@ -22,7 +22,7 @@ end
 
 function parse_client(msg,pl)
   local a=str_split(msg,":")
-  if a.n<1 then
+  if a.n<2 then
     return
   end
   if a[1]=="B" then -- Buy:cl:x:y

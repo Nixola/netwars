@@ -4,9 +4,11 @@ require "socket"
 
 local sock=socket:udp()
 local sendq=squeue()
+local recvq=rqueue()
 local seq=0
 local allsocks={sock}
 local insync=false
+local timeout=0
 
 function net_conn(addr,port)
   if sock:setpeername("127.0.0.1",6352) then
@@ -17,6 +19,7 @@ function net_conn(addr,port)
       net_parse(msg)
     end
     sock:settimeout()
+    timeout=socket:gettime()+30
     return true
   end
   return false
@@ -223,7 +226,7 @@ end
 
 function net_read(ts)
   local str=sock:receive()
-  if not p then
+  if not str then
     love.event.push("q")
     insync=true
     return
@@ -238,6 +241,7 @@ function net_read(ts)
     end
     seq=seq+1
     timeout=ts+30
+    sock:send(string.format("ACK:%d",s))
     return nil
   end
   return str
@@ -249,7 +253,7 @@ function net_proc()
   if ret[sock] then
     msg=net_read(ts)
   end
-  if timeout>=ts then
+  if ts>=timeout then
     love.event.push("q")
     return
   end
