@@ -49,13 +49,14 @@ end
 local function new_client(str,ts,ip,port)
   print("new client: ",str)
   local a=str_split(str,":")
-  if a[1]~="CONNECT" then
+  if a[1]~="PLr" or a.n<2 then
     return
   end
   local pl=Player:new(200)
   local h=ip..":"..port
   pl.ip=ip
   pl.port=port
+  pl.name=a[2]
   pl.sendq=squeue()
   pl.recvq=rqueue()
   pl.ts=ts+30
@@ -66,9 +67,9 @@ local function new_client(str,ts,ip,port)
   local m=queue()
   for k,o in pairs(players) do
     if o==pl then
-      m:put(string.format("PLa:%d:%d:me",o.idx,o.cash))
+      m:put(string.format("PLa:%d:%s:%d:me",o.idx,o.name,o.cash))
     else
-      m:put(string.format("PLa:%d:%d",o.idx,o.cash))
+      m:put(string.format("PLa:%d:%s:%d",o.idx,o.name,o.cash))
     end
   end
   for k,o in pairs(devices) do

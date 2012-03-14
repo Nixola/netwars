@@ -5,6 +5,7 @@ require "menu"
 require "devices"
 require "devices_gui"
 require "client"
+require "init"
 
 graph=love.graphics
 dtime=0
@@ -97,6 +98,7 @@ local huddevs={}
 local drag=nil
 local bdrag=nil
 local hover=nil
+local hint=nil
 local hover_dt=0
 local conn=nil
 local unlink=nil
@@ -114,61 +116,6 @@ end
 function mn_dev_del(d)
 end
 
-function love.keypressed(k)
-  if k=="escape" then
-    love.event.push("q")
-    return
-  end
-  if k=="lshift" or k=="rshift" then
-    kshift=true
-    return
-  end
-  if k=="w" or k=="up" then
-    if scroll.y<0 then
-      scroll.y=0
-    end
-    scroll.ky=1
-  end
-  if k=="s" or k=="down" then
-    if scroll.y>0 then
-      scroll.y=0
-    end
-    scroll.ky=-1
-  end
-  if k=="a" or k=="left" then
-    if scroll.x<0 then
-      scroll.x=0
-    end
-    scroll.kx=1
-  end
-  if k=="d" or k=="right" then
-    if scroll.x>0 then
-      scroll.x=0
-    end
-    scroll.kx=-1
-  end
-  scroll.run=scroll.kx~=0 or scroll.ky~=0 or scroll.ks~=0
-end
-
-function love.keyreleased(k)
-  if k=="lshift" or k=="rshift" then
-    kshift=false
-    return
-  end
-  if k=="w" or k=="up" then
-    scroll.ky=0
-  end
-  if k=="s" or k=="down" then
-    scroll.ky=0
-  end
-  if k=="a" or k=="left" then
-    scroll.kx=0
-  end
-  if k=="d" or k=="right" then
-    scroll.kx=0
-  end
-end
-
 local function get_device(x,y)
   for k,o in pairs(devices) do
     if o:is_pointed(x,y) then
@@ -181,10 +128,7 @@ end
 local function get_my_device(x,y)
   for k,o in pairs(devices) do
     if o:is_pointed(x,y) then
-      if o.pl==ME then
-        return o
-      end
-      return nil
+      return o.pl==ME and o or nil
     end
   end
   return nil
@@ -199,7 +143,16 @@ local function get_buydev(x,y)
   return nil
 end
 
-function love.mousepressed(mx,my,b)
+local function get_enemydev(x,y)
+  for k,o in pairs(devices) do
+    if o:is_pointed(x,y) then
+      return o.pl==ME and nil or o
+    end
+  end
+  return nil
+end
+
+function main_mousepressed(mx,my,b)
   local s={0.3,0.5,0.7,1.0,1.5,2.5}
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if b=="wu" then
@@ -268,7 +221,7 @@ function love.mousepressed(mx,my,b)
   end
 end
 
-function love.mousereleased(mx,my,mb)
+function main_mousereleased(mx,my,mb)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if drag and mb=="l" then
     if (not drag.online) and drag.pc<1 then
@@ -286,58 +239,56 @@ function love.mousereleased(mx,my,mb)
   end
 end
 
-local function set_cl_fonts(imgfont)
-  local function set_alpha(x,y,r,g,b,a)
-    if r==0 and g==0 and b==0 then
-      return 0,0,0,0
-    end
-    return r,g,b,255
+function main_keypressed(k)
+  if k=="lshift" or k=="rshift" then
+    kshift=true
+    return
   end
-  imgfont:mapPixel(set_alpha)
-  local img
-  img=love.image.newImageData(16,16)
-  img:paste(imgfont,0,0,0,8,16,16)
-  devcl.G.__members.img=graph.newImage(img)
-  img=love.image.newImageData(16,16)
-  img:paste(imgfont,0,0,16,8,16,16)
-  devcl.R.__members.img=graph.newImage(img)
-  img=love.image.newImageData(16,16)
-  img:paste(imgfont,0,0,48,8,16,16)
-  devcl.D.__members.img=graph.newImage(img)
+  if k=="w" or k=="up" then
+    if scroll.y<0 then
+      scroll.y=0
+    end
+    scroll.ky=1
+  end
+  if k=="s" or k=="down" then
+    if scroll.y>0 then
+      scroll.y=0
+    end
+    scroll.ky=-1
+  end
+  if k=="a" or k=="left" then
+    if scroll.x<0 then
+      scroll.x=0
+    end
+    scroll.kx=1
+  end
+  if k=="d" or k=="right" then
+    if scroll.x>0 then
+      scroll.x=0
+    end
+    scroll.kx=-1
+  end
+  scroll.run=scroll.kx~=0 or scroll.ky~=0 or scroll.ks~=0
 end
 
-function love.load()
-  eye.sx=graph.getWidth()
-  eye.sy=graph.getHeight()
-  eye.cx=eye.sx/2
-  eye.cy=eye.sy/2
-  eye.x=eye.vx+eye.cx/eye.s
-  eye.y=eye.vy+eye.cy/eye.s
-  graph.setBackgroundColor(0,0,0)
-  local imgfont=love.image.newImageData("imgs/font.png")
-  set_cl_fonts(imgfont)
-  for k,v in pairs(devcl) do
-    o=v:new(nil,0,eye.sy-25)
-    o.hud=true
-    buydevs:add(o)
+function main_keyreleased(k)
+  if k=="lshift" or k=="rshift" then
+    kshift=false
+    return
   end
-  local devs={"G","R","D"}
-  local x=25
-  for i,v in ipairs(devs) do
-    for k,o in pairs(buydevs) do
-      if o.cl==v then
-        huddevs[i]=o
-        o.x=x
-        x=x+40
-      end
-    end
+  if k=="w" or k=="up" then
+    scroll.ky=0
   end
-  net_conn("127.0.0.1",6352)
-  if not ME then
-    love.event.push("q")
+  if k=="s" or k=="down" then
+    scroll.ky=0
+  end
+  if k=="a" or k=="left" then
+    scroll.kx=0
+  end
+  if k=="d" or k=="right" then
+    scroll.kx=0
   end
 end
-
 
 local function draw_hud()
   graph.setColor(0,0,96)
@@ -355,11 +306,14 @@ local function draw_hud()
     graph.print(string.format("Price: %d",hover.price),eye.sx-200,eye.sy-40)
     graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-200,eye.sy-20)
   end
+  if hint and hint.pl.name then
+    graph.print(hint.pl.name,msx,msy+17)
+  end
 end
 
 local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
 local lsi=1
-function love.draw()
+function main_draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
   graph.scale(eye.s)
@@ -416,7 +370,7 @@ function love.draw()
 end
 
 local flow_dt=0
-function love.update(dt)
+function main_update(dt)
   dtime=dt
   scroll.dt=scroll.dt+dt
   msx,msy=love.mouse.getPosition()
@@ -428,8 +382,16 @@ function love.update(dt)
   end
   hover_dt=hover_dt+dt
   if hover_dt>=0.1 then
-    hover=get_buydev(msx,msy)
     hover_dt=0
+    if msy>eye.sy-50 then
+      hover=get_buydev(msx,msy)
+    else
+      if eye.s<0.6 then
+        hint=get_enemydev(mox,moy)
+      else
+        hint=nil
+      end
+    end
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
@@ -443,15 +405,62 @@ function love.update(dt)
   end
 end
 
-function love.quit()
+function main_quit()
   net_close()
 end
 
 function love.run()
   love.load()
-
   local dt=0
-  local ret
+
+  -- init
+  while true do
+    if love.timer then
+      love.timer.step()
+      dt=love.timer.getDelta()
+    end
+    if love.update then
+      love.update(dt)
+    end
+    if love.graphics then
+      love.graphics.clear()
+      love.draw()
+    end
+    if love.event then
+      for e,a,b,c in love.event.poll() do
+        if e=="q" then
+          if love.quit then
+            love.quit()
+          end
+          if love.audio then
+            love.audio.stop()
+          end
+          return
+        end
+        love.handlers[e](a,b,c)
+      end
+    end
+    if love.graphics then
+      love.graphics.present()
+    end
+    if net_sync() then
+      break
+    end
+  end
+
+  if ME then
+    love.draw=main_draw
+    love.update=main_update
+    love.quit=main_quit
+    love.keypressed=main_keypressed
+    love.keyreleased=main_keyreleased
+    love.mousepressed=main_mousepressed
+    love.mousereleased=main_mousereleased
+  else
+    love.event.push("q")
+  end
+
+  -- main
   while true do
     if love.timer then
       love.timer.step()
@@ -483,4 +492,55 @@ function love.run()
     end
     net_proc()
   end
+end
+
+local function set_cl_fonts(imgfont)
+  local function set_alpha(x,y,r,g,b,a)
+    if r==0 and g==0 and b==0 then
+      return 0,0,0,0
+    end
+    return r,g,b,255
+  end
+  imgfont:mapPixel(set_alpha)
+  local img
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,0,8,16,16)
+  devcl.G.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,16,8,16,16)
+  devcl.R.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,48,8,16,16)
+  devcl.D.__members.img=graph.newImage(img)
+end
+
+function love.load()
+  eye.sx=graph.getWidth()
+  eye.sy=graph.getHeight()
+  eye.cx=eye.sx/2
+  eye.cy=eye.sy/2
+  eye.x=eye.vx+eye.cx/eye.s
+  eye.y=eye.vy+eye.cy/eye.s
+  graph.setBackgroundColor(0,0,0)
+  local imgfont=love.image.newImageData("imgs/font.png")
+  set_cl_fonts(imgfont)
+  for k,v in pairs(devcl) do
+    o=v:new(nil,0,eye.sy-25)
+    o.hud=true
+    buydevs:add(o)
+  end
+  local devs={"G","R","D"}
+  local x=25
+  for i,v in ipairs(devs) do
+    for k,o in pairs(buydevs) do
+      if o.cl==v then
+        huddevs[i]=o
+        o.x=x
+        x=x+40
+      end
+    end
+  end
+  love.draw=init_draw
+  love.update=init_update
+  love.keypressed=init_keypressed
 end

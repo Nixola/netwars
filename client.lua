@@ -11,23 +11,33 @@ local insync=false
 local timeout=0
 local addr,port
 
-function net_conn(_addr,_port)
-  addr,port=_addr,_port
+function net_conn(_addr,nick)
+  addr,port=_addr,6352
   local ts=socket:gettime()
-  timeout=timeout+5
-  sock:sendto("CONNECT",addr,port)
-  local msg
-  while not insync do
-    msg=net_read(ts)
-    net_parse(msg)
-    ts=ts+1
+  timeout=ts+5
+  sock:sendto(string.format("PLr:%s",nick),addr,port)
+end
+
+function net_sync()
+  if (not addr) and (not port) then
+    return false
   end
-  timeout=socket:gettime()+30
+  local ts=socket:gettime()
+  local ret=socket.select(allsocks,nil,0)
+  local msg
+  if ret[sock] then
+    msg=net_read(ts)
+  end
+  if ts>=timeout then
+    love.event.push("q")
+    return
+  end
+  net_parse(msg)
+  return insync
 end
 
 function net_send(fmt,...)
   local str=string.format(fmt,unpack(arg))
-  print("net_send: ",str)
   sendq:put(str)
 end
 
@@ -184,16 +194,17 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="PLa" then -- PLa:idx:cash
-    if a.n<3 then
+  if a[1]=="PLa" then -- PLa:idx:nick:cash
+    if a.n<4 then
       return
     end
     local idx=tonumber(a[2])
-    local cash=tonumber(a[3])
+    local cash=tonumber(a[4])
     local pl=Player:new(cash)
     pl.idx=idx
+    pl.name=a[3]
     players[idx]=pl
-    if a[4]=="me" then
+    if a[5]=="me" then
       ME=pl
     end
     return
@@ -267,11 +278,9 @@ function net_proc()
   end
   net_parse(msg)
   for p in sendq:iter(ts,0.5) do
-    print("send: ",p)
     sock:sendto(p,addr,port)
   end
   if sendq.len>0 then
-    print("sendq have packets")
     lastsend=ts+5
   end
   if ts>=lastsend then
