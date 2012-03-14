@@ -2,27 +2,28 @@
 
 require "socket"
 
-local sock=socket:udp()
+local sock
 local sendq=squeue()
 local recvq=rqueue()
 local seq=0
-local allsocks={sock}
+local allsocks
 local insync=false
 local timeout=0
-local addr,port
 
-function net_conn(_addr,nick)
-  addr,port=_addr,6352
-  local ts=socket:gettime()
+function net_conn(addr,nick)
+  sock=socket.udp()
+  allsocks={sock}
+  local ts=socket.gettime()
   timeout=ts+5
-  sock:sendto(string.format("PLr:%s",nick),addr,port)
+  sock:setpeername(addr,6352)
+  sock:send(string.format("PLr:%s",nick))
 end
 
 function net_sync()
-  if (not addr) and (not port) then
+  if timeout==0 then
     return false
   end
-  local ts=socket:gettime()
+  local ts=socket.gettime()
   local ret=socket.select(allsocks,nil,0)
   local msg
   if ret[sock] then
@@ -42,7 +43,7 @@ function net_send(fmt,...)
 end
 
 function net_close()
-  sock:sendto("DISCONNECT",addr,port)
+  sock:send("DISCONNECT")
   sock:close()
 end
 
@@ -243,7 +244,7 @@ function net_parse(msg)
 end
 
 function net_read(ts)
-  local str=sock:receivefrom()
+  local str=sock:receive()
   if not str then
     love.event.push("q")
     insync=true
@@ -258,7 +259,7 @@ function net_read(ts)
       return nil
     end
     seq=seq+1
-    sock:sendto(string.format("ACK:%d",s),addr,port)
+    sock:send(string.format("ACK:%d",s))
     return nil
   end
   return str
@@ -278,13 +279,13 @@ function net_proc()
   end
   net_parse(msg)
   for p in sendq:iter(ts,0.5) do
-    sock:sendto(p,addr,port)
+    sock:send(p)
   end
   if sendq.len>0 then
     lastsend=ts+5
   end
   if ts>=lastsend then
-    sock:sendto("PING",addr,port)
+    sock:send("PING")
     lastsend=ts+5
   end
 end

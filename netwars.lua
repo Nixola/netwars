@@ -10,8 +10,7 @@ devices=ctable()
 links=ctable()
 packets=ctable()
 
-local sockc=socket.udp()
-local sockd=socket.udp()
+local sock=socket.udp()
 local iptab={}
 local ctlq=queue()
 local msgq=queue()
@@ -104,7 +103,7 @@ function del_client(pl)
 end
 
 local function read_socket(ts)
-  local str,ip,port=sockc:receivefrom()
+  local str,ip,port=sock:receivefrom()
   if not str then
     return
   end
@@ -117,7 +116,7 @@ local function read_socket(ts)
   pl.ts=ts+30
   if not str:find("!",1,true) then
     if str=="PING" then
-      sockc:sendto("PONG",pl.ip,pl.port)
+      sock:sendto("PONG",pl.ip,pl.port)
       return
     end
     if str=="DISCONNECT" then
@@ -136,14 +135,10 @@ local function read_socket(ts)
   pl.seq=pl.seq+1
   pl.ts=ts+30
   print("send client: ",string.format("ACK:%d",s))
-  sockc:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
+  sock:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
 end
 
-if not sockc:setsockname("*",6352) then
-  print("Error: bind() failed")
-  return
-end
-if not sockd:setsockname("*",6353) then
+if not sock:setsockname("*",6352) then
   print("Error: bind() failed")
   return
 end
@@ -151,13 +146,13 @@ end
 local ret
 local tm=socket.gettime()
 local ts,dt
-local allsocks={sockc}
+local allsocks={sock}
 local q=queue()
 local msg
 while true do
   ret=socket.select(allsocks,nil,0.1)
   ts=socket.gettime()
-  if ret[sockc] then
+  if ret[sock] then
     read_socket(ts)
   end
   for k,o in pairs(players) do
@@ -188,7 +183,7 @@ while true do
   for k,o in pairs(players) do
     for p in o.sendq:iter(ts,0.5) do
       print("sendq: ",ts,p)
-      sockc:sendto(p,o.ip,o.port)
+      sock:sendto(p,o.ip,o.port)
     end
   end
   enqueue(q,msgq)
@@ -197,7 +192,7 @@ while true do
     print("msgq: ",p)
     for k,o in pairs(players) do
       if o.insync then
-        sockd:sendto(p,o.ip,o.port)
+        sock:sendto(p,o.ip,o.port)
       end
     end
   end
