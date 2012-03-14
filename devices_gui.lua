@@ -127,6 +127,9 @@ function Device:net_move(x,y)
 end
 
 function Device:net_connect(dev)
+  if self==dev then
+    return
+  end
   if #self.links>=self.maxlinks then
     return
   end

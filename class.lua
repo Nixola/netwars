@@ -95,8 +95,8 @@ end
 function str_split(str,sep)
   local a={}
   local l=#str
-  local p=1,q
-  q=string.find(str,sep,1,true)
+  local p=1
+  local q=string.find(str,sep,1,true)
   while q do
     a[#a+1]=string.sub(str,p,q-1)
     p=q+1
@@ -113,7 +113,7 @@ function queue(sz)
   object.len=0
   function object:put(str)
     if self.len>=self.size then
-      return true
+      return nil
     end
     local t={}
     t.val=str
@@ -125,7 +125,7 @@ function queue(sz)
     end
     self.tail.link=t
     self.tail=t
-    return false
+    return true
   end
   function object:get()
     if self.head then
@@ -205,7 +205,7 @@ function squeue(sz)
   object.seq=0
   function object:put(str)
     if self.len>=self.size then
-      return true
+      return nil
     end
     local t={}
     self.len=self.len+1
@@ -219,28 +219,34 @@ function squeue(sz)
     end
     self.tail.link=t
     self.tail=t
-    return false
+    return true
   end
   function object:del(seq)
-    if self.head then
-      local l=self.head
-      local p=nil
-      while l and l.seq<seq do
-        p=l
-        l=l.link
+    local l=self.head
+    local p=nil
+    while l and l.seq<seq do
+      p=l
+      l=l.link
+    end
+    if not l then
+      return
+    end
+    if l.seq>seq then
+      return
+    end
+    self.len=self.len-1
+    if not p then
+      self.head=l.link
+      if not l.link then
+        self.tail=nil
       end
-      if not l then
-        return
-      end
-      if l.seq>seq then
-        return
-      end
-      self.len=self.len-1
-      if not p then
-        self.head=l.link
-      else
-        p.link=l.link
-      end
+      return
+    end
+    if not l.link then
+      p.link=nil
+      self.tail=p
+    else
+      p.link=l.link
     end
   end
   function object:iter(_ts,_dt)
@@ -294,7 +300,7 @@ function rqueue(sz)
     end
     local l=self.head
     local p=nil
-    while l and seq>=l.seq do
+    while l and l.seq<seq do
       p=l
       l=l.link
     end

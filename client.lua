@@ -9,42 +9,38 @@ local seq=0
 local allsocks={sock}
 local insync=false
 local timeout=0
+local addr,port
 
-function net_conn(addr,port)
-  if sock:setpeername("127.0.0.1",6352) then
-    sock:settimeout(5.0)
-    sock:send("PLr")
-    while not insync do
-      msg=net_read()
-      net_parse(msg)
-    end
-    sock:settimeout()
-    timeout=socket:gettime()+30
-    return true
+function net_conn(_addr,_port)
+  addr,port=_addr,_port
+  local ts=socket:gettime()
+  timeout=timeout+5
+  sock:sendto("CONNECT",addr,port)
+  local msg
+  while not insync do
+    msg=net_read(ts)
+    net_parse(msg)
+    ts=ts+1
   end
-  return false
+  timeout=socket:gettime()+30
 end
 
 function net_send(fmt,...)
   local str=string.format(fmt,unpack(arg))
+  print("net_send: ",str)
   sendq:put(str)
 end
 
 function net_close()
-  sock:send("PLu")
+  sock:sendto("DISCONNECT",addr,port)
   sock:close()
 end
 
 local function parse_server(msg)
-  a=str_split(msg,":")
-  if a.n==1 then
-    if a[1]=="ACK" then
+  local a=str_split(msg,":")
+  if a[1]=="ACK" then
+    if a.n==2 then
       sendq:del(tonumber(a[2]))
-      return
-    end
-    if a[1]=="DONE" then
-      insync=true
-      net_send("OK")
     end
     return
   end
@@ -54,10 +50,11 @@ local function parse_server(msg)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    local v=tonumber(a[4])
-    d1.pkt=tonumber(a[5])
-    local p=Packet:new(d1,d2,v)
-    packets:add(p)
+    if d1 and d2 then
+      d1.pkt=tonumber(a[5])
+      local p=Packet:new(d1,d2,tonumber(a[4]))
+      packets:add(p)
+    end
     return
   end
   if a[1]=="Pe" then -- Emit:dev1:dev2:val
@@ -66,8 +63,10 @@ local function parse_server(msg)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    local p=Packet:new(d1,d2,tonumber(a[4]))
-    packets:add(p)
+    if d1 and d2 then
+      local p=Packet:new(d1,d2,tonumber(a[4]))
+      packets:add(p)
+    end
     return
   end
   if a[1]=="Pc" then -- Cash:idx:cash
@@ -75,7 +74,9 @@ local function parse_server(msg)
       return
     end
     local pl=players[tonumber(a[2])]
-    pl.cash=tonumber(a[3])
+    if pl then
+      pl.cash=tonumber(a[3])
+    end
     return
   end
   if a[1]=="Ph" then -- Hit:dev:health
@@ -83,7 +84,9 @@ local function parse_server(msg)
       return
     end
     local o=devices[tonumber(a[2])]
-    o.health=tonumber(a[3])
+    if o then
+      o.health=tonumber(a[3])
+    end
     return
   end
   if a[1]=="Da" then -- Add:pl:cl:idx:online:x:y
@@ -205,6 +208,10 @@ local function parse_server(msg)
     players[idx]=nil
     return
   end
+  if a[1]=="DONE" then
+    insync=true
+    net_send("OK")
+  end
 end
 
 function net_parse(msg)
@@ -225,13 +232,13 @@ function net_parse(msg)
 end
 
 function net_read(ts)
-  local str=sock:receive()
+  local str=sock:receivefrom()
   if not str then
     love.event.push("q")
     insync=true
     return
   end
-  local ts=socket.gettime()
+  timeout=ts+30
   if str:find("!",1,true) then
     local s=recvq:put(str)
     if not s then
@@ -240,16 +247,17 @@ function net_read(ts)
       return nil
     end
     seq=seq+1
-    timeout=ts+30
-    sock:send(string.format("ACK:%d",s))
+    sock:sendto(string.format("ACK:%d",s),addr,port)
     return nil
   end
   return str
 end
 
+local lastsend=0
 function net_proc()
   local ts=socket.gettime()
-  ret=socket.select(allsocks,nil,0)
+  local ret=socket.select(allsocks,nil,0)
+  local msg
   if ret[sock] then
     msg=net_read(ts)
   end
@@ -259,6 +267,15 @@ function net_proc()
   end
   net_parse(msg)
   for p in sendq:iter(ts,0.5) do
-    sock:send(p)
+    print("send: ",p)
+    sock:sendto(p,addr,port)
+  end
+  if sendq.len>0 then
+    print("sendq have packets")
+    lastsend=ts+5
+  end
+  if ts>=lastsend then
+    sock:sendto("PING",addr,port)
+    lastsend=ts+5
   end
 end

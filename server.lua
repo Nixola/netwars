@@ -14,15 +14,18 @@ local function buy_device(pl,a)
     pl.cash=pl.cash-price
     local o=cl:new(pl,x,y)
     o.idx=devices:add(o)
-    --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
-    mput("Pc:%d:%d",pl.idx,pl.cash)
-    mput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+    cput("Pc:%d:%d",pl.idx,pl.cash)
+    cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
   end
 end
 
 function parse_client(msg,pl)
   local a=str_split(msg,":")
   if a.n<2 then
+    if a[1]=="OK" then
+      pl.insync=true
+      return
+    end
     return
   end
   if a[1]=="B" then -- Buy:cl:x:y
@@ -36,12 +39,12 @@ function parse_client(msg,pl)
     local idx=tonumber(a[2])
     local o=devices[idx]
     if o and o.pl==pl then
-      o:del_links()
+      o:delete()
       devices:del(o)
       if o.cl=="G" then
         generators[idx]=nil
       end
-      mput("Dd:%d",idx)
+      cput("Dd:%d",idx)
     end
     return
   end
@@ -54,7 +57,7 @@ function parse_client(msg,pl)
     local o=devices[idx]
     if o and o.pl==pl and (not o.online) then
       o:move(x,y)
-      mput("Dm:%d:%d:%d",idx,o.x,o.y)
+      cput("Dm:%d:%d:%d",idx,o.x,o.y)
     end
     return
   end
@@ -70,7 +73,7 @@ function parse_client(msg,pl)
       o.li=1
       o.edt=0
       b=b and 1 or 0
-      mput("Ds:%d:%d",idx,b)
+      cput("Ds:%d:%d",idx,b)
     end
     return
   end
@@ -84,7 +87,7 @@ function parse_client(msg,pl)
       local l=d1:connect(d2)
       if l then
         links:add(l)
-        mput("La:%d:%d",d1.idx,d2.idx)
+        cput("La:%d:%d",d1.idx,d2.idx)
       end
     end
     return
@@ -99,7 +102,7 @@ function parse_client(msg,pl)
       local l=d1:unlink(d2)
       if l then
         links:del(l)
-        mput("Lu:%d:%d",d1.idx,d2.idx)
+        cput("Lu:%d:%d",d1.idx,d2.idx)
       end
     end
     return
@@ -110,6 +113,7 @@ local function packet_hit(p)
   local pl=p.pl
   local o=p.dev2
   local v=p.v
+  packets:del(p)
   if o.pl==pl then
     -- Enqueued at friendly device
     if o.health<o.maxhealth then
@@ -122,7 +126,6 @@ local function packet_hit(p)
     end
     if o.cl=="D" then
       pl.cash=pl.cash+v
-      --pl.msgq:put(string.format("Pc:%d:%d",pl.idx,pl.cash))
       mput("Pc:%d:%d",pl.idx,pl.cash)
       return
     end
@@ -130,14 +133,13 @@ local function packet_hit(p)
     if o.pkt>100 then
       o.pkt=100
     end
-    --pl.msgq:put(string.format("Pp:%d:%d",o.idx,o.pkt))
     return
   end
   -- Attacking enemy device
   o.health=o.health-v
   if o.health<1 then
-    mput("Dd:%d",o.idx)
-    o:del_links()
+    cput("Dd:%d",o.idx)
+    o:delete()
     devices:del(o)
     return
   end
@@ -149,7 +151,6 @@ function flow_packets(dt)
   for k,p in pairs(packets) do
     if p:flow(dt) then
       packet_hit(p)
-      packets:del(p)
     end
   end
 end

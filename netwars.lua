@@ -13,17 +13,15 @@ packets=ctable()
 local sockc=socket.udp()
 local sockd=socket.udp()
 local iptab={}
+local ctlq=queue()
 local msgq=queue()
+
+function cput(fmt,...)
+  ctlq:put(string.format(fmt,unpack(arg)))
+end
 
 function mput(fmt,...)
   msgq:put(string.format(fmt,unpack(arg)))
-end
-
-function sput(fmt,...)
-  local msg=string.format(fmt,unpack(arg))
-  for k,o in pairs(players) do
-    o.sendq:put(msg)
-  end
 end
 
 local function enqueue(q,mq)
@@ -51,7 +49,7 @@ end
 local function new_client(str,ts,ip,port)
   print("new client: ",str)
   local a=str_split(str,":")
-  if a[1]~="PLr" then
+  if a[1]~="CONNECT" then
     return
   end
   local pl=Player:new(200)
@@ -78,7 +76,7 @@ local function new_client(str,ts,ip,port)
     m:put(string.format("Da:%d:%s:%d:%d:%d:%d",o.pl.idx,o.cl,o.idx,b,o.x,o.y))
   end
   for k,o in pairs(links) do
-    m:put(string.format("La:%d:%d\n",o.dev1.idx,o.dev2.idx))
+    m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
   end
   m:put("DONE")
   enqueue(pl.sendq,m)
@@ -115,13 +113,14 @@ local function read_socket(ts)
     return new_client(str,ts,ip,port)
   end
   print("recv client: ",str)
+  pl.ts=ts+30
   if not str:find("!",1,true) then
+    if str=="PING" then
+      sockc:sendto("PONG",pl.ip,pl.port)
+      return
+    end
     if str=="DISCONNECT" then
       return del_client(pl)
-    end
-    if str=="OK" then
-      pl.insync=true
-      return
     end
     local a=str_split(str,":")
     if a.n==2 and a[1]=="ACK" then
@@ -135,7 +134,8 @@ local function read_socket(ts)
   end
   pl.seq=pl.seq+1
   pl.ts=ts+30
-  sockd:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
+  print("send client: ",string.format("ACK:%d",s))
+  sockc:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
 end
 
 if not sockc:setsockname("*",6352) then
@@ -174,6 +174,15 @@ while true do
     tm=ts
     flow_packets(dt)
     emit_packets(dt)
+  end
+  enqueue(q,ctlq)
+  ctlq:clear()
+  for p in q:ited() do
+    for k,o in pairs(players) do
+      if o.insync then
+        o.sendq:put(p)
+      end
+    end
   end
   for k,o in pairs(players) do
     for p in o.sendq:iter(ts,0.5) do

@@ -100,6 +100,9 @@ function Device:move(x,y)
 end
 
 function Device:connect(dev)
+  if self==dev then
+    return
+  end
   if #self.links>=self.maxlinks then
     return nil
   end
@@ -294,8 +297,8 @@ end
 class "Generator" : extends(Device) {
 cl="G";
 r=15;
-maxhealth=100;
-maxlinks=3;
+maxhealth=50;
+maxlinks=2;
 maxblinks=1;
 price=50;
 }
@@ -314,7 +317,7 @@ cl="D";
 r=15;
 maxhealth=40;
 maxlinks=0;
-maxblinks=3;
+maxblinks=4;
 price=20;
 }
 

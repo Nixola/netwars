@@ -322,7 +322,7 @@ function love.load()
     buydevs:add(o)
   end
   local devs={"G","R","D"}
-  local x=20
+  local x=25
   for i,v in ipairs(devs) do
     for k,o in pairs(buydevs) do
       if o.cl==v then
@@ -445,7 +445,6 @@ end
 
 function love.quit()
   net_close()
-  love.timer.sleep(5000)
 end
 
 function love.run()
