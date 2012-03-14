@@ -15,6 +15,7 @@ function net_conn(addr,nick)
   allsocks={sock}
   local ts=socket.gettime()
   timeout=ts+5
+  seq=1
   sock:setpeername(addr,6352)
   sock:send(string.format("PLr:%s",nick))
 end
@@ -230,6 +231,7 @@ function net_parse(msg)
   local p=recvq:get(seq)
   local mt
   if p then
+    seq=seq+1
     mt=str_split(p,"|")
     for i,m in ipairs(mt) do
       parse_server(m)
@@ -246,8 +248,6 @@ end
 function net_read(ts)
   local str=sock:receive()
   if not str then
-    love.event.push("q")
-    insync=true
     return
   end
   timeout=ts+30
@@ -258,7 +258,6 @@ function net_read(ts)
       insync=true
       return nil
     end
-    seq=seq+1
     sock:send(string.format("ACK:%d",s))
     return nil
   end

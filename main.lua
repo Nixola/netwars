@@ -146,7 +146,7 @@ end
 local function get_enemydev(x,y)
   for k,o in pairs(devices) do
     if o:is_pointed(x,y) then
-      return o.pl==ME and nil or o
+      return o.pl~=ME and o or nil
     end
   end
   return nil
@@ -206,9 +206,11 @@ function main_mousepressed(mx,my,b)
       return
     end
     drag=get_my_device(x,y)
-    if drag and (drag.online or drag.pc>0) then
-      drag=nil
+    if not drag then
       return
+    end
+    if drag.online or drag.pc>0 or #drag.elinks>0 then
+      drag=nil
     end
     return
   end
@@ -224,9 +226,7 @@ end
 function main_mousereleased(mx,my,mb)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if drag and mb=="l" then
-    if (not drag.online) and drag.pc<1 then
-      drag:net_move(mox,moy)
-    end
+    drag:net_move(mox,moy)
     drag=nil
     return
   end
@@ -306,7 +306,7 @@ local function draw_hud()
     graph.print(string.format("Price: %d",hover.price),eye.sx-200,eye.sy-40)
     graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-200,eye.sy-20)
   end
-  if hint and hint.pl.name then
+  if hint and hint.pl and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
   end
 end
@@ -386,6 +386,7 @@ function main_update(dt)
     if msy>eye.sy-50 then
       hover=get_buydev(msx,msy)
     else
+      hover=nil
       if eye.s<0.6 then
         hint=get_enemydev(mox,moy)
       else

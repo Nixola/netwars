@@ -12,8 +12,8 @@ packets=ctable()
 
 local sock=socket.udp()
 local iptab={}
-local ctlq=queue()
-local msgq=queue()
+local ctlq=queue(1000)
+local msgq=queue(1000)
 
 function cput(fmt,...)
   ctlq:put(string.format(fmt,unpack(arg)))
@@ -46,7 +46,6 @@ local function enqueue(q,mq)
 end
 
 local function new_client(str,ts,ip,port)
-  print("new client: ",str)
   local a=str_split(str,":")
   if a[1]~="PLr" or a.n<2 then
     return
@@ -59,11 +58,11 @@ local function new_client(str,ts,ip,port)
   pl.sendq=squeue()
   pl.recvq=rqueue()
   pl.ts=ts+30
-  pl.seq=0
+  pl.seq=1
   pl.insync=false
   pl.idx=players:add(pl)
   iptab[h]=pl
-  local m=queue()
+  local m=queue(1000)
   for k,o in pairs(players) do
     if o==pl then
       m:put(string.format("PLa:%d:%s:%d:me",o.idx,o.name,o.cash))
@@ -80,13 +79,12 @@ local function new_client(str,ts,ip,port)
   end
   m:put("DONE")
   enqueue(pl.sendq,m)
-  local msg=string.format("PLa:%d:%d",pl.idx,pl.cash)
+  local msg=string.format("PLa:%d:%s:%d",pl.idx,pl.name,pl.cash)
   for k,o in pairs(players) do
     if o~=pl then
       o.sendq:put(msg)
     end
   end
-  print("client added")
 end
 
 function del_client(pl)
@@ -99,7 +97,6 @@ function del_client(pl)
   for k,o in pairs(players) do
     o.sendq:put(msg)
   end
-  print("client deleted")
 end
 
 local function read_socket(ts)
@@ -112,30 +109,26 @@ local function read_socket(ts)
   if not pl then
     return new_client(str,ts,ip,port)
   end
-  print("recv client: ",str)
   pl.ts=ts+30
-  if not str:find("!",1,true) then
-    if str=="PING" then
-      sock:sendto("PONG",pl.ip,pl.port)
-      return
-    end
-    if str=="DISCONNECT" then
+  if str:find("!",1,true) then
+    local s=pl.recvq:put(str)
+    if not s then
       return del_client(pl)
     end
-    local a=str_split(str,":")
-    if a.n==2 and a[1]=="ACK" then
-      pl.sendq:del(tonumber(a[2]))
-    end
+    sock:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
     return
   end
-  local s=pl.recvq:put(str)
-  if not s then
+  if str=="PING" then
+    sock:sendto("PONG",pl.ip,pl.port)
+    return
+  end
+  if str=="DISCONNECT" then
     return del_client(pl)
   end
-  pl.seq=pl.seq+1
-  pl.ts=ts+30
-  print("send client: ",string.format("ACK:%d",s))
-  sock:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
+  local a=str_split(str,":")
+  if a.n==2 and a[1]=="ACK" then
+    pl.sendq:del(tonumber(a[2]))
+  end
 end
 
 if not sock:setsockname("*",6352) then
@@ -161,6 +154,7 @@ while true do
     else
       msg=o.recvq:get(o.seq)
       if msg then
+        o.seq=o.seq+1
         parse_client(msg,o)
       end
     end
@@ -182,14 +176,12 @@ while true do
   end
   for k,o in pairs(players) do
     for p in o.sendq:iter(ts,0.5) do
-      print("sendq: ",ts,p)
       sock:sendto(p,o.ip,o.port)
     end
   end
   enqueue(q,msgq)
   msgq:clear()
   for p in q:ited() do
-    print("msgq: ",p)
     for k,o in pairs(players) do
       if o.insync then
         sock:sendto(p,o.ip,o.port)

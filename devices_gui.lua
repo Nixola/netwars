@@ -120,7 +120,7 @@ function Device:net_delete()
 end
 
 function Device:net_move(x,y)
-  if self.pc<=0 then
+  if (not self.online) and self.pc<1 and #self.elinks<1 then
     x,y=self:calc_xy(x,y)
     net_send("M:%d:%d:%d",self.idx,x,y)
   end

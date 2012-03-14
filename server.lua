@@ -41,9 +41,6 @@ function parse_client(msg,pl)
     if o and o.pl==pl then
       o:delete()
       devices:del(o)
-      if o.cl=="G" then
-        generators[idx]=nil
-      end
       cput("Dd:%d",idx)
     end
     return
@@ -55,7 +52,7 @@ function parse_client(msg,pl)
     local idx=tonumber(a[2])
     local x,y=tonumber(a[3]),tonumber(a[4])
     local o=devices[idx]
-    if o and o.pl==pl and (not o.online) then
+    if o and o.pl==pl and (not o.online) and o.pc<1 and #o.elinks<1 then
       o:move(x,y)
       cput("Dm:%d:%d:%d",idx,o.x,o.y)
     end

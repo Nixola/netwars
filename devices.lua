@@ -142,7 +142,11 @@ function Device:unlink(dev)
   for i,v in ipairs(self.links) do
     if v.dev2==dev then
       self:del_link(v.dev2)
-      v.dev2:del_blink(self)
+      if self.pl==dev.pl then
+        v.dev2:del_blink(self)
+      else
+        v.dev2:del_elink(self)
+      end
       return v
     end
   end
@@ -185,7 +189,11 @@ function Device:del_links()
   end
   for k,v in pairs(tmp) do
     self:del_link(v.dev2)
-    v.dev2:del_blink(self)
+    if self.pl==v.dev2.pl then
+      v.dev2:del_blink(self)
+    else
+      v.dev2:del_elink(self)
+    end
     links:del(v)
   end
   tmp={}
