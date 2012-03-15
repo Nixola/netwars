@@ -50,7 +50,7 @@ local function new_client(str,ts,ip,port)
   if a[1]~="PLr" or a.n<2 then
     return
   end
-  local pl=Player:new(200)
+  local pl=Player:new(300)
   local h=ip..":"..port
   pl.ip=ip
   pl.port=port

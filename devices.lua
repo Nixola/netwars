@@ -232,6 +232,7 @@ function Device:delete()
     end
   end
   self:del_links()
+  self.deleted=true
 end
 
 class "Link"
@@ -314,7 +315,7 @@ price=50;
 class "Router" : extends(Device) {
 cl="R";
 r=15;
-maxhealth=20;
+maxhealth=50;
 maxlinks=5;
 maxblinks=5;
 price=10;
@@ -326,7 +327,7 @@ r=15;
 maxhealth=40;
 maxlinks=0;
 maxblinks=4;
-price=20;
+price=80;
 }
 
 devcl={G=Generator,R=Router,D=DataCenter}

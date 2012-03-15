@@ -153,13 +153,13 @@ function flow_packets(dt)
 end
 
 function emit_packets(dt)
-  local i,d,p,l,c,ok
+  local i,d,p,l,c,v,ok
   for k,o in pairs(devices) do
     ok=false
     if o.cl=="G" and o.online then
       o.dt=o.dt+dt
       if o.dt>=3.0 then
-        o.dt=0
+        o.dt=o.dt-3.0
         ok=true
         v=nil
       end
@@ -167,7 +167,7 @@ function emit_packets(dt)
     if o.pkt>0 then
       o.dt=o.dt+dt
       if o.dt>=0.5 then
-        o.dt=0
+        o.dt=o.dt-0.5
         ok=true
         v=o.pkt>10 and 10 or o.pkt
       end

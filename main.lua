@@ -333,29 +333,41 @@ function main_draw()
     o:draw()
   end
   if conn then
-    local vx,vy=mox-conn.x,moy-conn.y
-    local len=math.sqrt(vx*vx+vy*vy)
-    if len>240 then
-      graph.setColor(150,150,150)
+    if conn.deleted then
+      conn=nil
     else
-      graph.setColor(255,255,255)
+      local vx,vy=mox-conn.x,moy-conn.y
+      local len=math.sqrt(vx*vx+vy*vy)
+      if len>240 then
+        graph.setColor(150,150,150)
+      else
+        graph.setColor(255,255,255)
+      end
+      graph.setLineWidth(1,"rough")
+      graph.line(conn.x,conn.y,mox,moy)
     end
-    graph.setLineWidth(1,"rough")
-    graph.line(conn.x,conn.y,mox,moy)
   end
   if unlink then
-    local vx,vy=mox-unlink.x,moy-unlink.y
-    local len=math.sqrt(vx*vx+vy*vy)
-    if len>240 then
-      graph.setColor(150,0,0)
+    if unlink.deleted then
+      unlink=nil
     else
-      graph.setColor(255,0,0)
+      local vx,vy=mox-unlink.x,moy-unlink.y
+      local len=math.sqrt(vx*vx+vy*vy)
+      if len>240 then
+        graph.setColor(150,0,0)
+      else
+        graph.setColor(255,0,0)
+      end
+      graph.setLineWidth(1,"rough")
+      graph.line(unlink.x,unlink.y,mox,moy)
     end
-    graph.setLineWidth(1,"rough")
-    graph.line(unlink.x,unlink.y,mox,moy)
   end
   if drag then
-    drag:drag(mox,moy)
+    if drag.deleted then
+      drag=nil
+    else
+      drag:drag(mox,moy)
+    end
   end
   if bdrag then
     bdrag:drag(mox,moy)
@@ -384,6 +396,7 @@ function main_update(dt)
   if hover_dt>=0.1 then
     hover_dt=0
     if msy>eye.sy-50 then
+      hint=nil
       hover=get_buydev(msx,msy)
     else
       hover=nil
