@@ -40,41 +40,39 @@ function eye.in_view(x,y,...)
   end
 end
 
-function eye.scroll(dt)
-  local sdt=dt*75
-  local ndt=dt*15
+function eye.scroll()
   if not scroll.run then
     return
   end
   if scroll.kx==0 then
-    scroll.x=scroll.x-(scroll.x*ndt)
+    scroll.x=scroll.x-(scroll.x*0.2)
     if math.abs(scroll.x)<1 then
       scroll.x=0
     end
   else
     if math.abs(scroll.x)<10/eye.s then
-      scroll.x=scroll.x+(scroll.kx*sdt/eye.s)
+      scroll.x=scroll.x+(scroll.kx/eye.s)
     end
   end
   if scroll.ky==0 then
-    scroll.y=scroll.y-(scroll.y*ndt)
+    scroll.y=scroll.y-(scroll.y*0.2)
     if math.abs(scroll.y)<1 then
       scroll.y=0
     end
   else
     if math.abs(scroll.y)<10/eye.s then
-      scroll.y=scroll.y+(scroll.ky*sdt/eye.s)
+      scroll.y=scroll.y+(scroll.ky/eye.s)
     end
   end
   if scroll.ks<0 then
-    eye.s=eye.s+(scroll.ks*sdt/10)
+    eye.s=eye.s+(scroll.ks/10)
     if eye.s<=scroll.s then
       eye.s=scroll.s
       scroll.ks=0
     end
   end
   if scroll.ks>0 then
-    eye.s=eye.s+(scroll.ks*sdt/10)
+    eye.s=eye.s+(scroll.ks/10)
     if eye.s>=scroll.s then
       eye.s=scroll.s
       scroll.ks=0
@@ -389,7 +387,14 @@ function main_update(dt)
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x
   moy=msy/eye.s-eye.y
-  eye.scroll(dt)
+  scroll.dt=scroll.dt+dt
+  if scroll.dt>=0.02 then
+    eye.scroll()
+    scroll.dt=scroll.dt-0.02
+    if scroll.dt>0.02 then
+      scroll.dt=0.02
+    end
+  end
   hover_dt=hover_dt+dt
   if hover_dt>=0.1 then
     hover_dt=0
@@ -419,7 +424,7 @@ function main_update(dt)
         packets:del(p)
       end
     end
-    flow_dt=flot_dt-0.05
+    flow_dt=flow_dt-0.05
   end
 end
 

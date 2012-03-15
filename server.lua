@@ -160,6 +160,9 @@ function emit_packets(dt)
       o.dt=o.dt+dt
       if o.dt>=3.0 then
         o.dt=o.dt-3.0
+        if o.dt>3.0 then
+          o.dt=3.0
+        end
         ok=true
         v=nil
       end
@@ -168,6 +171,9 @@ function emit_packets(dt)
       o.dt=o.dt+dt
       if o.dt>=0.5 then
         o.dt=o.dt-0.5
+        if o.dt>0.5 then
+          o.dt=0.5
+        end
         ok=true
         v=o.pkt>10 and 10 or o.pkt
       end
