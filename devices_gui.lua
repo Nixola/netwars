@@ -39,7 +39,7 @@ function Device:draw_sym(_x,_y)
     if self.online then
       graph.setColor(0,0,255)
     else
-      graph.setColor(0,0,128)
+      graph.setColor(0,0,160)
     end
   else
     if self.online then
@@ -222,6 +222,12 @@ function Generator:init_gui()
 end
 
 function Router:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function Friend:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)

@@ -86,13 +86,6 @@ function Device:calc_xy(x,y)
   return x,y
 end
 
-function Device:heal(v)
-  self.health=self.health+v
-  if self.health>self.maxhealth then
-    self.health=self.maxhealth
-  end
-end
-
 function Device:move(x,y)
   x,y=self:calc_xy(x,y)
   self.x=x
@@ -269,7 +262,11 @@ function Packet:initialize(d1,d2,v,srv)
   local l=math.sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
-  self.pl=d1.pl
+  if d1.cl=="F" then
+    self.pl=d2.pl
+  else
+    self.pl=d1.pl
+  end
   self.v=v
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
@@ -298,7 +295,7 @@ function Packet:flow(dt)
   if r<=d2.r then
     d1.pc=d1.pc-1
     d2.pc=d2.pc-1
-    if d1.pl==ME then
+    if self.pl==ME then
       ME.pkts=ME.pkts-1
     end
     return true
@@ -309,7 +306,7 @@ end
 class "Generator" : extends(Device) {
 cl="G";
 r=15;
-maxhealth=50;
+maxhealth=100;
 maxlinks=2;
 maxblinks=1;
 price=50;
@@ -318,19 +315,27 @@ price=50;
 class "Router" : extends(Device) {
 cl="R";
 r=15;
-maxhealth=50;
+maxhealth=100;
 maxlinks=5;
 maxblinks=5;
 price=10;
 }
 
+class "Friend" : extends(Router) {
+cl="F";
+maxhealth=50;
+maxlinks=1;
+maxblinks=3;
+price=30;
+}
+
 class "DataCenter" : extends(Device) {
 cl="D";
 r=15;
-maxhealth=40;
+maxhealth=50;
 maxlinks=0;
 maxblinks=4;
 price=80;
 }
 
-devcl={G=Generator,R=Router,D=DataCenter}
+devcl={G=Generator,R=Router,F=Friend,D=DataCenter}

@@ -105,17 +105,6 @@ local conn=nil
 local menu=nil
 local kshift=false
 
-function mn_dev_conn(d)
-  conn=d
-end
-
-function mn_dev_unlink(d)
-  unlink=d
-end
-
-function mn_dev_del(d)
-end
-
 local function get_device(x,y)
   for k,o in pairs(devices) do
     if o:is_pointed(x,y) then
@@ -176,8 +165,10 @@ function main_mousepressed(mx,my,b)
   if menu then
     if b=="l" then
       menu=menu:click(mx,my)
+      return
     end
     if b=="r" then
+      menu:cleanup()
       menu=nil
     end
     return
@@ -234,13 +225,15 @@ function main_mousereleased(mx,my,b)
   end
   if conn then
     if b=="r" then
-      local dev=get_my_device(x,y)
+      local dev=get_device(x,y)
       if not dev then
         conn=nil
         return
       end
       if conn==dev then
-        menu=conn.menu
+        if conn.pl==ME then
+          menu=conn.menu
+        end
         conn=nil
         return
       end
@@ -264,16 +257,20 @@ function main_keypressed(k)
     bdev=nil
     return
   end
-  if k=="1" then
+  if k=="1" or k=="kp1" then
     bdev=huddevs[1]
     return
   end
-  if k=="2" then
+  if k=="2" or k=="kp2" then
     bdev=huddevs[2]
     return
   end
-  if k=="3" then
+  if k=="3" or k=="kp3" then
     bdev=huddevs[3]
+    return
+  end
+  if k=="4" or k=="kp4" then
+    bdev=huddevs[4]
     return
   end
   if k=="w" or k=="up" then
@@ -568,11 +565,31 @@ local function set_cl_fonts(imgfont)
   img:paste(imgfont,0,0,16,8,16,16)
   devcl.R.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,32,8,16,16)
+  devcl.F.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
   devcl.D.__members.img=graph.newImage(img)
 end
 
+local function reconf()
+  if love.filesystem.exists("netwars.cfg") then
+    local chunk=love.filesystem.load("netwars.cfg")
+    return chunk()
+  end
+  local data="return {\n"
+  data=data.."width="..graph.getWidth()..";\n"
+  data=data.."height="..graph.getHeight()..";\n"
+  data=data.."}\n"
+  love.filesystem.write("netwars.cfg",data)
+  return nil
+end
+
 function love.load()
+  local t=reconf()
+  if t then
+    graph.setMode(t.width,t.height)
+  end
   eye.sx=graph.getWidth()
   eye.sy=graph.getHeight()
   eye.cx=eye.sx/2
@@ -587,7 +604,7 @@ function love.load()
     o.hud=true
     buydevs:add(o)
   end
-  local devs={"G","R","D"}
+  local devs={"G","R","F","D"}
   local x=25
   for i,v in ipairs(devs) do
     for k,o in pairs(buydevs) do

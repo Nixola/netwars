@@ -51,6 +51,15 @@ function Menu:switch(fs,ts)
   end
 end
 
+function Menu:cleanup()
+  for k,v in pairs(self.items) do
+    if v.str=="DELETE" then
+      v.str="Delete"
+      break
+    end
+  end
+end
+
 function Menu:click(mx,my)
   local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
@@ -67,11 +76,6 @@ function Menu:click(mx,my)
     end
     y=y+16
   end
-  for k,v in pairs(self.items) do
-    if v.str=="DELETE" then
-      v.str="Delete"
-      break
-    end
-  end
+  self:cleanup()
   return nil
 end

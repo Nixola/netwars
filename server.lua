@@ -114,7 +114,10 @@ local function packet_hit(p)
   if o.pl==pl then
     -- Enqueued at friendly device
     if o.health<o.maxhealth then
-      o:heal(v)
+      o.health=o.health+v*3
+      if o.health>o.maxhealth then
+        o.health=o.maxhealth
+      end
       mput("Ph:%d:%d",o.idx,o.health)
       return
     end
@@ -129,6 +132,9 @@ local function packet_hit(p)
     o.pkt=o.pkt+v
     if o.pkt>100 then
       o.pkt=100
+    end
+    if not o.online then
+      mput("Pi:%d:%d",o.idx,o.pkt)
     end
     return
   end
