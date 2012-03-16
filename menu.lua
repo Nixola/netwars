@@ -51,13 +51,13 @@ function Menu:switch(fs,ts)
   end
 end
 
-function Menu:click()
+function Menu:click(mx,my)
   local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
   y=y-(#self.items*8)
   for k,v in pairs(self.items) do
     l=#v.str*8+6
-    if msx>x and msx<x+l and msy>y and msy<y+16 then
+    if mx>x and mx<x+l and my>y and my<y+16 then
       if v.str=="Delete" then
         v.str="DELETE"
         return self

@@ -97,11 +97,11 @@ local huddevs={}
 
 local drag=nil
 local bdrag=nil
+local bdev=nil
 local hover=nil
 local hint=nil
 local hover_dt=0
 local conn=nil
-local unlink=nil
 local menu=nil
 local kshift=false
 
@@ -173,68 +173,84 @@ function main_mousepressed(mx,my,b)
     scroll.run=scroll.ks~=0
     return
   end
-  if b=="l" then
-    if kshift then
-      local dev=get_my_device(x,y)
-      if dev then
-        dev:net_switch()
-      end
-      return
+  if menu then
+    if b=="l" then
+      menu=menu:click(mx,my)
     end
-    if menu then
-      menu=menu:click()
-      return
-    end
-    if conn then
-      local d=get_device(x,y)
-      if d then
-        conn:net_connect(d)
-      end
-      conn=nil
-      return
-    end
-    if unlink then
-      local d=get_device(x,y)
-      if d then
-        unlink:net_unlink(d)
-      end
-      unlink=nil
-      return
-    end
-    bdrag=get_buydev(mx,my)
-    if bdrag then
-      return
-    end
-    drag=get_my_device(x,y)
-    if not drag then
-      return
-    end
-    if drag.online or drag.pc>0 or #drag.elinks>0 then
-      drag=nil
+    if b=="r" then
+      menu=nil
     end
     return
   end
-  if b=="r" and (not menu) then
-    local d=get_my_device(x,y)
-    if d and d.menu then
-      menu=d.menu
+  if bdev then
+    if b=="l" and my<eye.sy-50 then
+      bdev:net_buy(x,y)
     end
+    if b=="r" then
+      bdev=nil
+    end
+    return
+  end
+  if msy>=eye.sy-50 and b=="l" then
+    bdrag=get_buydev(mx,my)
+    return
+  end
+  if b=="l" then
+    local dev=get_my_device(x,y)
+    if dev then
+      if kshift then
+        dev:net_switch()
+        return
+      end
+      if (not dev.online) and dev.pc<1 and #dev.elinks<1 then
+        drag=dev
+      end
+    end
+    return
+  end
+  if b=="r" then
+    conn=get_my_device(x,y)
     return
   end
 end
 
-function main_mousereleased(mx,my,mb)
+function main_mousereleased(mx,my,b)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
-  if drag and mb=="l" then
-    drag:net_move(mox,moy)
-    drag=nil
+  if drag then
+    if b=="l" then
+      drag:net_move(mox,moy)
+      drag=nil
+    end
     return
   end
-  if bdrag and mb=="l" then
-    if my<eye.sy-50 then
-      bdrag:net_buy(x,y)
+  if bdrag then
+    if b=="l" then
+      if my<eye.sy-50 then
+        bdrag:net_buy(x,y)
+      end
+      bdrag=nil
     end
-    bdrag=nil
+    return
+  end
+  if conn then
+    if b=="r" then
+      local dev=get_my_device(x,y)
+      if not dev then
+        conn=nil
+        return
+      end
+      if conn==dev then
+        menu=conn.menu
+        conn=nil
+        return
+      end
+      if kshift then
+        conn:net_unlink(dev)
+      else
+        conn:net_connect(dev)
+      end
+      conn=nil
+    end
     return
   end
 end
@@ -242,6 +258,22 @@ end
 function main_keypressed(k)
   if k=="lshift" or k=="rshift" then
     kshift=true
+    return
+  end
+  if k=="escape" then
+    bdev=nil
+    return
+  end
+  if k=="1" then
+    bdev=huddevs[1]
+    return
+  end
+  if k=="2" then
+    bdev=huddevs[2]
+    return
+  end
+  if k=="3" then
+    bdev=huddevs[3]
     return
   end
   if k=="w" or k=="up" then
@@ -336,30 +368,27 @@ function main_draw()
     if conn.deleted then
       conn=nil
     else
-      local vx,vy=mox-conn.x,moy-conn.y
-      local len=math.sqrt(vx*vx+vy*vy)
-      if len>240 then
-        graph.setColor(150,150,150)
+      if kshift then
+        local vx,vy=mox-conn.x,moy-conn.y
+        local len=math.sqrt(vx*vx+vy*vy)
+        if len>240 then
+          graph.setColor(150,0,0)
+        else
+          graph.setColor(255,0,0)
+        end
+        graph.setLineWidth(1,"rough")
+        graph.line(conn.x,conn.y,mox,moy)
       else
-        graph.setColor(255,255,255)
+        local vx,vy=mox-conn.x,moy-conn.y
+        local len=math.sqrt(vx*vx+vy*vy)
+        if len>240 then
+          graph.setColor(150,150,150)
+        else
+          graph.setColor(255,255,255)
+        end
+        graph.setLineWidth(1,"rough")
+        graph.line(conn.x,conn.y,mox,moy)
       end
-      graph.setLineWidth(1,"rough")
-      graph.line(conn.x,conn.y,mox,moy)
-    end
-  end
-  if unlink then
-    if unlink.deleted then
-      unlink=nil
-    else
-      local vx,vy=mox-unlink.x,moy-unlink.y
-      local len=math.sqrt(vx*vx+vy*vy)
-      if len>240 then
-        graph.setColor(150,0,0)
-      else
-        graph.setColor(255,0,0)
-      end
-      graph.setLineWidth(1,"rough")
-      graph.line(unlink.x,unlink.y,mox,moy)
     end
   end
   if drag then
@@ -371,6 +400,9 @@ function main_draw()
   end
   if bdrag then
     bdrag:drag(mox,moy)
+  end
+  if bdev then
+    bdev:drag(mox,moy)
   end
   -- hud display
   graph.pop()
@@ -416,6 +448,9 @@ function main_update(dt)
     flow_dt=0
     for k,p in pairs(packets) do
       packets:del(p)
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
     end
   elseif flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1

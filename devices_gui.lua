@@ -1,8 +1,9 @@
 -- vim:et
 
+local pi2=math.pi*2
+
 function Device:draw_bar()
   local poly={}
-  local pi2=math.pi*2
   local m=48
   local p=self.health/self.maxhealth
   local n=math.floor(m*p)
@@ -29,40 +30,23 @@ function Device:draw_bar()
   end
 end
 
-function Device:draw_st()
-  local poly={}
-  local pi2=math.pi*2
-  local m=48
-  if self.online then
-    local off=self.off*3
-    for t=0,4 do
-      s=t
-      graph.setColor(255,255,255)
-      x=math.sin((s/m)*pi2-off)
-      y=math.cos((s/m)*pi2-off)
-      poly[1]=self.x+((self.r+3)*x)
-      poly[2]=self.y+((self.r+3)*y)
-      poly[3]=self.x+((self.r)*x)
-      poly[4]=self.y+((self.r)*y)
-      s=s+1.0
-      x=math.sin((s/m)*pi2-off)
-      y=math.cos((s/m)*pi2-off)
-      poly[5]=self.x+((self.r)*x)
-      poly[6]=self.y+((self.r)*y)
-      poly[7]=self.x+((self.r+3)*x)
-      poly[8]=self.y+((self.r+3)*y)
-      graph.polygon("fill",poly)
-    end
-  end
-end
-
 function Device:draw_sym(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
-  if (not self.pl) or self.pl==ME then
+  if (not self.pl) then
     graph.setColor(0,0,255)
+  elseif self.pl==ME then
+    if self.online then
+      graph.setColor(0,0,255)
+    else
+      graph.setColor(0,0,128)
+    end
   else
-    graph.setColor(255,0,0)
+    if self.online then
+      graph.setColor(255,0,0)
+    else
+      graph.setColor(128,0,0)
+    end
   end
   graph.circle("fill",x,y,self.r,24)
   if self.hud or eye.s>0.6 then
@@ -73,7 +57,6 @@ end
 
 function Device:draw()
   if self.online then
-    local pi2=math.pi*2
     self.off=(self.off+dtime)%pi2
   end
   if eye.in_view(self.x,self.y,self.r) then
@@ -81,10 +64,9 @@ function Device:draw()
     if eye.s>0.6 then
       self:draw_bar()
     end
-    if eye.s>0.4 then
-      self:draw_st()
-    end
+    return true
   end
+  return false
 end
 
 function Device:drag(x,y)
@@ -95,7 +77,8 @@ end
 function Device:is_pointed(x,y)
   local tx,ty=self.x-x,self.y-y
   local r=math.sqrt(tx*tx+ty*ty)
-  return r<=self.r and math.abs(tx)<=r and math.abs(ty)<=r and true or false
+  --return r<=self.r and math.abs(tx)<=r and math.abs(ty)<=r and true or false
+  return r<=self.r+3
 end
 
 function Device:switch(b)
@@ -128,6 +111,9 @@ end
 
 function Device:net_connect(dev)
   if self==dev then
+    return
+  end
+  if self.cl=="G" and dev.cl~="R" then
     return
   end
   if #self.links>=self.maxlinks then
@@ -194,18 +180,49 @@ function Packet:draw()
   end
 end
 
+function Router:draw_st()
+  local poly={}
+  local m=48
+  local p=self.pkt/100
+  local n=math.floor(m*p)
+  local off=self.off*3
+  local x,y,s
+  for t=0,n-1 do
+    s=t
+    graph.setColor(255,255,255)
+    x=math.sin((s/m)*pi2-off)
+    y=math.cos((s/m)*pi2-off)
+    poly[1]=self.x+((self.r+3)*x)
+    poly[2]=self.y+((self.r+3)*y)
+    poly[3]=self.x+((self.r)*x)
+    poly[4]=self.y+((self.r)*y)
+    s=s+1.0
+    x=math.sin((s/m)*pi2-off)
+    y=math.cos((s/m)*pi2-off)
+    poly[5]=self.x+((self.r)*x)
+    poly[6]=self.y+((self.r)*y)
+    poly[7]=self.x+((self.r+3)*x)
+    poly[8]=self.y+((self.r+3)*y)
+    graph.polygon("fill",poly)
+  end
+end
+
+function Router:draw()
+  if self:super("draw") then
+    if eye.s>0.4 then
+      self:draw_st()
+    end
+  end
+end
+
 function Generator:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Connect",mn_dev_conn)
-  self.menu:add("Unlink",mn_dev_unlink)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end
 
 function Router:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Connect",mn_dev_conn)
-  self.menu:add("Unlink",mn_dev_unlink)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end

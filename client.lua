@@ -69,6 +69,16 @@ local function parse_server(msg)
     end
     return
   end
+  if a[1]=="Pi" then -- Info:dev:val
+    if a.n<3 then
+      return
+    end
+    local o=devices[tonumber(a[2])]
+    if o then
+      o.pkt=tonumber(a[3])
+    end
+    return
+  end
   if a[1]=="Pe" then -- Emit:dev1:dev2:val
     if a.n<4 then
       return
