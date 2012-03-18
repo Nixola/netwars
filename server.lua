@@ -98,6 +98,7 @@ function parse_client(msg,pl)
     if d1 and d2 and d1.pl==pl then
       local l=d1:unlink(d2)
       if l then
+        l:del_packets()
         links:del(l)
         cput("Lu:%d:%d",d1.idx,d2.idx)
       end

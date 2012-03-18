@@ -242,7 +242,7 @@ function Link:del_packets()
   local d1=self.dev1
   local d2=self.dev2
   for k,p in pairs(packets) do
-    if (p.dev1==d1 and p.dev2==d2) or (p.dev1==d2 and p.dev2==d1) then
+    if p.dev1==d1 and p.dev2==d2 then
       d1.pc=d1.pc-1
       d2.pc=d2.pc-1
       packets:del(p)
