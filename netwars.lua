@@ -57,12 +57,13 @@ local function new_client(str,ts,ip,port)
   pl.name=a[2]
   pl.sendq=squeue()
   pl.recvq=rqueue()
+  pl.syncq=squeue(500)
   pl.ts=ts+30
   pl.seq=1
   pl.insync=false
   pl.idx=players:add(pl)
   iptab[h]=pl
-  local m=queue(1000)
+  local m=queue(5000)
   for k,o in pairs(players) do
     if o==pl then
       m:put(string.format("PLa:%d:%s:%d:me",o.idx,o.name,o.cash))
@@ -78,7 +79,8 @@ local function new_client(str,ts,ip,port)
     m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
   end
   m:put("DONE")
-  enqueue(pl.sendq,m)
+  enqueue(pl.syncq,m)
+  pl.sendq.seq=pl.syncq.seq
   local msg=string.format("PLa:%d:%s:%d",pl.idx,pl.name,pl.cash)
   for k,o in pairs(players) do
     if o~=pl then
@@ -118,6 +120,9 @@ local function read_socket(ts)
     sock:sendto(string.format("ACK:%d",s),pl.ip,pl.port)
     return
   end
+  if str=="KEEPALIVE" then
+    return
+  end
   if str=="PING" then
     sock:sendto("PONG",pl.ip,pl.port)
     return
@@ -127,7 +132,11 @@ local function read_socket(ts)
   end
   local a=str_split(str,":")
   if a.n==2 and a[1]=="ACK" then
-    pl.sendq:del(tonumber(a[2]))
+    if pl.insync then
+      pl.sendq:del(tonumber(a[2]))
+    else
+      pl.syncq:del(tonumber(a[2]))
+    end
   end
 end
 
@@ -169,14 +178,22 @@ while true do
   ctlq:clear()
   for p in q:ited() do
     for k,o in pairs(players) do
-      if o.insync then
-        o.sendq:put(p)
-      end
+      o.sendq:put(p)
     end
   end
   for k,o in pairs(players) do
-    for p in o.sendq:iter(ts,0.5) do
-      sock:sendto(p,o.ip,o.port)
+    if o.insync then
+      for p in o.sendq:iter(ts,0.5) do
+        sock:sendto(p,o.ip,o.port)
+      end
+    else
+      p=o.syncq:get(ts,0.5)
+      if p then
+        sock:sendto(p,o.ip,o.port)
+      end
+      if o.gotok and o.syncq.len<1 then
+        o.insync=true
+      end
     end
   end
   enqueue(q,msgq)

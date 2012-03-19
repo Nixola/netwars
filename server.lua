@@ -23,7 +23,7 @@ function parse_client(msg,pl)
   local a=str_split(msg,":")
   if a.n<2 then
     if a[1]=="OK" then
-      pl.insync=true
+      pl.gotok=true
       return
     end
     return

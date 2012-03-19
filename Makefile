@@ -6,7 +6,7 @@ SRVS = netwars.lua devices.lua server.lua
 APPN = netwars
 
 build: $(SRCS)
-	zip -r $(APPN).love $(LIBS) $(SRCS) $(IMGS)
+	zip -r $(APPN).love $(LIBS) $(SRCS) LICENSE $(IMGS)
 
 srvpkg: $(SRVS)
-	tar -czf $(APPN).tgz $(LIBS) $(SRVS)
+	tar -czf $(APPN).tgz $(LIBS) $(SRVS) LICENSE

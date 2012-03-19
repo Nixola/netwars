@@ -221,6 +221,17 @@ function squeue(sz)
     self.tail=t
     return true
   end
+  function object:get(ts,dt)
+    local i=self.head
+    while i do
+      if (not i.ts) or ts>=i.ts then
+        i.ts=ts+dt
+        return i.val
+      end
+      i=i.link
+    end
+    return nil
+  end
   function object:del(seq)
     local l=self.head
     local p=nil

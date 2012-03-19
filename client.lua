@@ -255,11 +255,14 @@ function net_parse(msg)
   end
 end
 
+local lastsend=0
+local lastrecv=0
 function net_read(ts)
   local str=sock:receive()
   if not str then
     return
   end
+  lastrecv=ts+4
   timeout=ts+30
   if str:find("!",1,true) then
     local s=recvq:put(str)
@@ -274,7 +277,6 @@ function net_read(ts)
   return str
 end
 
-local lastsend=0
 function net_proc()
   local ts=socket.gettime()
   local ret=socket.select(allsocks,nil,0)
@@ -294,7 +296,11 @@ function net_proc()
     lastsend=ts+5
   end
   if ts>=lastsend then
-    sock:send("PING")
+    if ts>=lastrecv then
+      sock:send("PING")
+    else
+      sock:send("KEEPALIVE")
+    end
     lastsend=ts+5
   end
 end
