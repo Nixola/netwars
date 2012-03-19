@@ -187,7 +187,7 @@ while true do
         sock:sendto(p,o.ip,o.port)
       end
     else
-      p=o.syncq:get(ts,0.5)
+      local p=o.syncq:get(ts,0.5)
       if p then
         sock:sendto(p,o.ip,o.port)
       end
