@@ -161,6 +161,9 @@ while true do
     if ts>=o.ts then
       del_client(o)
     else
+      if (not o.insync) and o.gotok and o.syncq.len<1 then
+        o.insync=true
+      end
       msg=o.recvq:get(o.seq)
       if msg then
         o.seq=o.seq+1
@@ -190,9 +193,6 @@ while true do
       local p=o.syncq:get(ts,0.5)
       if p then
         sock:sendto(p,o.ip,o.port)
-      end
-      if o.gotok and o.syncq.len<1 then
-        o.insync=true
       end
     end
   end
