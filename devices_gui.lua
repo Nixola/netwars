@@ -132,8 +132,8 @@ function Device:net_connect(dev)
     return
   end
   local ok=true
-  for i,v in ipairs(self.links) do
-    if v.dev2==dev then
+  for _,l in ipairs(self.links) do
+    if l.dev2==dev then
       ok=false
       break
     end
@@ -144,8 +144,8 @@ function Device:net_connect(dev)
 end
 
 function Device:net_unlink(dev)
-  for i,v in ipairs(self.links) do
-    if v.dev2==dev then
+  for _,l in ipairs(self.links) do
+    if l.dev2==dev then
       net_send("U:%d:%d",self.idx,dev.idx)
       return
     end

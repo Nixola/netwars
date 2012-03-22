@@ -106,7 +106,7 @@ local menu=nil
 local kshift=false
 
 local function get_device(x,y)
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     if o:is_pointed(x,y) then
       return o
     end
@@ -115,7 +115,7 @@ local function get_device(x,y)
 end
 
 local function get_my_device(x,y)
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     if o:is_pointed(x,y) then
       return o.pl==ME and o or nil
     end
@@ -124,7 +124,7 @@ local function get_my_device(x,y)
 end
 
 local function get_buydev(x,y)
-  for k,o in pairs(buydevs) do
+  for _,o in pairs(buydevs) do
     if o:is_pointed(x,y) then
       return o
     end
@@ -133,7 +133,7 @@ local function get_buydev(x,y)
 end
 
 local function get_enemydev(x,y)
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     if o:is_pointed(x,y) then
       return o.pl~=ME and o or nil
     end
@@ -325,7 +325,7 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
-  for i,v in ipairs(huddevs) do
+  for _,v in ipairs(huddevs) do
     v:draw_sym()
   end
   graph.setColor(255,255,255)
@@ -349,16 +349,16 @@ function main_draw()
   graph.translate(eye.vx,eye.vy)
   graph.setScissor(0,0,eye.sx-1,eye.sy-51)
   graph.setLineStipple(ls[lsi])
-  for k,o in pairs(links) do
+  for _,o in pairs(links) do
     o:draw()
   end
   graph.setLineStipple()
   if eye.s>0.4 then
-    for k,o in pairs(packets) do
+    for _,o in pairs(packets) do
       o:draw()
     end
   end
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     o:draw()
   end
   if conn then
@@ -443,7 +443,7 @@ function main_update(dt)
   if flow_dt>=0.2 then
     lsi=lsi>7 and 1 or lsi+1
     flow_dt=0
-    for k,p in pairs(packets) do
+    for _,p in pairs(packets) do
       packets:del(p)
       if p.pl==ME then
         ME.pkts=ME.pkts-1
@@ -451,7 +451,7 @@ function main_update(dt)
     end
   elseif flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
-    for k,p in pairs(packets) do
+    for _,p in pairs(packets) do
       if p:flow(flow_dt) then
         packets:del(p)
       end
@@ -599,7 +599,8 @@ function love.load()
   graph.setBackgroundColor(0,0,0)
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
-  for k,v in pairs(devcl) do
+  local o
+  for _,v in pairs(devcl) do
     o=v:new(nil,0,eye.sy-25)
     o.hud=true
     buydevs:add(o)
@@ -607,7 +608,7 @@ function love.load()
   local devs={"G","R","F","D"}
   local x=25
   for i,v in ipairs(devs) do
-    for k,o in pairs(buydevs) do
+    for _,o in pairs(buydevs) do
       if o.cl==v then
         huddevs[i]=o
         o.x=x

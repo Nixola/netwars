@@ -152,7 +152,7 @@ end
 
 function flow_packets(dt)
   local d1,d2,v
-  for k,p in pairs(packets) do
+  for _,p in pairs(packets) do
     if p:flow(dt) then
       packet_hit(p)
     end
@@ -161,7 +161,7 @@ end
 
 function emit_packets(dt)
   local i,d,p,l,c,v,ok
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     ok=false
     if o.cl=="G" and o.online then
       o.dt=o.dt+dt

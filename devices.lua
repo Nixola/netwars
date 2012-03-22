@@ -14,7 +14,7 @@ function Player:initialize(cash)
 end
 
 function Player:disconnect()
-  for k,p in pairs(packets) do
+  for _,p in pairs(packets) do
     if p.dev1.pl==self or p.dev2.pl==self then
       p.dev1.pc=p.dev1.pc-1
       p.dev2.pc=p.dev2.pc-1
@@ -53,7 +53,7 @@ end
 function Device:calc_xy(x,y)
   local d,len,s
   local vx,vy
-  for k,l in pairs(self.links) do
+  for _,l in pairs(self.links) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
@@ -63,7 +63,7 @@ function Device:calc_xy(x,y)
       x,y=x-vx,y-vy
     end
   end
-  for k,l in pairs(self.blinks) do
+  for _,l in pairs(self.blinks) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
@@ -73,7 +73,7 @@ function Device:calc_xy(x,y)
       x,y=x-vx,y-vy
     end
   end
-  for k,l in pairs(self.elinks) do
+  for _,l in pairs(self.elinks) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
@@ -115,8 +115,8 @@ function Device:connect(dev)
     return nil
   end
   local ok=true
-  for i,v in ipairs(self.links) do
-    if v.dev2==dev then
+  for _,l in ipairs(self.links) do
+    if l.dev2==dev then
       ok=false
       break
     end
@@ -135,13 +135,13 @@ function Device:connect(dev)
 end
 
 function Device:unlink(dev)
-  for i,v in ipairs(self.links) do
-    if v.dev2==dev then
-      self:del_link(v.dev2)
+  for _,l in ipairs(self.links) do
+    if l.dev2==dev then
+      self:del_link(l.dev2)
       if self.pl==dev.pl then
-        v.dev2:del_blink(self)
+        l.dev2:del_blink(self)
       else
-        v.dev2:del_elink(self)
+        l.dev2:del_elink(self)
       end
       return v
     end
@@ -150,8 +150,8 @@ function Device:unlink(dev)
 end
 
 function Device:del_link(dev)
-  for i,v in ipairs(self.links) do
-    if v.dev2==dev then
+  for i,l in ipairs(self.links) do
+    if l.dev2==dev then
       table.remove(self.links,i)
       return
     end
@@ -159,8 +159,8 @@ function Device:del_link(dev)
 end
 
 function Device:del_blink(dev)
-  for i,v in ipairs(self.blinks) do
-    if v.dev1==dev then
+  for i,l in ipairs(self.blinks) do
+    if l.dev1==dev then
       table.remove(self.blinks,i)
       return
     end
@@ -168,8 +168,8 @@ function Device:del_blink(dev)
 end
 
 function Device:del_elink(dev)
-  for i,v in ipairs(self.elinks) do
-    if v.dev1==dev then
+  for i,l in ipairs(self.elinks) do
+    if l.dev1==dev then
       table.remove(self.elinks,i)
       return
     end
@@ -178,46 +178,46 @@ end
 
 function Device:del_links()
   local tmp={}
-  for i,v in ipairs(self.links) do
-    if v.dev1==self then
-      tmp[#tmp+1]=v
+  for _,l in ipairs(self.links) do
+    if l.dev1==self then
+      tmp[#tmp+1]=l
     end
   end
-  for k,v in pairs(tmp) do
-    self:del_link(v.dev2)
-    if self.pl==v.dev2.pl then
-      v.dev2:del_blink(self)
+  for _,l in pairs(tmp) do
+    self:del_link(l.dev2)
+    if self.pl==l.dev2.pl then
+      l.dev2:del_blink(self)
     else
-      v.dev2:del_elink(self)
+      l.dev2:del_elink(self)
     end
-    links:del(v)
+    links:del(l)
   end
   tmp={}
-  for i,v in ipairs(self.blinks) do
-    if v.dev2==self then
-      tmp[#tmp+1]=v
+  for _,l in ipairs(self.blinks) do
+    if l.dev2==self then
+      tmp[#tmp+1]=l
     end
   end
-  for k,v in pairs(tmp) do
-    self:del_blink(v.dev1)
-    v.dev1:del_link(self)
-    links:del(v)
+  for _,l in pairs(tmp) do
+    self:del_blink(l.dev1)
+    l.dev1:del_link(self)
+    links:del(l)
   end
   tmp={}
-  for i,v in ipairs(self.elinks) do
-    if v.dev2==self then
-      tmp[#tmp+1]=v
+  for _,l in ipairs(self.elinks) do
+    if l.dev2==self then
+      tmp[#tmp+1]=l
     end
   end
-  for k,v in pairs(tmp) do
-    self:del_elink(v.dev1)
-    v.dev1:del_link(self)
-    links:del(v)
+  for _,l in pairs(tmp) do
+    self:del_elink(l.dev1)
+    l.dev1:del_link(self)
+    links:del(l)
   end
 end
 
 function Device:delete()
-  for k,p in pairs(packets) do
+  for _,p in pairs(packets) do
     if p.dev1==self or p.dev2==self then
       p.dev1.pc=p.dev1.pc-1
       p.dev2.pc=p.dev2.pc-1
@@ -241,7 +241,7 @@ end
 function Link:del_packets()
   local d1=self.dev1
   local d2=self.dev2
-  for k,p in pairs(packets) do
+  for _,p in pairs(packets) do
     if p.dev1==d1 and p.dev2==d2 then
       d1.pc=d1.pc-1
       d2.pc=d2.pc-1

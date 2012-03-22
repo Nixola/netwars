@@ -243,13 +243,13 @@ function net_parse(msg)
   if p then
     seq=seq+1
     mt=str_split(p,"|")
-    for i,m in ipairs(mt) do
+    for _,m in ipairs(mt) do
       parse_server(m)
     end
   end
   if msg then
     mt=str_split(msg,"|")
-    for i,m in ipairs(mt) do
+    for _,m in ipairs(mt) do
       parse_server(m)
     end
   end

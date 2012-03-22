@@ -21,7 +21,7 @@ function Menu:draw()
   x=x+(self.obj.r+8)*eye.s
   y=y-(#self.items*8)
   graph.setLine(1,"rough")
-  for k,v in pairs(self.items) do
+  for _,v in pairs(self.items) do
     l=#v.str*9
     if msx>x and msx<x+l and msy>y and msy<y+16 then
       graph.setColor(219,159,223)
@@ -43,7 +43,7 @@ function Menu:draw()
 end
 
 function Menu:switch(fs,ts)
-  for k,v in pairs(self.items) do
+  for _,v in pairs(self.items) do
     if v.str==fs then
       v.str=ts
       return
@@ -64,7 +64,7 @@ function Menu:click(mx,my)
   local x,y=(self.obj.x+eye.vx)*eye.s+eye.cx,(self.obj.y+eye.vy)*eye.s+eye.cy
   x=x+(self.obj.r+8)*eye.s
   y=y-(#self.items*8)
-  for k,v in pairs(self.items) do
+  for _,v in pairs(self.items) do
     l=#v.str*8+6
     if mx>x and mx<x+l and my>y and my<y+16 then
       if v.str=="Delete" then

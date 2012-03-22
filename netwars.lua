@@ -64,25 +64,25 @@ local function new_client(str,ts,ip,port)
   pl.idx=players:add(pl)
   iptab[h]=pl
   local m=queue(5000)
-  for k,o in pairs(players) do
+  for _,o in pairs(players) do
     if o==pl then
       m:put(string.format("PLa:%d:%s:%d:me",o.idx,o.name,o.cash))
     else
       m:put(string.format("PLa:%d:%s:%d",o.idx,o.name,o.cash))
     end
   end
-  for k,o in pairs(devices) do
+  for _,o in pairs(devices) do
     b=o.online and 1 or 0
     m:put(string.format("Da:%d:%s:%d:%d:%d:%d",o.pl.idx,o.cl,o.idx,b,o.x,o.y))
   end
-  for k,o in pairs(links) do
+  for _,o in pairs(links) do
     m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
   end
   m:put("DONE")
   enqueue(pl.syncq,m)
   pl.sendq.seq=pl.syncq.seq
   local msg=string.format("PLa:%d:%s:%d",pl.idx,pl.name,pl.cash)
-  for k,o in pairs(players) do
+  for _,o in pairs(players) do
     if o~=pl then
       o.sendq:put(msg)
     end
@@ -96,7 +96,7 @@ function del_client(pl)
   players:del(pl)
   iptab[h]=nil
   local msg=string.format("PLd:%d",idx)
-  for k,o in pairs(players) do
+  for _,o in pairs(players) do
     o.sendq:put(msg)
   end
 end
@@ -157,7 +157,7 @@ while true do
   if ret[sock] then
     read_socket(ts)
   end
-  for k,o in pairs(players) do
+  for _,o in pairs(players) do
     if ts>=o.ts then
       del_client(o)
     else
@@ -180,11 +180,11 @@ while true do
   enqueue(q,ctlq)
   ctlq:clear()
   for p in q:ited() do
-    for k,o in pairs(players) do
+    for _,o in pairs(players) do
       o.sendq:put(p)
     end
   end
-  for k,o in pairs(players) do
+  for _,o in pairs(players) do
     if o.insync then
       for p in o.sendq:iter(ts,0.5) do
         sock:sendto(p,o.ip,o.port)
@@ -199,7 +199,7 @@ while true do
   enqueue(q,msgq)
   msgq:clear()
   for p in q:ited() do
-    for k,o in pairs(players) do
+    for _,o in pairs(players) do
       if o.insync then
         sock:sendto(p,o.ip,o.port)
       end
