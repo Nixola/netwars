@@ -153,7 +153,7 @@ function Device:unlink(dev)
       else
         l.dev2:del_elink(self)
       end
-      return v
+      return l
     end
   end
   return nil
