@@ -115,7 +115,7 @@ local function packet_hit(p)
   if o.pl==pl then
     -- Enqueued at friendly device
     if o.health<o.maxhealth then
-      o.health=o.health+v*3
+      o.health=o.health+v*2
       if o.health>o.maxhealth then
         o.health=o.maxhealth
       end
@@ -126,8 +126,13 @@ local function packet_hit(p)
       return
     end
     if o.cl=="D" then
-      pl.cash=pl.cash+v
-      mput("Pc:%d:%d",pl.idx,pl.cash)
+      if pl.cash<pl.maxcash then
+        pl.cash=pl.cash+v
+        if pl.cash>pl.maxcash then
+          pl.cash=pl.maxcash
+        end
+        mput("Pc:%d:%d",pl.idx,pl.cash)
+      end
       return
     end
     o.pkt=o.pkt+v
@@ -165,13 +170,13 @@ function emit_packets(dt)
     ok=false
     if o.cl=="G" and o.online then
       o.dt=o.dt+dt
-      if o.dt>=3.0 then
-        o.dt=o.dt-3.0
-        if o.dt>3.0 then
-          o.dt=3.0
+      if o.dt>=1.0 then
+        o.dt=o.dt-1.0
+        if o.dt>1.0 then
+          o.dt=1.0
         end
-        ok=true
         v=nil
+        ok=true
       end
     end
     if o.pkt>0 then
@@ -181,8 +186,8 @@ function emit_packets(dt)
         if o.dt>0.5 then
           o.dt=0.5
         end
-        ok=true
         v=o.pkt>10 and 10 or o.pkt
+        ok=true
       end
     end
     if ok then

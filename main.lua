@@ -104,6 +104,7 @@ local hover_dt=0
 local conn=nil
 local menu=nil
 local kshift=false
+local scoreboard=false
 
 local function get_device(x,y)
   for _,o in pairs(devices) do
@@ -257,6 +258,10 @@ function main_keypressed(k)
     bdev=nil
     return
   end
+  if k=="tab" then
+    scoreboard=true
+    return
+  end
   if k=="1" or k=="kp1" then
     bdev=huddevs[1]
     return
@@ -305,6 +310,10 @@ function main_keyreleased(k)
     kshift=false
     return
   end
+  if k=="tab" then
+    scoreboard=false
+    return
+  end
   if k=="w" or k=="up" then
     scroll.ky=0
   end
@@ -337,6 +346,29 @@ local function draw_hud()
   end
   if hint and hint.pl and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
+  end
+end
+
+local function draw_scoreboard()
+  local padding = 16
+  local player_count = 0
+  for _,v in pairs(players) do
+    player_count = player_count + 1
+  end
+  local x,y=eye.cx-200,eye.cy-(padding*(4+player_count))/2
+  graph.setColor(0,0,120,127)
+  graph.rectangle("fill",x,y,400,padding*(4+player_count))
+
+  graph.print("Name",x+padding,y+padding)
+  graph.print("Cash",x+200+padding,y+padding)
+  graph.print("Devices",x+300+padding,y+padding)
+  
+  local abs_index = 0
+  for i,v in pairs(players) do
+    abs_index = abs_index + 1
+    graph.print(v.name,x+padding,y+(abs_index+2)*padding)
+    graph.print(v.cash,x+200+padding,y+(abs_index+2)*padding)
+    graph.print(v.devcnt,x+300+padding,y+(abs_index+2)*padding)
   end
 end
 
@@ -407,6 +439,9 @@ function main_draw()
   draw_hud()
   if menu then
     menu:draw()
+  end
+  if scoreboard then
+    draw_scoreboard()
   end
 end
 

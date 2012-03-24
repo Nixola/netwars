@@ -10,7 +10,10 @@ class "Player"
 
 function Player:initialize(cash)
   self.cash=cash
+  self.maxcash=0
   self.pkts=0
+  self.devcnt=0
+  self.dcnt=0
 end
 
 function Player:disconnect()
@@ -48,6 +51,13 @@ function Device:initialize(pl,x,y)
   self.links={}
   self.blinks={}
   self.elinks={}
+  if pl then
+    pl.devcnt=pl.devcnt+1
+    if self.cl=="D" then
+      pl.dcnt=pl.dcnt+1
+      pl.maxcash=pl.dcnt*1000
+    end
+  end
 end
 
 function Device:calc_xy(x,y)
@@ -96,8 +106,10 @@ function Device:connect(dev)
   if self==dev then
     return
   end
-  if self.cl=="G" and dev.cl~="R" then
-    return
+  if self.cl=="G" then
+    if self.pl~=dev.pl or dev.cl~="R" then
+      return
+    end
   end
   if #self.links>=self.maxlinks then
     return nil
@@ -228,6 +240,14 @@ function Device:delete()
     end
   end
   self:del_links()
+  if self.pl then
+    self.pl.devcnt=self.pl.devcnt-1
+    if self.cl=="D" then
+      self.pl.cash=self.pl.cash-(self.pl.cash/self.pl.dcnt)
+      self.pl.dcnt=self.pl.dcnt-1
+      self.pl.maxcash=self.pl.dcnt*1000
+    end
+  end
   self.deleted=true
 end
 
@@ -309,7 +329,7 @@ r=15;
 maxhealth=100;
 maxlinks=2;
 maxblinks=1;
-price=50;
+price=100;
 }
 
 class "Router" : extends(Device) {
@@ -318,7 +338,7 @@ r=15;
 maxhealth=100;
 maxlinks=5;
 maxblinks=5;
-price=10;
+price=20;
 }
 
 class "Friend" : extends(Router) {
@@ -326,7 +346,7 @@ cl="F";
 maxhealth=50;
 maxlinks=1;
 maxblinks=3;
-price=30;
+price=60;
 }
 
 class "DataCenter" : extends(Device) {
@@ -335,7 +355,7 @@ r=15;
 maxhealth=50;
 maxlinks=0;
 maxblinks=4;
-price=80;
+price=200;
 }
 
 devcl={G=Generator,R=Router,F=Friend,D=DataCenter}
