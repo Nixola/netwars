@@ -104,12 +104,10 @@ end
 
 function Device:connect(dev)
   if self==dev then
-    return
+    return nil
   end
-  if self.cl=="G" then
-    if self.pl~=dev.pl or dev.cl~="R" then
-      return
-    end
+  if self.cl=="G" and dev.cl~="R" then
+    return nil
   end
   if #self.links>=self.maxlinks then
     return nil
