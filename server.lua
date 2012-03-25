@@ -139,9 +139,7 @@ local function packet_hit(p)
     if o.pkt>100 then
       o.pkt=100
     end
-    if not o.online then
-      mput("Pi:%d:%d",o.idx,o.pkt)
-    end
+    o.upd=true
     return
   end
   -- Attacking enemy device
@@ -181,10 +179,10 @@ function emit_packets(dt)
     end
     if o.pkt>0 then
       o.dt=o.dt+dt
-      if o.dt>=0.5 then
-        o.dt=o.dt-0.5
-        if o.dt>0.5 then
-          o.dt=0.5
+      if o.dt>=1.0 then
+        o.dt=o.dt-1.0
+        if o.dt>1.0 then
+          o.dt=1.0
         end
         v=o.pkt>10 and 10 or o.pkt
         ok=true
@@ -213,8 +211,9 @@ function emit_packets(dt)
         c=c-1
       end
       o.li=i
-      if o.cl=="R" and c<1 then
+      if o.cl=="R" and c<1 and o.upd then
         mput("Pi:%d:%d",o.idx,o.pkt)
+        o.upd=false
       end
     end
   end

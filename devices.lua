@@ -47,6 +47,7 @@ function Device:initialize(pl,x,y)
   self.pc=0
   self.pkt=0
   self.off=0
+  self.upd=false
   self.health=self.maxhealth
   self.links={}
   self.blinks={}
@@ -241,7 +242,7 @@ function Device:delete()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
     if self.cl=="D" then
-      self.pl.cash=self.pl.cash-(self.pl.cash/self.pl.dcnt)
+      self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
       self.pl.dcnt=self.pl.dcnt-1
       self.pl.maxcash=self.pl.dcnt*1000
     end
