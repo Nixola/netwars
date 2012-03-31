@@ -231,6 +231,16 @@ local function parse_server(msg)
     players[idx]=nil
     return
   end
+  if a[1]=="MSG" then -- MSG:nick:'msg'
+    if a.n<3 then
+      return
+    end
+    if chat.chatq.len>=chat.chatq.size then
+      chat.chatq:del()
+    end
+    chat.chatq:put(string.format("<%s> %s",a[2],a[3]))
+    return
+  end
   if a[1]=="DONE" then
     insync=true
     net_send("OK")

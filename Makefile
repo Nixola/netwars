@@ -1,5 +1,5 @@
 LIBS = class.lua
-SRCS = conf.lua main.lua menu.lua client.lua \
+SRCS = conf.lua main.lua menu.lua client.lua chat.lua \
 	devices.lua devices_gui.lua init.lua
 IMGS = imgs
 SRVS = netwars.lua devices.lua server.lua

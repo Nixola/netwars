@@ -94,15 +94,25 @@ end
 
 function str_split(str,sep)
   local a={}
-  local l=#str
+  local l=str:len()
   local p=1
-  local q=string.find(str,sep,1,true)
+  local q=str:find(sep,1,true)
   while q do
-    a[#a+1]=string.sub(str,p,q-1)
+    a[#a+1]=str:sub(p,q-1)
+    q=str:find(sep,q,true)
+    if not q then
+      a.n=#a
+      return a
+    end
     p=q+1
-    q=string.find(str,sep,p,true)
+    if str:sub(p,p)=="'" then
+      p=p+1
+      q=str:find("'",p,true)
+    else
+      q=str:find(sep,p,true)
+    end
   end
-  a[#a+1]=string.sub(str,p,l)
+  a[#a+1]=str:sub(p,l)
   a.n=#a
   return a
 end
@@ -294,16 +304,17 @@ function rqueue(sz)
     if self.len>=self.size then
       return nil
     end
-    local a=str_split(str,"!")
-    if a.n<2 then
+    local p=str:find("!",1,true)
+    if not p then
       return nil
     end
-    local seq=tonumber(a[1])
+    local seq=tonumber(str:sub(1,p-1))
     if seq<=self.seq then
       return seq
     end
+    local msg=str:sub(p+1,str:len())
     if not self.head then
-      local t={seq=seq,val=a[2]}
+      local t={seq=seq,val=msg}
       self.head=t
       self.tail=t
       self.len=self.len+1
@@ -316,7 +327,7 @@ function rqueue(sz)
       l=l.link
     end
     if not l then
-      local t={seq=seq,val=a[2]}
+      local t={seq=seq,val=msg}
       self.tail.link=t
       self.tail=t
       self.len=self.len+1
@@ -326,13 +337,13 @@ function rqueue(sz)
       return seq
     end
     if not p then
-      local t={seq=seq,val=a[2]}
+      local t={seq=seq,val=msg}
       t.link=self.head
       self.head=t
       self.len=self.len+1
       return seq
     end
-    local t={seq=seq,val=a[2]}
+    local t={seq=seq,val=msg}
     p.link=t
     t.link=l
     self.len=self.len+1

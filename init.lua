@@ -2,10 +2,12 @@
 
 local nick=""
 local addr=""
+local buf={}
 local str=""
 local init_st=1
 
 local function init_enter()
+  buf={}
   if init_st==1 then
     if str:len()>15 or str:len()<1 then
       str=""
@@ -45,14 +47,16 @@ function init_keypressed(key,ch)
     return init_enter()
   end
   if key=="backspace" then
-    str=str:sub(1,-2)
+    table.remove(buf)
+    str=table.concat(buf)
     return
   end
   if ch<32 or ch>127 then
     return
   end
-  if str:len()<30 then
-    str=str..string.char(ch)
+  if table.maxn(buf)<30 then
+    table.insert(buf,string.char(ch))
+    str=table.concat(buf)
   end
 end
 

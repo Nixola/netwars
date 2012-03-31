@@ -6,6 +6,7 @@ require "devices"
 require "devices_gui"
 require "client"
 require "init"
+require "chat"
 
 graph=love.graphics
 dtime=0
@@ -249,7 +250,11 @@ function main_mousereleased(mx,my,b)
   end
 end
 
-function main_keypressed(k)
+function main_keypressed(k,ch)
+  if chat.input then
+    chat.input=chat.keypressed(k,ch)
+    return
+  end
   if k=="lshift" or k=="rshift" then
     kshift=true
     return
@@ -260,6 +265,10 @@ function main_keypressed(k)
   end
   if k=="tab" then
     scoreboard=true
+    return
+  end
+  if k=="return" then
+    chat.input=true
     return
   end
   if k=="1" or k=="kp1" then
@@ -443,6 +452,7 @@ function main_draw()
   if scoreboard then
     draw_scoreboard()
   end
+  chat.draw()
 end
 
 local flow_dt=0
@@ -493,6 +503,7 @@ function main_update(dt)
     end
     flow_dt=flow_dt-0.05
   end
+  chat.update(dt)
 end
 
 function main_quit()
@@ -613,8 +624,9 @@ local function reconf()
     return chunk()
   end
   local data="return {\n"
-  data=data.."width="..graph.getWidth()..";\n"
-  data=data.."height="..graph.getHeight()..";\n"
+  data=data.."graph_width="..graph.getWidth()..";\n"
+  data=data.."graph_height="..graph.getHeight()..";\n"
+  data=data.."chat_timeout=3.0;\n"
   data=data.."}\n"
   love.filesystem.write("netwars.cfg",data)
   return nil
@@ -623,7 +635,8 @@ end
 function love.load()
   local t=reconf()
   if t then
-    graph.setMode(t.width,t.height)
+    graph.setMode(t.graph_width,t.graph_height)
+    chat.timeout=t.chat_timeout
   end
   eye.sx=graph.getWidth()
   eye.sy=graph.getHeight()
