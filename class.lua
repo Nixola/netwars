@@ -99,18 +99,12 @@ function str_split(str,sep)
   local q=str:find(sep,1,true)
   while q do
     a[#a+1]=str:sub(p,q-1)
-    q=str:find(sep,q,true)
-    if not q then
-      a.n=#a
-      return a
-    end
     p=q+1
-    if str:sub(p,p)=="'" then
+    if str:sub(p,p)=="~" then
       p=p+1
-      q=str:find("'",p,true)
-    else
-      q=str:find(sep,p,true)
+      break
     end
+    q=str:find(sep,p,true)
   end
   a[#a+1]=str:sub(p,l)
   a.n=#a

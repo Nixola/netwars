@@ -13,7 +13,7 @@ local function init_enter()
       str=""
       return
     end
-    if str:match("[%a%d_]*")~=str then
+    if str:match("[%a%d_%-]*")~=str then
       str=""
       return
     end
@@ -27,7 +27,7 @@ local function init_enter()
       str=""
       return
     end
-    if str:match("[%a%d.]*")~=str then
+    if str:match("[%a%d%.%-]*")~=str then
       str=""
       return
     end

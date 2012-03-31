@@ -105,11 +105,11 @@ function parse_client(msg,pl)
     end
     return
   end
-  if a[1]=="MSG" then -- MSG:'msg'
+  if a[1]=="MSG" then -- MSG:~msg
     if a.n<2 then
       return
     end
-    cput("MSG:%s:'%s'",pl.name,a[2])
+    cput("MSG:%s:~%s",pl.name,a[2])
     return
   end
 end

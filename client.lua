@@ -231,7 +231,7 @@ local function parse_server(msg)
     players[idx]=nil
     return
   end
-  if a[1]=="MSG" then -- MSG:nick:'msg'
+  if a[1]=="MSG" then -- MSG:nick:~msg
     if a.n<3 then
       return
     end

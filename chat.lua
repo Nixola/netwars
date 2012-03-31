@@ -15,11 +15,11 @@ function chat.enter()
     str=""
     return false
   end
-  if str:match("[%a%d_ :;,%.%-%<%>%(%)%[%]%/%*%!]*")~=str then
+  if str:match("[%a%d_\\ :;`\"\'%,%.%<%>%(%)%[%]%{%}%/%?%!%@%#%$%%%^%&%*%-%+]*")~=str then
     str=""
     return false
   end
-  net_send("MSG:'%s'",str)
+  net_send("MSG:~%s",str)
   str=""
   return false
 end
