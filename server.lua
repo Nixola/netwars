@@ -10,14 +10,24 @@ local function buy_device(pl,a)
     return
   end
   local price=cl.__members.price
+  if price<10 then
+    return
+  end
   if pl.cash>=price then
     pl.cash=pl.cash-price
     local o=cl:new(pl,x,y)
+    if a[2]=="G" or a[2]=="B" then
+      o.pwr=5
+    end
     if o:chk_border(x,y) then
       o.idx=devices:add(o)
       devhash:add(o)
       cput("Pc:%d:%d",pl.idx,pl.cash)
-      cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+      if a[2]=="G" or a[2]=="B" then
+        cput("Dn:%d:%s:%d:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y,o.pwr)
+      else
+        cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+      end
     end
   end
 end
@@ -126,7 +136,7 @@ local function packet_hit(p)
   if o.pl==pl then
     -- Enqueued at friendly device
     if o.health<o.maxhealth then
-      o.health=o.health+v*2
+      o.health=o.health+v
       if o.health>o.maxhealth then
         o.health=o.maxhealth
       end
@@ -156,6 +166,15 @@ local function packet_hit(p)
   -- Attacking enemy device
   o.health=o.health-v
   if o.health<1 then
+    if o.cl=="G" then
+      o:del_packets()
+      o:del_links()
+      o.pl=pl
+      o.health=math.floor(o.maxhealth/2)
+      o.online=false
+      cput("Do:%d:%d:%d",o.idx,pl.idx,o.health)
+      return
+    end
     cput("Dd:%d",o.idx)
     o:delete()
     devices:del(o)
@@ -176,16 +195,16 @@ end
 function emit_packets(dt)
   local i,d,p,l,c,v,ok
   for _,o in pairs(devices) do
-    ok=false
-    if o.cl=="G" and o.online then
+    ok=nil
+    if o.cl=="G" or o.cl=="B" then
       o.dt=o.dt+dt
       if o.dt>=1.0 then
         o.dt=o.dt-1.0
         if o.dt>1.0 then
           o.dt=1.0
         end
-        v=nil
-        ok=true
+        v=o.pwr
+        ok=1
       end
     end
     if o.pkt>0 then
@@ -196,10 +215,10 @@ function emit_packets(dt)
           o.dt=1.0
         end
         v=o.pkt>10 and 10 or o.pkt
-        ok=true
+        ok=2
       end
     end
-    if ok then
+    if ok and v>0 then
       l=#o.links
       c=l
       i=o.li>l and 1 or o.li
@@ -207,16 +226,19 @@ function emit_packets(dt)
         d=o.links[i].dev2
         i=i<l and i+1 or 1
         if o.pl~=d.pl or d.online then
-          if v then
+          if ok==1 then
+            p=Packet:new(o,d,v)
+            packets:add(p)
+            mput("Pe:%d:%d:%d",o.idx,d.idx,v)
+            break
+          end
+          if ok==2 then
             o.pkt=o.pkt-v
-            p=Packet:new(o,d,v,true)
+            p=Packet:new(o,d,v)
             packets:add(p)
             mput("Pr:%d:%d:%d:%d",o.idx,d.idx,v,o.pkt)
             break
           end
-          p=Packet:new(o,d,1,true)
-          packets:add(p)
-          mput("Pe:%d:%d:%d",o.idx,d.idx,1)
           break
         end
         c=c-1

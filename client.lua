@@ -114,42 +114,68 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="Da" then -- Add:pl:cl:idx:online:x:y
-    if a.n<7 then
+  if a[1]=="Da" then -- Add:pl:cl:idx:health:online:x:y:...
+    if a.n<8 then
       return
     end
     local pl=players[tonumber(a[2])]
     local cl=devcl[a[3]]
     local idx=tonumber(a[4])
-    local b=tonumber(a[5])==1
+    local b=tonumber(a[6])==1
+    local x,y=tonumber(a[7]),tonumber(a[8])
     if not cl then
       return
     end
-    local x,y=tonumber(a[6]),tonumber(a[7])
     local o=cl:new(pl,x,y)
+    if a[3]=="G" or a[3]=="B" then
+      if a.n<9 then
+        return
+      end
+      o.pwr=tonumber(a[9])
+    end
     o.idx=idx
+    o.health=tonumber(a[5])
     o:init_gui()
     o.online=b
     devices[idx]=o
     devhash:add(o)
     return
   end
-  if a[1]=="Dn" then -- New:pl:cl:idx:x:y
+  if a[1]=="Dn" then -- New:pl:cl:idx:x:y:...
     if a.n<6 then
       return
     end
     local pl=players[tonumber(a[2])]
     local cl=devcl[a[3]]
     local idx=tonumber(a[4])
+    local x,y=tonumber(a[5]),tonumber(a[6])
     if not cl then
       return
     end
-    local x,y=tonumber(a[5]),tonumber(a[6])
     local o=cl:new(pl,x,y)
+    if a[3]=="G" or a[3]=="B" then
+      if a.n<7 then
+        return
+      end
+      o.pwr=tonumber(a[7])
+    end
     o.idx=idx
     o:init_gui()
     devices[idx]=o
     devhash:add(o)
+    return
+  end
+  if a[1]=="Do" then -- Del:idx:pl:health
+    if a.n<4 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local o=devices[idx]
+    o:del_packets()
+    o:del_links()
+    o.pl=players[tonumber(a[3])]
+    o.health=tonumber(a[4])
+    o.online=false
     return
   end
   if a[1]=="Dd" then -- Del:idx

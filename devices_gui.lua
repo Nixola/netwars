@@ -21,7 +21,7 @@ function Device:draw_sym(_x,_y)
   if self.hud then
     graph.setColor(0,0,255)
   elseif (not self.pl) then
-    graph.setColor(192,192,192)
+    graph.setColor(128,128,128)
   elseif self.pl==ME then
     if self.online then
       graph.setColor(0,0,255)
@@ -46,7 +46,7 @@ end
 
 function Device:draw_border()
   if (not self.pl) then
-    graph.setColor(96,96,96)
+    graph.setColor(64,64,64)
   elseif self.pl==ME then
     graph.setColor(0,0,96)
   else
@@ -74,9 +74,6 @@ function Device:draw_eborder(_x,_y)
 end
 
 function Device:draw()
-  if self.online then
-    self.off=(self.off+dtime)%pi2
-  end
   if eye.in_view(self.x,self.y,self.er) then
     self:draw_sym()
     if eye.s>0.4 then
@@ -128,6 +125,9 @@ function Device:net_delete()
 end
 
 function Device:net_move(x,y)
+  if self.nomove then
+    return
+  end
   if (not self.online) and self.pc<1 and #self.elinks<1 then
     x,y=self:calc_xy(x,y)
     if self:chk_border(x,y) then
@@ -207,6 +207,24 @@ function Packet:draw()
   end
 end
 
+function Generator:draw_st()
+  local p=self.pwr/10
+  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
+  local n=math.floor(w*p)
+  if n>0 then
+    graph.setColor(255,128,255)
+    graph.rectangle("fill",x,y,n,3)
+  end
+end
+
+function Generator:draw()
+  if self:super("draw") then
+    if eye.s>0.4 then
+      self:draw_st()
+    end
+  end
+end
+
 function Router:draw_st()
   local p=self.pkt/100
   local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
@@ -225,10 +243,27 @@ function Router:draw()
   end
 end
 
+function DataBase:draw_st()
+  local p=self.pwr/10
+  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
+  local n=math.floor(w*p)
+  if n>0 then
+    graph.setColor(255,128,255)
+    graph.rectangle("fill",x,y,n,3)
+  end
+end
+
+function DataBase:draw()
+  if self:super("draw") then
+    if eye.s>0.4 then
+      self:draw_st()
+    end
+  end
+end
+
 function Generator:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
 end
 
 function Router:init_gui()
@@ -244,6 +279,12 @@ function Friend:init_gui()
 end
 
 function DataCenter:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function DataBase:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)

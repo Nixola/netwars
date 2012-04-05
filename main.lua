@@ -201,7 +201,7 @@ function main_mousepressed(mx,my,b)
         dev:net_switch()
         return
       end
-      if (not dev.online) and dev.pc<1 and #dev.elinks<1 then
+      if (not dev.nomove) and (not dev.online) and dev.pc<1 and #dev.elinks<1 then
         drag=dev
       end
     end
@@ -353,11 +353,11 @@ local function draw_hud()
     v:draw_sym()
   end
   graph.setColor(255,255,255)
-  graph.print(string.format("Cash: %d",ME.cash),eye.sx-100,eye.sy-40)
-  graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-100,eye.sy-20)
+  graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
+  graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
   if hover then
-    graph.print(string.format("Price: %d",hover.price),eye.sx-200,eye.sy-40)
-    graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-200,eye.sy-20)
+    graph.print(string.format("Price: %d",hover.price),eye.sx-250,eye.sy-40)
+    graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-250,eye.sy-20)
   end
   if hint and hint.pl and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
@@ -402,7 +402,14 @@ function main_draw()
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local t=devhash:get(x1,y1,x2,y2)
   for _,o in pairs(t) do
-    o:draw_border()
+    if o.pl~=ME then
+      o:draw_border()
+    end
+  end
+  for _,o in pairs(t) do
+    if o.pl==ME then
+      o:draw_border()
+    end
   end
   for _,o in pairs(links) do
     o:draw()
@@ -638,6 +645,9 @@ local function set_cl_fonts(imgfont)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
   devcl.D.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,64,8,16,16)
+  devcl.B.__members.img=graph.newImage(img)
 end
 
 local function reconf()
@@ -681,7 +691,7 @@ function love.load()
     o.hud=true
     buydevs:add(o)
   end
-  local devs={"G","R","F","D"}
+  local devs={"B","R","F","D"}
   local x=25
   for i,v in ipairs(devs) do
     for _,o in pairs(buydevs) do

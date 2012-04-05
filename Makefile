@@ -1,12 +1,16 @@
 LIBS = class.lua sphash.lua
-SRCS = conf.lua main.lua menu.lua client.lua chat.lua \
-	devices.lua devices_gui.lua init.lua
+COMMON = devices.lua
+EXTRA = LICENSE
+SRCS = conf.lua main.lua menu.lua client.lua chat.lua init.lua \
+	devices_gui.lua
 IMGS = imgs
-SRVS = netwars.lua devices.lua server.lua
+SRVS = netwars.lua server.lua
 APPN = netwars
 
-build: $(SRCS)
-	zip -r $(APPN).love $(LIBS) $(SRCS) LICENSE $(IMGS)
+.PHONY: build srvpkg
 
-srvpkg: $(SRVS)
-	tar -czf $(APPN).tgz $(LIBS) $(SRVS) LICENSE
+build:
+	zip -r $(APPN).love $(LIBS) $(COMMON) $(SRCS) $(EXTRA) $(IMGS)
+
+srvpkg:
+	tar -czf $(APPN).tgz $(LIBS) $(COMMON) $(SRVS) $(EXTRA)

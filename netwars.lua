@@ -77,9 +77,15 @@ local function new_client(str,ts,ip,port)
       m:put(string.format("PLa:%d:%s:%d",o.idx,o.name,o.cash))
     end
   end
+  local b,i
   for _,o in pairs(devices) do
     b=o.online and 1 or 0
-    m:put(string.format("Da:%d:%s:%d:%d:%d:%d",o.pl.idx,o.cl,o.idx,b,o.x,o.y))
+    i=o.pl and o.pl.idx or 0
+    if o.cl=="G" or o.cl=="B" then
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
+    else
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y))
+    end
   end
   for _,o in pairs(links) do
     m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
@@ -149,6 +155,18 @@ end
 if not sock:setsockname("*",6352) then
   print("Error: bind() failed")
   return
+end
+
+function add_G(x,y,pwr)
+  local o=Generator:new(nil,x,y)
+  o.pwr=pwr
+  o.idx=devices:add(o)
+  devhash:add(o)
+end
+
+if arg[1] then
+  local chunk=loadfile(arg[1])
+  chunk()
 end
 
 local ret

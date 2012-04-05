@@ -32,8 +32,14 @@ function Player:disconnect()
   for k,o in pairs(devices) do
     if o.pl==self then
       o:del_links()
-      devices[k]=nil
-      devhash:del(o)
+      if o.cl=="G" then
+        o.pl=nil
+        o.health=o.maxhealth
+        o.online=false
+      else
+        devices[k]=nil
+        devhash:del(o)
+      end
     end
   end
 end
@@ -53,18 +59,20 @@ function Device:initialize(pl,x,y)
   self.dt=0
   self.pc=0
   self.pkt=0
-  self.off=0
   self.upd=false
+  self.attch=false
+  if self.cl=="G" or self.cl=="B" then
+    self.nomove=true
+    self.pwr=0
+  else
+    self.nomove=false
+  end
   self.health=self.maxhealth
   self.links={}
   self.blinks={}
   self.elinks={}
   if pl then
     pl.devcnt=pl.devcnt+1
-    if self.cl=="D" then
-      pl.dcnt=pl.dcnt+1
-      pl.maxcash=pl.dcnt*1000
-    end
   end
 end
 
@@ -130,6 +138,9 @@ function Device:chk_border(x,y)
 end
 
 function Device:move(x,y)
+  if self.nomove then
+    return false
+  end
   x,y=self:calc_xy(x,y)
   if self:chk_border(x,y) then
     devhash:del(self)
@@ -175,6 +186,11 @@ function Device:connect(dev)
     table.insert(self.links,l)
     if self.pl==dev.pl then
       table.insert(dev.blinks,l)
+      if dev.cl=="D" and (not dev.attch) then
+        dev.pl.dcnt=dev.pl.dcnt+1
+        dev.pl.maxcash=dev.pl.dcnt*1000
+        dev.attch=true
+      end
     else
       table.insert(dev.elinks,l)
     end
@@ -189,6 +205,11 @@ function Device:unlink(dev)
       self:del_link(l.dev2)
       if self.pl==dev.pl then
         l.dev2:del_blink(self)
+        if dev.cl=="D" and dev.attch and #dev.blinks<1 then
+          dev.pl.dcnt=dev.pl.dcnt-1
+          dev.pl.maxcash=dev.pl.dcnt*1000
+          dev.attch=false
+        end
       else
         l.dev2:del_elink(self)
       end
@@ -265,6 +286,19 @@ function Device:del_links()
   end
 end
 
+function Device:del_packets()
+  for _,p in pairs(packets) do
+    if p.dev1==self or p.dev2==self then
+      p.dev1.pc=p.dev1.pc-1
+      p.dev2.pc=p.dev2.pc-1
+      packets:del(p)
+      if p.pl==ME then
+        ME.pkts=ME.pkts-1
+      end
+    end
+  end
+end
+
 function Device:delete()
   for _,p in pairs(packets) do
     if p.dev1==self or p.dev2==self then
@@ -315,12 +349,12 @@ class "Packet" {
 r=3;
 }
 
-function Packet:initialize(d1,d2,v,srv)
+function Packet:initialize(d1,d2,v)
   local vx,vy=d2.x-d1.x,d2.y-d1.y
   local l=math.sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
-  if d1.cl=="F" then
+  if d1.cl=="F" and d2.pl then
     self.pl=d2.pl
   else
     self.pl=d1.pl
@@ -329,13 +363,8 @@ function Packet:initialize(d1,d2,v,srv)
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
   vx,vy=vx/l,vy/l
-  if srv then
-    self.x=d1.x
-    self.y=d1.y
-  else
-    self.x=d1.x+vx*d1.r
-    self.y=d1.y+vy*d1.r
-  end
+  self.x=d1.x+vx*d1.r
+  self.y=d1.y+vy*d1.r
   self.vx=vx*50
   self.vy=vy*50
   if self.pl==ME then
@@ -363,15 +392,15 @@ end
 
 class "Generator" : extends(Device) {
 cl="G";
-maxhealth=100;
+maxhealth=200;
 maxlinks=2;
-maxblinks=1;
-price=100;
+maxblinks=2;
+price=0;
 }
 
 class "Router" : extends(Device) {
 cl="R";
-maxhealth=100;
+maxhealth=200;
 maxlinks=5;
 maxblinks=5;
 price=20;
@@ -379,18 +408,26 @@ price=20;
 
 class "Friend" : extends(Router) {
 cl="F";
-maxhealth=50;
+maxhealth=100;
 maxlinks=1;
 maxblinks=3;
-price=60;
+price=100;
 }
 
 class "DataCenter" : extends(Device) {
 cl="D";
-maxhealth=50;
+maxhealth=100;
 maxlinks=0;
 maxblinks=4;
 price=200;
 }
 
-devcl={G=Generator,R=Router,F=Friend,D=DataCenter}
+class "DataBase" : extends(Device) {
+cl="B";
+maxhealth=300;
+maxlinks=2;
+maxblinks=2;
+price=500;
+}
+
+devcl={G=Generator,R=Router,F=Friend,D=DataCenter,B=DataBase}
