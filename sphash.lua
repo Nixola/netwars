@@ -64,8 +64,8 @@ function sphash(grid)
     local grid=self.grid
     local sx=math.floor(x1/grid)
     local sy=math.floor(y1/grid)
-    local mx=math.floor(x2/grid)
-    local my=math.floor(y2/grid)
+    local mx=x2 and math.floor(x2/grid) or sx
+    local my=y2 and math.floor(y2/grid) or sy
     local x,y
     if mx<sx then
       x=mx

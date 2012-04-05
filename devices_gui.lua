@@ -3,30 +3,15 @@
 local pi2=math.pi*2
 
 function Device:draw_bar()
-  local poly={}
-  local m=48
   local p=self.health/self.maxhealth
-  local n=math.floor(m*p)
-  local x,y,s
-  local re=n>=32 and 250-((n-32)*15) or 250
-  local gr=n<=24 and n*10 or 250
-  graph.setColor(re,gr,0)
-  for t=0,n-1 do
-    s=t
-    x=math.sin((s/m)*pi2+self.off)
-    y=math.cos((s/m)*pi2+self.off)
-    poly[1]=self.x+((self.r+6)*x)
-    poly[2]=self.y+((self.r+6)*y)
-    poly[3]=self.x+((self.r+3)*x)
-    poly[4]=self.y+((self.r+3)*y)
-    s=s+1.0
-    x=math.sin((s/m)*pi2+self.off)
-    y=math.cos((s/m)*pi2+self.off)
-    poly[5]=self.x+((self.r+3)*x)
-    poly[6]=self.y+((self.r+3)*y)
-    poly[7]=self.x+((self.r+6)*x)
-    poly[8]=self.y+((self.r+6)*y)
-    graph.polygon("fill",poly)
+  local x,y,w=self.x-self.r,self.y-self.r-6,self.r*2
+  local n=math.floor(w*p)
+  local c=math.floor(48*p)
+  local re=c>=32 and 250-((c-32)*15) or 250
+  local gr=c<=24 and c*10 or 250
+  if n>0 then
+    graph.setColor(re,gr,0)
+    graph.rectangle("fill",x,y,n,3)
   end
 end
 
@@ -62,13 +47,10 @@ end
 function Device:draw_border()
   if (not self.pl) then
     graph.setColor(96,96,96)
-    graph.circle("line",self.x,self.y,self.er,24)
-    return
-  end
-  if self.pl==ME then
-    graph.setColor(0,0,128)
+  elseif self.pl==ME then
+    graph.setColor(0,0,96)
   else
-    graph.setColor(96,0,0)
+    graph.setColor(64,0,0)
   end
   graph.circle("fill",self.x,self.y,self.er,24)
 end
@@ -79,6 +61,14 @@ function Device:draw_cborder(_x,_y)
   if self.hud or self.pl==ME then
     graph.setColor(255,255,255)
     graph.circle("line",x,y,self.cr,24)
+  end
+end
+
+function Device:draw_eborder(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.hud or self.pl==ME then
+    graph.setColor(255,255,255)
     graph.circle("line",x,y,self.er,24)
   end
 end
@@ -89,7 +79,7 @@ function Device:draw()
   end
   if eye.in_view(self.x,self.y,self.er) then
     self:draw_sym()
-    if eye.s>0.6 then
+    if eye.s>0.4 then
       self:draw_bar()
     end
     return true
@@ -101,13 +91,19 @@ function Device:drag(x,y)
   x,y=self:calc_xy(x,y)
   self:draw_sym(x,y)
   self:draw_cborder(x,y)
+  self:draw_eborder(x,y)
 end
 
 function Device:is_pointed(x,y)
   local tx,ty=self.x-x,self.y-y
   local r=math.sqrt(tx*tx+ty*ty)
-  --return r<=self.r and math.abs(tx)<=r and math.abs(ty)<=r and true or false
-  return r<=self.r+3
+  return r<=self.r
+end
+
+function Device:is_epointed(x,y)
+  local tx,ty=self.x-x,self.y-y
+  local r=math.sqrt(tx*tx+ty*ty)
+  return r<=self.er
 end
 
 function Device:switch(b)
@@ -212,29 +208,12 @@ function Packet:draw()
 end
 
 function Router:draw_st()
-  local poly={}
-  local m=48
   local p=self.pkt/100
-  local n=math.floor(m*p)
-  local off=self.off*3
-  local x,y,s
-  for t=0,n-1 do
-    s=t
+  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
+  local n=math.floor(w*p)
+  if n>0 then
     graph.setColor(255,255,255)
-    x=math.sin((s/m)*pi2-off)
-    y=math.cos((s/m)*pi2-off)
-    poly[1]=self.x+((self.r+3)*x)
-    poly[2]=self.y+((self.r+3)*y)
-    poly[3]=self.x+((self.r)*x)
-    poly[4]=self.y+((self.r)*y)
-    s=s+1.0
-    x=math.sin((s/m)*pi2-off)
-    y=math.cos((s/m)*pi2-off)
-    poly[5]=self.x+((self.r)*x)
-    poly[6]=self.y+((self.r)*y)
-    poly[7]=self.x+((self.r+3)*x)
-    poly[8]=self.y+((self.r+3)*y)
-    graph.polygon("fill",poly)
+    graph.rectangle("fill",x,y,n,3)
   end
 end
 

@@ -1,5 +1,7 @@
 -- vim:et
 
+NVER=1
+
 vec={}
 function vec.len(x1,y1,x2,y2)
   local tx,ty=x2-x1,y2-y1

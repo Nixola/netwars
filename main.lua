@@ -9,6 +9,8 @@ require "client"
 require "init"
 require "chat"
 
+CVER=1
+
 graph=love.graphics
 dtime=0
 msx,msy=0,0
@@ -90,7 +92,6 @@ end
 ME=nil
 players=ctable()
 devices=ctable()
-mydevs={}
 links=ctable()
 packets=ctable()
 devhash=sphash(100)
@@ -110,7 +111,8 @@ local kshift=false
 local scoreboard=false
 
 local function get_device(x,y)
-  for _,o in pairs(devices) do
+  local t=devhash:get(x,y)
+  for _,o in pairs(t) do
     if o:is_pointed(x,y) then
       return o
     end
@@ -119,9 +121,10 @@ local function get_device(x,y)
 end
 
 local function get_my_device(x,y)
-  for _,o in pairs(devices) do
-    if o:is_pointed(x,y) then
-      return o.pl==ME and o or nil
+  local t=devhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl==ME then
+      return o
     end
   end
   return nil
@@ -137,9 +140,10 @@ local function get_buydev(x,y)
 end
 
 local function get_enemydev(x,y)
-  for _,o in pairs(devices) do
-    if o:is_pointed(x,y) then
-      return o.pl~=ME and o or nil
+  local t=devhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_epointed(x,y) and o.pl~=ME then
+      return o
     end
   end
   return nil
@@ -639,14 +643,20 @@ end
 local function reconf()
   if love.filesystem.exists("netwars.cfg") then
     local chunk=love.filesystem.load("netwars.cfg")
-    return chunk()
+    local t=chunk()
+    if t.ver==CVER then
+      return t
+    end
   end
-  local data="return {\n"
-  data=data.."graph_width="..graph.getWidth()..";\n"
-  data=data.."graph_height="..graph.getHeight()..";\n"
-  data=data.."chat_timeout=3.0;\n"
-  data=data.."}\n"
-  love.filesystem.write("netwars.cfg",data)
+  local f=love.filesystem.newFile("netwars.cfg")
+  f:open("w")
+  f:write("return {\n")
+  f:write(string.format("ver=%d;\n",CVER))
+  f:write(string.format("graph_width=%d;\n",graph.getWidth()))
+  f:write(string.format("graph_height=%d;\n",graph.getHeight()))
+  f:write("chat_timeout=5.0;\n")
+  f:write("}\n")
+  f:close()
   return nil
 end
 

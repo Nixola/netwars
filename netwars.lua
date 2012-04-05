@@ -49,7 +49,11 @@ end
 
 local function new_client(str,ts,ip,port)
   local a=str_split(str,":")
-  if a[1]~="PLr" or a.n<2 then
+  if a[1]~="PLr" or a.n<3 then
+    return
+  end
+  if tonumber(a[3])~=NVER then
+    sock:sendto("ERR:~Client version mismatch.",ip,port)
     return
   end
   local pl=Player:new(1000)

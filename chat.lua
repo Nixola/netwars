@@ -3,7 +3,7 @@
 chat={
 chatq=queue(10);
 input=false;
-timeout=3.0;
+timeout=5.0;
 }
 
 local buf={}

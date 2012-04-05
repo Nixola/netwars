@@ -5,6 +5,7 @@ local addr=""
 local buf={}
 local str=""
 local init_st=1
+net_err=nil
 
 local function init_enter()
   buf={}
@@ -68,6 +69,9 @@ function init_draw()
   graph.print("Host: "..addr,50,eye.cy/2)
   if init_st>2 then
     graph.print("connecting...",50,eye.cy/2+30)
+  end
+  if init_st>8 and net_err then
+    graph.print(net_err,50,eye.cy/2+50)
   end
 end
 

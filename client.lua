@@ -17,10 +17,13 @@ function net_conn(addr,nick)
   timeout=ts+5
   seq=1
   sock:setpeername(addr,6352)
-  sock:send(string.format("PLr:%s",nick))
+  sock:send(string.format("PLr:%s:%d",nick,NVER))
 end
 
 function net_sync()
+  if net_err then
+    return false
+  end
   if timeout==0 then
     return false
   end
@@ -147,9 +150,6 @@ local function parse_server(msg)
     o:init_gui()
     devices[idx]=o
     devhash:add(o)
-    if pl==ME then
-      mydevs[idx]=o
-    end
     return
   end
   if a[1]=="Dd" then -- Del:idx
@@ -160,9 +160,6 @@ local function parse_server(msg)
     local o=devices[idx]
     o:delete()
     devices[idx]=nil
-    if o.pl==ME then
-      mydevs[idx]=nil
-    end
     return
   end
   if a[1]=="Dm" then -- Move:idx:x,y
@@ -241,6 +238,10 @@ local function parse_server(msg)
       chat.chatq:del()
     end
     chat.chatq:put(string.format("<%s> %s",a[2],a[3]))
+    return
+  end
+  if a[1]=="ERR" then
+    net_err=a[2]
     return
   end
   if a[1]=="DONE" then
