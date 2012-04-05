@@ -1,6 +1,7 @@
 -- vim:et
 
 require "class"
+require "sphash"
 require "menu"
 require "devices"
 require "devices_gui"
@@ -92,6 +93,7 @@ devices=ctable()
 mydevs={}
 links=ctable()
 packets=ctable()
+devhash=sphash(100)
 
 local buydevs=ctable()
 local huddevs={}
@@ -390,6 +392,14 @@ function main_draw()
   graph.translate(eye.vx,eye.vy)
   graph.setScissor(0,0,eye.sx-1,eye.sy-51)
   graph.setLineStipple(ls[lsi])
+  local sx=eye.cx/eye.s
+  local sy=eye.cy/eye.s
+  local x1,y1=-eye.vx-sx,-eye.vy-sy
+  local x2,y2=-eye.vx+sx,-eye.vy+sy
+  local t=devhash:get(x1,y1,x2,y2)
+  for _,o in pairs(t) do
+    o:draw_border()
+  end
   for _,o in pairs(links) do
     o:draw()
   end
@@ -399,8 +409,16 @@ function main_draw()
       o:draw()
     end
   end
-  for _,o in pairs(devices) do
+  for _,o in pairs(t) do
     o:draw()
+  end
+  if drag or bdrag or bdev then
+    local d=drag or bdrag or bdev
+    for _,o in pairs(t) do
+      if o~=d then
+        o:draw_cborder()
+      end
+    end
   end
   if conn then
     if conn.deleted then

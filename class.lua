@@ -66,20 +66,36 @@ function class(name)
   return setmetatable(newclass,{__call=newclass.define})
 end
 
-local mt_table={}
-function mt_table:add(o)
+local mt_storage={}
+function mt_storage:add(o)
+  rawset(self,o,o)
+end
+function mt_storage:del(o)
+  rawset(self,o,nil)
+end
+function mt_storage:find(o)
+  return rawget(self,o)
+end
+function storage()
+  local t={}
+  setmetatable(t,{__index=mt_storage})
+  return t
+end
+
+local mt_ctable={}
+function mt_ctable:add(o)
   local idx=#self+1
   o.__idx=idx
   self[idx]=o
   return idx
 end
-function mt_table:del(o)
+function mt_ctable:del(o)
   local idx=o.__idx
   o.__idx=nil
   self[idx]=nil
   return idx
 end
-function mt_table:find(o)
+function mt_ctable:find(o)
   local idx=o.__idx
   if self[idx]==o then
     return idx
@@ -88,7 +104,7 @@ function mt_table:find(o)
 end
 function ctable()
   local t={}
-  setmetatable(t,{__index=mt_table})
+  setmetatable(t,{__index=mt_ctable})
   return t
 end
 

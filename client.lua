@@ -128,6 +128,7 @@ local function parse_server(msg)
     o:init_gui()
     o.online=b
     devices[idx]=o
+    devhash:add(o)
     return
   end
   if a[1]=="Dn" then -- New:pl:cl:idx:x:y
@@ -145,6 +146,7 @@ local function parse_server(msg)
     o.idx=idx
     o:init_gui()
     devices[idx]=o
+    devhash:add(o)
     if pl==ME then
       mydevs[idx]=o
     end

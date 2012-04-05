@@ -33,8 +33,10 @@ end
 function Device:draw_sym(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
-  if (not self.pl) then
+  if self.hud then
     graph.setColor(0,0,255)
+  elseif (not self.pl) then
+    graph.setColor(192,192,192)
   elseif self.pl==ME then
     if self.online then
       graph.setColor(0,0,255)
@@ -49,9 +51,35 @@ function Device:draw_sym(_x,_y)
     end
   end
   graph.circle("fill",x,y,self.r,24)
+  graph.setColor(255,255,255)
+  graph.circle("line",x,y,self.r,24)
   if self.hud or eye.s>0.6 then
     graph.setColorMode("replace")
     graph.draw(self.img,x-8,y-8)
+  end
+end
+
+function Device:draw_border()
+  if (not self.pl) then
+    graph.setColor(96,96,96)
+    graph.circle("line",self.x,self.y,self.er,24)
+    return
+  end
+  if self.pl==ME then
+    graph.setColor(0,0,128)
+  else
+    graph.setColor(96,0,0)
+  end
+  graph.circle("fill",self.x,self.y,self.er,24)
+end
+
+function Device:draw_cborder(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.hud or self.pl==ME then
+    graph.setColor(255,255,255)
+    graph.circle("line",x,y,self.cr,24)
+    graph.circle("line",x,y,self.er,24)
   end
 end
 
@@ -59,7 +87,7 @@ function Device:draw()
   if self.online then
     self.off=(self.off+dtime)%pi2
   end
-  if eye.in_view(self.x,self.y,self.r) then
+  if eye.in_view(self.x,self.y,self.er) then
     self:draw_sym()
     if eye.s>0.6 then
       self:draw_bar()
@@ -72,6 +100,7 @@ end
 function Device:drag(x,y)
   x,y=self:calc_xy(x,y)
   self:draw_sym(x,y)
+  self:draw_cborder(x,y)
 end
 
 function Device:is_pointed(x,y)
@@ -105,7 +134,9 @@ end
 function Device:net_move(x,y)
   if (not self.online) and self.pc<1 and #self.elinks<1 then
     x,y=self:calc_xy(x,y)
-    net_send("M:%d:%d:%d",self.idx,x,y)
+    if self:chk_border(x,y) then
+      net_send("M:%d:%d:%d",self.idx,x,y)
+    end
   end
 end
 

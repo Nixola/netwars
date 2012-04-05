@@ -31,11 +31,16 @@ function Player:disconnect()
     if o.pl==self then
       o:del_links()
       devices[k]=nil
+      devhash:del(o)
     end
   end
 end
 
-class "Device"
+class "Device" {
+r=15;
+cr=25;
+er=100;
+}
 
 function Device:initialize(pl,x,y)
   self.pl=pl
@@ -59,6 +64,12 @@ function Device:initialize(pl,x,y)
       pl.maxcash=pl.dcnt*1000
     end
   end
+end
+
+function Device:bound_box(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  return x-self.er,y-self.er,x+self.er,y+self.er
 end
 
 function Device:calc_xy(x,y)
@@ -97,10 +108,35 @@ function Device:calc_xy(x,y)
   return x,y
 end
 
+function Device:chk_border(x,y)
+  local t=devhash:get(self:bound_box(x,y))
+  local ok=true
+  local len,vx,vy
+  local br
+  for _,d in pairs(t) do
+    if self~=d then
+      vx,vy=x-d.x,y-d.y
+      len=math.sqrt(vx*vx+vy*vy)
+      br=self.pl==d.pl and d.cr or d.er
+      if len<=br*2 then
+        ok=false
+        break
+      end
+    end
+  end
+  return ok
+end
+
 function Device:move(x,y)
   x,y=self:calc_xy(x,y)
-  self.x=x
-  self.y=y
+  if self:chk_border(x,y) then
+    devhash:del(self)
+    self.x=x
+    self.y=y
+    devhash:add(self)
+    return true
+  end
+  return false
 end
 
 function Device:connect(dev)
@@ -247,6 +283,7 @@ function Device:delete()
       self.pl.maxcash=self.pl.dcnt*1000
     end
   end
+  devhash:del(self)
   self.deleted=true
 end
 
@@ -324,7 +361,6 @@ end
 
 class "Generator" : extends(Device) {
 cl="G";
-r=15;
 maxhealth=100;
 maxlinks=2;
 maxblinks=1;
@@ -333,7 +369,6 @@ price=100;
 
 class "Router" : extends(Device) {
 cl="R";
-r=15;
 maxhealth=100;
 maxlinks=5;
 maxblinks=5;
@@ -350,7 +385,6 @@ price=60;
 
 class "DataCenter" : extends(Device) {
 cl="D";
-r=15;
 maxhealth=50;
 maxlinks=0;
 maxblinks=4;

@@ -2,6 +2,7 @@
 -- vim:et
 
 require "class"
+require "sphash"
 require "devices"
 require "server"
 
@@ -9,6 +10,7 @@ players=ctable()
 devices=ctable()
 links=ctable()
 packets=ctable()
+devhash=sphash(100)
 
 local sock=socket.udp()
 local iptab={}

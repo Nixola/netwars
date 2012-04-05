@@ -13,9 +13,12 @@ local function buy_device(pl,a)
   if pl.cash>=price then
     pl.cash=pl.cash-price
     local o=cl:new(pl,x,y)
-    o.idx=devices:add(o)
-    cput("Pc:%d:%d",pl.idx,pl.cash)
-    cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+    if o:chk_border(x,y) then
+      o.idx=devices:add(o)
+      devhash:add(o)
+      cput("Pc:%d:%d",pl.idx,pl.cash)
+      cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+    end
   end
 end
 
@@ -53,8 +56,9 @@ function parse_client(msg,pl)
     local x,y=tonumber(a[3]),tonumber(a[4])
     local o=devices[idx]
     if o and o.pl==pl and (not o.online) and o.pc<1 and #o.elinks<1 then
-      o:move(x,y)
-      cput("Dm:%d:%d:%d",idx,o.x,o.y)
+      if o:move(x,y) then
+        cput("Dm:%d:%d:%d",idx,o.x,o.y)
+      end
     end
     return
   end

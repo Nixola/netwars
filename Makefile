@@ -1,4 +1,4 @@
-LIBS = class.lua
+LIBS = class.lua sphash.lua
 SRCS = conf.lua main.lua menu.lua client.lua chat.lua \
 	devices.lua devices_gui.lua init.lua
 IMGS = imgs
