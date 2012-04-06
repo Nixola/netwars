@@ -208,7 +208,7 @@ function Packet:draw()
 end
 
 function Generator:draw_st()
-  local p=self.pwr/10
+  local p=self.pwr/MAXV
   local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
   local n=math.floor(w*p)
   if n>0 then
@@ -226,7 +226,7 @@ function Generator:draw()
 end
 
 function Router:draw_st()
-  local p=self.pkt/100
+  local p=self.pkt/MAXP
   local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
   local n=math.floor(w*p)
   if n>0 then
@@ -244,7 +244,7 @@ function Router:draw()
 end
 
 function DataBase:draw_st()
-  local p=self.pwr/10
+  local p=self.pwr/MAXV
   local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
   local n=math.floor(w*p)
   if n>0 then

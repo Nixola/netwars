@@ -135,6 +135,7 @@ local function packet_hit(p)
   packets:del(p)
   if o.pl==pl then
     -- Enqueued at friendly device
+    o.dt2=0
     if o.health<o.maxhealth then
       o.health=o.health+v
       if o.health>o.maxhealth then
@@ -157,8 +158,8 @@ local function packet_hit(p)
       return
     end
     o.pkt=o.pkt+v
-    if o.pkt>100 then
-      o.pkt=100
+    if o.pkt>MAXP then
+      o.pkt=MAXP
     end
     o.upd=true
     return
@@ -195,27 +196,43 @@ end
 function emit_packets(dt)
   local i,d,p,l,c,v,ok
   for _,o in pairs(devices) do
-    ok=nil
-    if o.cl=="G" or o.cl=="B" then
-      o.dt=o.dt+dt
-      if o.dt>=1.0 then
-        o.dt=o.dt-1.0
-        if o.dt>1.0 then
-          o.dt=1.0
+    if not o.pwr then
+      o.dt2=o.dt2+dt
+      if o.dt2>=10.0 then
+        o.dt2=o.dt-10.0
+        o.health=o.health-10
+        if o.health<1 then
+          cput("Dd:%d",o.idx)
+          o:delete()
+          devices:del(o)
+        else
+          mput("Ph:%d:%d",o.idx,o.health)
         end
-        v=o.pwr
-        ok=1
       end
     end
-    if o.pkt>0 then
-      o.dt=o.dt+dt
-      if o.dt>=1.0 then
-        o.dt=o.dt-1.0
-        if o.dt>1.0 then
-          o.dt=1.0
+    ok=nil
+    if o.pl and (not o.deleted)
+      if o.cl=="G" or o.cl=="B" then
+        o.dt=o.dt+dt
+        if o.dt>=1.0 then
+          o.dt=o.dt-1.0
+          if o.dt>1.0 then
+            o.dt=1.0
+          end
+          v=o.pwr
+          ok=1
         end
-        v=o.pkt>10 and 10 or o.pkt
-        ok=2
+      end
+      if o.pkt>0 then
+        o.dt=o.dt+dt
+        if o.dt>=1.0 then
+          o.dt=o.dt-1.0
+          if o.dt>1.0 then
+            o.dt=1.0
+          end
+          v=o.pkt>MAXV and MAXV or o.pkt
+          ok=2
+        end
       end
     end
     if ok and v>0 then

@@ -159,9 +159,13 @@ end
 
 function add_G(x,y,pwr)
   local o=Generator:new(nil,x,y)
-  o.pwr=pwr
-  o.idx=devices:add(o)
-  devhash:add(o)
+  o.pwr=pwr>MAXV and MAXV or pwr
+  if o:chk_border() then
+    o.idx=devices:add(o)
+    devhash:add(o)
+    return true
+  end
+  return false
 end
 
 if arg[1] then

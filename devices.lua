@@ -1,6 +1,8 @@
 -- vim:et
 
-NVER=1
+NVER=2
+MAXP=1000
+MAXV=10
 
 vec={}
 function vec.len(x1,y1,x2,y2)
@@ -57,6 +59,7 @@ function Device:initialize(pl,x,y)
   self.online=false
   self.li=1
   self.dt=0
+  self.dt2=0
   self.pc=0
   self.pkt=0
   self.upd=false
@@ -393,7 +396,7 @@ end
 class "Generator" : extends(Device) {
 cl="G";
 maxhealth=200;
-maxlinks=2;
+maxlinks=3;
 maxblinks=2;
 price=0;
 }
@@ -418,14 +421,14 @@ class "DataCenter" : extends(Device) {
 cl="D";
 maxhealth=100;
 maxlinks=0;
-maxblinks=4;
+maxblinks=5;
 price=200;
 }
 
 class "DataBase" : extends(Device) {
 cl="B";
 maxhealth=300;
-maxlinks=2;
+maxlinks=3;
 maxblinks=2;
 price=500;
 }
