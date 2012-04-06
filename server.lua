@@ -14,12 +14,12 @@ local function buy_device(pl,a)
     return
   end
   if pl.cash>=price then
-    pl.cash=pl.cash-price
     local o=cl:new(pl,x,y)
-    if a[2]=="G" or a[2]=="B" then
+    if a[2]=="B" then
       o.pwr=5
     end
     if o:chk_border(x,y) then
+      pl.cash=pl.cash-price
       o.idx=devices:add(o)
       devhash:add(o)
       cput("Pc:%d:%d",pl.idx,pl.cash)
@@ -144,7 +144,7 @@ local function packet_hit(p)
       mput("Ph:%d:%d",o.idx,o.health)
       return
     end
-    if o.cl=="G" then
+    if o.cl=="G" or o.cl=="B" then
       return
     end
     if o.cl=="D" then

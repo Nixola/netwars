@@ -32,11 +32,12 @@ function Device:draw_sym(_x,_y)
     if self.online then
       graph.setColor(255,0,0)
     else
-      graph.setColor(128,0,0)
+      graph.setColor(160,0,0)
     end
   end
   graph.circle("fill",x,y,self.r,24)
   graph.setColor(255,255,255)
+  graph.setLine(1,"rough")
   graph.circle("line",x,y,self.r,24)
   if self.hud or eye.s>0.6 then
     graph.setColorMode("replace")
@@ -50,7 +51,7 @@ function Device:draw_border()
   elseif self.pl==ME then
     graph.setColor(0,0,96)
   else
-    graph.setColor(64,0,0)
+    graph.setColor(96,0,0)
   end
   graph.circle("fill",self.x,self.y,self.er,24)
 end
@@ -60,6 +61,7 @@ function Device:draw_cborder(_x,_y)
   local y=_y or self.y
   if self.hud or self.pl==ME then
     graph.setColor(255,255,255)
+    graph.setLine(1,"rough")
     graph.circle("line",x,y,self.cr,24)
   end
 end
@@ -69,6 +71,7 @@ function Device:draw_eborder(_x,_y)
   local y=_y or self.y
   if self.hud or self.pl==ME then
     graph.setColor(255,255,255)
+    graph.setLine(1,"rough")
     graph.circle("line",x,y,self.er,24)
   end
 end
@@ -141,6 +144,9 @@ function Device:net_connect(dev)
     return
   end
   if self.cl=="G" and dev.cl~="R" then
+    return
+  end
+  if self.cl=="B" and dev.cl~="R" then
     return
   end
   if #self.links>=self.maxlinks then

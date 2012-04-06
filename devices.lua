@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=2
+NVER=3
 MAXP=1000
 MAXV=10
 
@@ -48,7 +48,7 @@ end
 
 class "Device" {
 r=15;
-cr=25;
+cr=30;
 er=100;
 }
 
@@ -64,11 +64,13 @@ function Device:initialize(pl,x,y)
   self.pkt=0
   self.upd=false
   self.attch=false
-  if self.cl=="G" or self.cl=="B" then
+  self.nomove=false
+  if self.cl=="B" then
+    self.pwr=0
+  end
+  if self.cl=="G" then
     self.nomove=true
     self.pwr=0
-  else
-    self.nomove=false
   end
   self.health=self.maxhealth
   self.links={}
@@ -160,6 +162,9 @@ function Device:connect(dev)
     return nil
   end
   if self.cl=="G" and dev.cl~="R" then
+    return nil
+  end
+  if self.cl=="B" and dev.cl~="R" then
     return nil
   end
   if #self.links>=self.maxlinks then
