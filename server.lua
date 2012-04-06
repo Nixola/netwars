@@ -211,7 +211,7 @@ function emit_packets(dt)
       end
     end
     ok=nil
-    if o.pl and (not o.deleted)
+    if o.pl and (not o.deleted) then
       if o.cl=="G" or o.cl=="B" then
         o.dt=o.dt+dt
         if o.dt>=1.0 then
