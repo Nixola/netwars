@@ -42,8 +42,7 @@ function net_sync()
 end
 
 function net_send(fmt,...)
-  local str=string.format(fmt,unpack(arg))
-  sendq:put(str)
+  sendq:put(string.format(fmt,...))
 end
 
 function net_close()

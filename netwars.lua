@@ -23,11 +23,11 @@ local ctlq=queue(1000)
 local msgq=queue(1000)
 
 function cput(fmt,...)
-  ctlq:put(string.format(fmt,unpack(arg)))
+  ctlq:put(string.format(fmt,...))
 end
 
 function mput(fmt,...)
-  msgq:put(string.format(fmt,unpack(arg)))
+  msgq:put(string.format(fmt,...))
 end
 
 local function enqueue(q,mq)
