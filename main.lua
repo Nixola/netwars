@@ -397,22 +397,22 @@ function main_draw()
   graph.scale(eye.s)
   graph.translate(eye.vx,eye.vy)
   graph.setScissor(0,0,eye.sx-1,eye.sy-51)
-  graph.setLineStipple(ls[lsi])
   local sx=eye.cx/eye.s
   local sy=eye.cy/eye.s
   local x1,y1=-eye.vx-sx,-eye.vy-sy
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local t=devhash:get(x1,y1,x2,y2)
   for _,o in pairs(t) do
-    if o.pl~=ME then
-      o:draw_border()
-    end
-  end
-  for _,o in pairs(t) do
     if o.pl==ME then
       o:draw_border()
     end
   end
+  for _,o in pairs(t) do
+    if o.pl~=ME then
+      o:draw_border()
+    end
+  end
+  graph.setLineStipple(ls[lsi])
   for _,o in pairs(links) do
     o:draw()
   end

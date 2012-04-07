@@ -301,7 +301,7 @@ function emit_packets(dt)
         c=c-1
       end
       o.li=i
-      if o.cl=="R" and c<1 and o.pupd then
+      if c<1 and o.pupd then
         mput("Pi:%d:%d",o.idx,o.pkt)
         o.pupd=false
       end

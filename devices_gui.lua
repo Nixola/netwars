@@ -206,7 +206,7 @@ function Link:draw()
 end
 
 function Packet:draw()
-  if (not self.hit) and eye.in_view(self.x,self.y,self.r) then
+  if eye.in_view(self.x,self.y,self.r) then
     if self.pl==ME then
       graph.setColor(0,255,0)
     else

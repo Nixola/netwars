@@ -228,7 +228,6 @@ function Device:unlink(dev)
       self:del_link(l.dev2)
       if self.pl==dev.pl then
         dev:del_blink(self)
-        dev.lupd=true
       else
         dev:del_elink(self)
       end
@@ -251,6 +250,7 @@ function Device:del_blink(dev)
   for i,l in ipairs(self.blinks) do
     if l.dev1==dev then
       table.remove(self.blinks,i)
+      self.lupd=true
       return
     end
   end
