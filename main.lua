@@ -9,14 +9,14 @@ require "client"
 require "init"
 require "chat"
 
-CVER=1
+CVER=1 -- config version
 
 graph=love.graphics
 dtime=0
-msx,msy=0,0
-mox,moy=0,0
+msx,msy=0,0 -- mouse real (screen) position
+mox,moy=0,0 -- mouse virtual position
 
-eye={vx=0,vy=0,si=4,s=1.0}
+eye={vx=0,vy=0,si=4,s=1.0} -- eyeposition, scale index, scale
 scroll={
 dt=0,run=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
@@ -96,7 +96,7 @@ links=ctable()
 packets=ctable()
 devhash=sphash(100)
 
-local buydevs=ctable()
+local buydevs={}
 local huddevs={}
 
 local drag=nil
@@ -355,9 +355,10 @@ local function draw_hud()
   graph.setColor(255,255,255)
   graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
   graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
-  if hover then
-    graph.print(string.format("Price: %d",hover.price),eye.sx-250,eye.sy-40)
-    graph.print(string.format("Health: %d",hover.maxhealth),eye.sx-250,eye.sy-20)
+  if hover or bdrag then
+    local d=hover or bdrag
+    graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
+    graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
   end
   if hint and hint.pl and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
@@ -438,18 +439,14 @@ function main_draw()
       if kshift then
         local vx,vy=mox-conn.x,moy-conn.y
         local len=math.sqrt(vx*vx+vy*vy)
-        if len>240 then
-          graph.setColor(150,0,0)
-        else
-          graph.setColor(255,0,0)
-        end
+        graph.setColor(255,0,0)
         graph.setLineWidth(1,"rough")
         graph.line(conn.x,conn.y,mox,moy)
       else
         local vx,vy=mox-conn.x,moy-conn.y
         local len=math.sqrt(vx*vx+vy*vy)
-        if len>240 then
-          graph.setColor(150,150,150)
+        if len>LINK then
+          graph.setColor(128,128,128)
         else
           graph.setColor(255,255,255)
         end
@@ -686,22 +683,16 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  for _,v in pairs(devcl) do
-    o=v:new(nil,0,eye.sy-25)
-    o.hud=true
-    buydevs:add(o)
-  end
   local devs={"B","R","F","D"}
   local x=25
   for i,v in ipairs(devs) do
-    for _,o in pairs(buydevs) do
-      if o.cl==v then
-        huddevs[i]=o
-        o.x=x
-        x=x+40
-      end
-    end
+    o=devcl[v]:new(nil,x,eye.sy-25)
+    o.hud=true
+    buydevs[v]=o
+    huddevs[i]=o
+    x=x+40
   end
+  buydevs["B"].buyonce=true
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed

@@ -94,13 +94,14 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="Pc" then -- Cash:idx:cash
-    if a.n<3 then
+  if a[1]=="Pc" then -- Cash:idx:cash:maxcash
+    if a.n<4 then
       return
     end
     local pl=players[tonumber(a[2])]
     if pl then
       pl.cash=tonumber(a[3])
+      pl.maxcash=tonumber(a[4])
     end
     return
   end

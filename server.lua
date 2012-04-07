@@ -16,15 +16,19 @@ local function buy_device(pl,a)
   if pl.cash>=price then
     local o=cl:new(pl,x,y)
     if a[2]=="B" then
-      o.pwr=5
+      if pl.database then
+        return
+      end
+      o.pwr=10
     end
     if o:chk_border(x,y) then
       pl.cash=pl.cash-price
       o.idx=devices:add(o)
       devhash:add(o)
-      cput("Pc:%d:%d",pl.idx,pl.cash)
-      if a[2]=="G" or a[2]=="B" then
+      cput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+      if a[2]=="B" then
         cput("Dn:%d:%s:%d:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y,o.pwr)
+        pl.database=true
       else
         cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
       end
@@ -55,6 +59,9 @@ function parse_client(msg,pl)
       o:delete()
       devices:del(o)
       cput("Dd:%d",idx)
+      if o.cl=="D" then
+        mput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+      end
     end
     return
   end
@@ -135,7 +142,6 @@ local function packet_hit(p)
   packets:del(p)
   if o.pl==pl then
     -- Enqueued at friendly device
-    o.dt2=0
     if o.health<o.maxhealth then
       o.health=o.health+v
       if o.health>o.maxhealth then
@@ -149,11 +155,11 @@ local function packet_hit(p)
     end
     if o.cl=="D" then
       if pl.cash<pl.maxcash then
-        pl.cash=pl.cash+v
+        pl.cash=pl.cash+math.floor(v/3)
         if pl.cash>pl.maxcash then
           pl.cash=pl.maxcash
         end
-        mput("Pc:%d:%d",pl.idx,pl.cash)
+        mput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
       end
       return
     end
@@ -161,7 +167,7 @@ local function packet_hit(p)
     if o.pkt>MAXP then
       o.pkt=MAXP
     end
-    o.upd=true
+    o.pupd=true
     return
   end
   -- Attacking enemy device
@@ -179,6 +185,9 @@ local function packet_hit(p)
     cput("Dd:%d",o.idx)
     o:delete()
     devices:del(o)
+    if o.cl=="D" then
+      mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+    end
     return
   end
   mput("Ph:%d:%d",o.idx,o.health)
@@ -196,17 +205,48 @@ end
 function emit_packets(dt)
   local i,d,p,l,c,v,ok
   for _,o in pairs(devices) do
-    if not o.pwr then
+    if not o.gotpwr then
       o.dt2=o.dt2+dt
-      if o.dt2>=10.0 then
-        o.dt2=o.dt-10.0
-        o.health=o.health-10
+      if o.dt2>=DEGT then
+        o.dt2=o.dt-DEGT
+        o.health=o.health-DEGV
         if o.health<1 then
           cput("Dd:%d",o.idx)
           o:delete()
           devices:del(o)
+          if o.cl=="D" then
+            mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+          end
         else
           mput("Ph:%d:%d",o.idx,o.health)
+        end
+      end
+    end
+    if (not o.deleted) and (not o.pwr) then
+      if o.lupd then
+        o:upd_bdevs()
+        o.lupd=false
+      end
+      local nok=true
+      for _,d in pairs(o.bdevs) do
+        if d.gotpwr then
+          nok=false
+          break
+        end
+      end
+      o.gotpwr=not nok
+      if o.cl=="D" then
+        if nok and o.attch then
+          o.pl.dcnt=o.pl.dcnt-1
+          o.pl.maxcash=o.pl.dcnt*1000
+          o.attch=false
+          mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+        end
+        if (not nok) and (not o.attch) then
+          o.pl.dcnt=o.pl.dcnt+1
+          o.pl.maxcash=o.pl.dcnt*1000
+          o.attch=true
+          mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
         end
       end
     end
@@ -261,9 +301,9 @@ function emit_packets(dt)
         c=c-1
       end
       o.li=i
-      if o.cl=="R" and c<1 and o.upd then
+      if o.cl=="R" and c<1 and o.pupd then
         mput("Pi:%d:%d",o.idx,o.pkt)
-        o.upd=false
+        o.pupd=false
       end
     end
   end

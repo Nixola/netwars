@@ -1,8 +1,12 @@
 -- vim:et
 
-NVER=3
-MAXP=1000
-MAXV=10
+NVER=4 -- network protocol version
+MAXP=1000 -- max pkt queue
+MAXV=10 -- max pkt value
+LINK=300 -- max link dinstance
+LINK2=LINK+2
+DEGT=10 -- degrate timer
+DEGV=10 -- degrate health value
 
 vec={}
 function vec.len(x1,y1,x2,y2)
@@ -48,8 +52,8 @@ end
 
 class "Device" {
 r=15;
-cr=30;
-er=100;
+cr=30; -- collision radius
+er=100; -- enemy border radius
 }
 
 function Device:initialize(pl,x,y)
@@ -57,25 +61,30 @@ function Device:initialize(pl,x,y)
   self.x=x
   self.y=y
   self.online=false
-  self.li=1
-  self.dt=0
-  self.dt2=0
-  self.pc=0
-  self.pkt=0
-  self.upd=false
-  self.attch=false
+  self.li=1 -- link index, used to forward packets (cyclic)
+  self.dt=0 -- dt for packet forward
+  self.dt2=0 -- dt for degradation
+  self.pc=0 -- packet cnt on wire
+  self.pkt=0 -- packets in queue
+  self.pupd=false -- update packet info
+  self.lupd=false -- link update
+  self.gotpwr=false -- connected to power source (G or B)
+  self.attch=false -- D attached to power source
   self.nomove=false
+  self.bdevs={} -- devices connected to us (back links)
   if self.cl=="B" then
     self.pwr=0
+    self.gotpwr=true
   end
   if self.cl=="G" then
     self.nomove=true
     self.pwr=0
+    self.gotpwr=true
   end
   self.health=self.maxhealth
-  self.links={}
-  self.blinks={}
-  self.elinks={}
+  self.links={} -- forward links
+  self.blinks={} -- back links
+  self.elinks={} -- enemy connections
   if pl then
     pl.devcnt=pl.devcnt+1
   end
@@ -94,8 +103,8 @@ function Device:calc_xy(x,y)
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
-    if len>250 then
-      s=(len-250)/len
+    if len>LINK then
+      s=(len-LINK)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
@@ -104,8 +113,8 @@ function Device:calc_xy(x,y)
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
-    if len>250 then
-      s=(len-250)/len
+    if len>LINK then
+      s=(len-LINK)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
@@ -114,8 +123,8 @@ function Device:calc_xy(x,y)
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
     len=math.sqrt(vx*vx+vy*vy)
-    if len>250 then
-      s=(len-250)/len
+    if len>LINK then
+      s=(len-LINK)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
@@ -157,6 +166,16 @@ function Device:move(x,y)
   return false
 end
 
+function Device:upd_bdevs()
+  local tmp={}
+  for _,l in ipairs(self.blinks) do
+    if l.dev2==self then
+      tmp[#tmp+1]=l.dev1
+    end
+  end
+  self.bdevs=tmp
+end
+
 function Device:connect(dev)
   if self==dev then
     return nil
@@ -179,7 +198,7 @@ function Device:connect(dev)
       return nil
     end
   end
-  if vec.len(self.x,self.y,dev.x,dev.y)>252 then
+  if vec.len(self.x,self.y,dev.x,dev.y)>LINK2 then
     return nil
   end
   local ok=true
@@ -194,11 +213,7 @@ function Device:connect(dev)
     table.insert(self.links,l)
     if self.pl==dev.pl then
       table.insert(dev.blinks,l)
-      if dev.cl=="D" and (not dev.attch) then
-        dev.pl.dcnt=dev.pl.dcnt+1
-        dev.pl.maxcash=dev.pl.dcnt*1000
-        dev.attch=true
-      end
+      dev.lupd=true
     else
       table.insert(dev.elinks,l)
     end
@@ -212,14 +227,10 @@ function Device:unlink(dev)
     if l.dev2==dev then
       self:del_link(l.dev2)
       if self.pl==dev.pl then
-        l.dev2:del_blink(self)
-        if dev.cl=="D" and dev.attch and #dev.blinks<1 then
-          dev.pl.dcnt=dev.pl.dcnt-1
-          dev.pl.maxcash=dev.pl.dcnt*1000
-          dev.attch=false
-        end
+        dev:del_blink(self)
+        dev.lupd=true
       else
-        l.dev2:del_elink(self)
+        dev:del_elink(self)
       end
       return l
     end
@@ -321,10 +332,14 @@ function Device:delete()
   self:del_links()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
-    if self.cl=="D" then
-      self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
-      self.pl.dcnt=self.pl.dcnt-1
-      self.pl.maxcash=self.pl.dcnt*1000
+    if SRV and self.cl=="D" then
+      if self.attch then
+        self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
+        self.pl.dcnt=self.pl.dcnt-1
+        self.pl.maxcash=self.pl.dcnt*1000
+      else
+        self.pl.cash=self.pl.cash-math.floor(self.pl.cash/(self.pl.dcnt+1))
+      end
     end
   end
   devhash:del(self)

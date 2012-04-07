@@ -6,6 +6,8 @@ require "sphash"
 require "devices"
 require "server"
 
+SRV=true
+
 players=ctable()
 devices=ctable()
 links=ctable()

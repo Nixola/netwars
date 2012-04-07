@@ -19,7 +19,11 @@ function Device:draw_sym(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
   if self.hud then
-    graph.setColor(0,0,255)
+    if self.buyonce then
+      graph.setColor(0,0,160)
+    else
+      graph.setColor(0,0,255)
+    end
   elseif (not self.pl) then
     graph.setColor(128,128,128)
   elseif self.pl==ME then
@@ -161,7 +165,7 @@ function Device:net_connect(dev)
       return nil
     end
   end
-  if vec.len(self.x,self.y,dev.x,dev.y)>250 then
+  if vec.len(self.x,self.y,dev.x,dev.y)>LINK then
     return
   end
   local ok=true
