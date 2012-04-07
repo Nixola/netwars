@@ -1,6 +1,9 @@
 #!/usr/bin/lua
 -- vim:et
 
+if not socket then
+  require "socket"
+end
 require "class"
 require "sphash"
 require "devices"

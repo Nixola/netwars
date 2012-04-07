@@ -23,19 +23,20 @@ x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
 }
 
 function eye.in_view(x,y,...)
+  local arg={...}
   local sx=eye.cx/eye.s
   local sy=eye.cy/eye.s
-  if arg.n==0 then
+  if #arg==0 then
     local tx=math.abs(eye.vx+x)
     local ty=math.abs(eye.vy+y)
     return tx<sx and ty<sy
   end
-  if arg.n==1 then
+  if #arg==1 then
     local tx=math.abs(eye.vx+x)-arg[1]
     local ty=math.abs(eye.vy+y)-arg[1]
     return tx<sx and ty<sy
   end
-  if arg.n==2 then
+  if #arg==2 then
     local tx1=math.abs(eye.vx+x)
     local ty1=math.abs(eye.vy+y)
     local tx2=math.abs(eye.vx+arg[1])
@@ -355,8 +356,8 @@ local function draw_hud()
   graph.setColor(255,255,255)
   graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
   graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
-  if hover or bdrag then
-    local d=hover or bdrag
+  if hover or bdrag or bdev then
+    local d=hover or bdrag or bdev
     graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
     graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
   end
