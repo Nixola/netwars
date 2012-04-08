@@ -139,6 +139,7 @@ local function packet_hit(p)
   local pl=p.pl
   local o=p.dev2
   local v=p.v
+  p:delete()
   packets:del(p)
   if o.pl==pl then
     -- Enqueued at friendly device

@@ -519,15 +519,14 @@ function main_update(dt)
     lsi=lsi>7 and 1 or lsi+1
     flow_dt=0
     for _,p in pairs(packets) do
+      p:delete()
       packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
     end
   elseif flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
     for _,p in pairs(packets) do
       if p:flow(flow_dt) then
+        p:delete()
         packets:del(p)
       end
     end

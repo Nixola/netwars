@@ -21,12 +21,8 @@ end
 function Player:disconnect()
   for _,p in pairs(packets) do
     if p.dev1.pl==self or p.dev2.pl==self then
-      p.dev1.pc=p.dev1.pc-1
-      p.dev2.pc=p.dev2.pc-1
+      p:delete()
       packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
     end
   end
   for k,o in pairs(devices) do
@@ -305,27 +301,14 @@ end
 function Device:del_packets()
   for _,p in pairs(packets) do
     if p.dev1==self or p.dev2==self then
-      p.dev1.pc=p.dev1.pc-1
-      p.dev2.pc=p.dev2.pc-1
+      p:delete()
       packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
     end
   end
 end
 
 function Device:delete()
-  for _,p in pairs(packets) do
-    if p.dev1==self or p.dev2==self then
-      p.dev1.pc=p.dev1.pc-1
-      p.dev2.pc=p.dev2.pc-1
-      packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
-    end
-  end
+  self:del_packets()
   self:del_links()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
@@ -355,12 +338,8 @@ function Link:del_packets()
   local d2=self.dev2
   for _,p in pairs(packets) do
     if p.dev1==d1 and p.dev2==d2 then
-      d1.pc=d1.pc-1
-      d2.pc=d2.pc-1
+      p:delete()
       packets:del(p)
-      if p.pl==ME then
-        ME.pkts=ME.pkts-1
-      end
     end
   end
 end
@@ -380,15 +359,25 @@ function Packet:initialize(d1,d2,v)
     self.pl=d1.pl
   end
   self.v=v
-  d1.pc=d1.pc+1
-  d2.pc=d2.pc+1
   vx,vy=vx/l,vy/l
   self.x=d1.x+vx*d1.r
   self.y=d1.y+vy*d1.r
   self.vx=vx*50
   self.vy=vy*50
+  d1.pc=d1.pc+1
+  d2.pc=d2.pc+1
   if self.pl==ME then
     ME.pkts=ME.pkts+1
+  end
+end
+
+function Packet:delete()
+  local d1=self.dev1
+  local d2=self.dev2
+  d1.pc=d1.pc-1
+  d2.pc=d2.pc-1
+  if self.pl==ME then
+    ME.pkts=ME.pkts-1
   end
 end
 
@@ -400,11 +389,6 @@ function Packet:flow(dt)
   local tx,ty=d2.x-self.x,d2.y-self.y
   local r=math.sqrt(tx*tx+ty*ty)
   if r<=d2.r then
-    d1.pc=d1.pc-1
-    d2.pc=d2.pc-1
-    if self.pl==ME then
-      ME.pkts=ME.pkts-1
-    end
     return true
   end
   return false
