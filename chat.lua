@@ -27,6 +27,7 @@ local function history(sz)
       self.len=self.len-1
       if t.prev then
         self.tail=t.prev
+        self.tail.link=nil
       else
         self.head=nil
         self.tail=nil
