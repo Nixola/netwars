@@ -60,7 +60,7 @@ function parse_client(msg,pl)
       devices:del(o)
       cput("Dd:%d",idx)
       if o.cl=="D" then
-        mput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+        cput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
       end
     end
     return
@@ -142,6 +142,7 @@ local function packet_hit(p)
   packets:del(p)
   if o.pl==pl then
     -- Enqueued at friendly device
+    o.dt2=0
     if o.health<o.maxhealth then
       o.health=o.health+v
       if o.health>o.maxhealth then
@@ -186,7 +187,7 @@ local function packet_hit(p)
     o:delete()
     devices:del(o)
     if o.cl=="D" then
-      mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+      cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
     end
     return
   end
@@ -215,7 +216,7 @@ function emit_packets(dt)
           o:delete()
           devices:del(o)
           if o.cl=="D" then
-            mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+            cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
           end
         else
           mput("Ph:%d:%d",o.idx,o.health)
@@ -240,13 +241,13 @@ function emit_packets(dt)
           o.pl.dcnt=o.pl.dcnt-1
           o.pl.maxcash=o.pl.dcnt*1000
           o.attch=false
-          mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+          cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
         end
         if (not nok) and (not o.attch) then
           o.pl.dcnt=o.pl.dcnt+1
           o.pl.maxcash=o.pl.dcnt*1000
           o.attch=true
-          mput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+          cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
         end
       end
     end

@@ -8,12 +8,6 @@ LINK2=LINK+2
 DEGT=10 -- degrate timer
 DEGV=10 -- degrate health value
 
-vec={}
-function vec.len(x1,y1,x2,y2)
-  local tx,ty=x2-x1,y2-y1
-  return math.sqrt(tx*tx+ty*ty)
-end
-
 class "Player"
 
 function Player:initialize(cash)
@@ -102,7 +96,7 @@ function Device:calc_xy(x,y)
   for _,l in pairs(self.links) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
-    len=math.sqrt(vx*vx+vy*vy)
+    len=math.floor(math.sqrt(vx*vx+vy*vy))
     if len>LINK then
       s=(len-LINK)/len
       vx,vy=vx*s,vy*s
@@ -112,7 +106,7 @@ function Device:calc_xy(x,y)
   for _,l in pairs(self.blinks) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
-    len=math.sqrt(vx*vx+vy*vy)
+    len=math.floor(math.sqrt(vx*vx+vy*vy))
     if len>LINK then
       s=(len-LINK)/len
       vx,vy=vx*s,vy*s
@@ -122,13 +116,14 @@ function Device:calc_xy(x,y)
   for _,l in pairs(self.elinks) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
-    len=math.sqrt(vx*vx+vy*vy)
+    len=math.floor(math.sqrt(vx*vx+vy*vy))
     if len>LINK then
       s=(len-LINK)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
   end
+  x,y=math.floor(x),math.floor(y)
   return x,y
 end
 
@@ -140,7 +135,7 @@ function Device:chk_border(x,y)
   for _,d in pairs(t) do
     if self~=d then
       vx,vy=x-d.x,y-d.y
-      len=math.sqrt(vx*vx+vy*vy)
+      len=math.floor(math.sqrt(vx*vx+vy*vy))
       br=self.pl==d.pl and d.cr or d.er
       if len<=br*2 then
         ok=false
@@ -198,7 +193,9 @@ function Device:connect(dev)
       return nil
     end
   end
-  if vec.len(self.x,self.y,dev.x,dev.y)>LINK2 then
+  local tx,ty=self.x-dev.x,self.y-dev.y
+  local len=math.floor(math.sqrt(tx*tx+ty*ty))
+  if len>LINK2 then
     return nil
   end
   local ok=true

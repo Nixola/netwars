@@ -443,14 +443,12 @@ function main_draw()
       conn=nil
     else
       if kshift then
-        local vx,vy=mox-conn.x,moy-conn.y
-        local len=math.sqrt(vx*vx+vy*vy)
         graph.setColor(255,0,0)
         graph.setLineWidth(1,"rough")
         graph.line(conn.x,conn.y,mox,moy)
       else
-        local vx,vy=mox-conn.x,moy-conn.y
-        local len=math.sqrt(vx*vx+vy*vy)
+        local tx,ty=mox-conn.x,moy-conn.y
+        local len=math.floor(math.sqrt(tx*tx+ty*ty))
         if len>LINK then
           graph.setColor(128,128,128)
         else

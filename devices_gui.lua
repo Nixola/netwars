@@ -60,21 +60,29 @@ function Device:draw_border()
   graph.circle("fill",self.x,self.y,self.er,24)
 end
 
-function Device:draw_cborder(_x,_y)
+function Device:draw_cborder(_x,_y,c)
   local x=_x or self.x
   local y=_y or self.y
   if self.hud or self.pl==ME then
-    graph.setColor(255,255,255)
+    if c==1 then
+      graph.setColor(255,0,0)
+    else
+      graph.setColor(255,255,255)
+    end
     graph.setLine(1,"rough")
     graph.circle("line",x,y,self.cr,24)
   end
 end
 
-function Device:draw_eborder(_x,_y)
+function Device:draw_eborder(_x,_y,c)
   local x=_x or self.x
   local y=_y or self.y
   if self.hud or self.pl==ME then
-    graph.setColor(255,255,255)
+    if c==2 then
+      graph.setColor(255,0,0)
+    else
+      graph.setColor(255,255,255)
+    end
     graph.setLine(1,"rough")
     graph.circle("line",x,y,self.er,24)
   end
@@ -91,11 +99,33 @@ function Device:draw()
   return false
 end
 
+function Device:chk_border2(x,y)
+  local t=devhash:get(self:bound_box(x,y))
+  local ok=true
+  local len,vx,vy
+  local br,tp,pl
+  for _,d in pairs(t) do
+    if self~=d then
+      vx,vy=x-d.x,y-d.y
+      len=math.floor(math.sqrt(vx*vx+vy*vy))
+      pl=self.hud and ME or self.pl
+      br=pl==d.pl and d.cr or d.er
+      if len<=br*2 then
+        ok=false
+        tp=pl==d.pl and 1 or 2
+        break
+      end
+    end
+  end
+  return ok,tp
+end
+
 function Device:drag(x,y)
   x,y=self:calc_xy(x,y)
+  local ok,tp=self:chk_border2(x,y)
   self:draw_sym(x,y)
-  self:draw_cborder(x,y)
-  self:draw_eborder(x,y)
+  self:draw_cborder(x,y,tp)
+  self:draw_eborder(x,y,tp)
 end
 
 function Device:is_pointed(x,y)
@@ -165,7 +195,9 @@ function Device:net_connect(dev)
       return nil
     end
   end
-  if vec.len(self.x,self.y,dev.x,dev.y)>LINK then
+  local tx,ty=self.x-dev.x,self.y-dev.y
+  local len=math.floor(math.sqrt(tx*tx+ty*ty))
+  if len>LINK then
     return
   end
   local ok=true
