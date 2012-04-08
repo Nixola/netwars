@@ -76,7 +76,7 @@ function chat.enter()
     str=""
     return chat.console
   end
-  if str:match("[%a%d_\\ :;\"\'%,%.%<%>%(%)%[%]%{%}%/%?%!%@%#%$%%%^%&%*%-%+]*")~=str then
+  if str:match("[%a%d_\\ :;\"\'%,%.%<%>%(%)%[%]%{%}%/%?%!%@%#%$%%%^%&%*%-%+%=]*")~=str then
     str=""
     return chat.console
   end
