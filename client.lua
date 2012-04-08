@@ -244,7 +244,9 @@ local function parse_server(msg)
     if a[5]=="me" then
       ME=pl
     end
-    chat.msg(string.format("%s has connected.",a[3]))
+    if insync then
+      chat.msg(string.format("%s has connected.",a[3]))
+    end
     return
   end
   if a[1]=="PLd" then -- PLa:idx
