@@ -147,6 +147,12 @@ function queue(sz)
     self.tail=t
     return true
   end
+  function object:push(str)
+    if self.len>=self.size then
+      self:del()
+    end
+    self:put(str)
+  end
   function object:get()
     if self.head then
       local t=self.head

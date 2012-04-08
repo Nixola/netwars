@@ -278,6 +278,11 @@ function main_keypressed(k,ch)
     chat.input=true
     return
   end
+  if k=="`" then
+    chat.console=true
+    chat.input=true
+    return
+  end
   if k=="1" or k=="kp1" then
     bdev=huddevs[1]
     return

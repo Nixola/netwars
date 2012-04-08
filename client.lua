@@ -244,6 +244,7 @@ local function parse_server(msg)
     if a[5]=="me" then
       ME=pl
     end
+    chat.msg(string.format("%s has connected.",a[3]))
     return
   end
   if a[1]=="PLd" then -- PLa:idx
@@ -254,16 +255,14 @@ local function parse_server(msg)
     local pl=players[idx]
     pl:disconnect()
     players[idx]=nil
+    chat.msg(string.format("%s disconnected.",pl.name))
     return
   end
   if a[1]=="MSG" then -- MSG:nick:~msg
     if a.n<3 then
       return
     end
-    if chat.chatq.len>=chat.chatq.size then
-      chat.chatq:del()
-    end
-    chat.chatq:put(string.format("<%s> %s",a[2],a[3]))
+    chat.msg(string.format("<%s> %s",a[2],a[3]))
     return
   end
   if a[1]=="ERR" then
