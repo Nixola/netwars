@@ -14,7 +14,6 @@ SRV=true
 players=ctable()
 devices=ctable()
 links=ctable()
-packets=ctable()
 devhash=sphash(100)
 
 local sock=socket.udp()
@@ -185,7 +184,7 @@ local allsocks={sock}
 local q=queue()
 local msg
 while true do
-  ret=socket.select(allsocks,nil,0.1)
+  ret=socket.select(allsocks,nil,0.3)
   ts=socket.gettime()
   if ret[sock] then
     read_socket(ts)
@@ -204,10 +203,9 @@ while true do
       end
     end
   end
-  if ts>=tm+0.1 then
+  if ts>tm+0.25 then
     dt=ts-tm
     tm=ts
-    flow_packets(dt)
     emit_packets(dt)
   end
   enqueue(q,ctlq)
@@ -219,11 +217,11 @@ while true do
   end
   for _,o in pairs(players) do
     if o.insync then
-      for p in o.sendq:iter(ts,0.5) do
+      for p in o.sendq:iter(ts,1.0) do
         sock:sendto(p,o.ip,o.port)
       end
     else
-      local p=o.syncq:get(ts,0.5)
+      local p=o.syncq:get(ts,1.0)
       if p then
         sock:sendto(p,o.ip,o.port)
       end

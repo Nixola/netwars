@@ -25,7 +25,7 @@ local function buy_device(pl,a)
       pl.cash=pl.cash-price
       o.idx=devices:add(o)
       devhash:add(o)
-      cput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+      cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
       if a[2]=="B" then
         cput("Dn:%d:%s:%d:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y,o.pwr)
         pl.database=true
@@ -57,11 +57,11 @@ function parse_client(msg,pl)
     local o=devices[idx]
     if o and o.pl==pl then
       o:delete()
-      devices:del(o)
       cput("Dd:%d",idx)
       if o.cl=="D" then
-        cput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+        cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
       end
+      devices:del(o)
     end
     return
   end
@@ -72,7 +72,7 @@ function parse_client(msg,pl)
     local idx=tonumber(a[2])
     local x,y=tonumber(a[3]),tonumber(a[4])
     local o=devices[idx]
-    if o and o.pl==pl and (not o.online) and o.pc<1 and #o.elinks<1 then
+    if o and o.pl==pl and (not o.online) and o.pt<=0 and #o.elinks<1 then
       if o:move(x,y) then
         cput("Dm:%d:%d:%d",idx,o.x,o.y)
       end
@@ -119,7 +119,6 @@ function parse_client(msg,pl)
     if d1 and d2 and d1.pl==pl then
       local l=d1:unlink(d2)
       if l then
-        l:del_packets()
         links:del(l)
         cput("Lu:%d:%d",d1.idx,d2.idx)
       end
@@ -136,91 +135,105 @@ function parse_client(msg,pl)
 end
 
 local function packet_hit(p)
-  local pl=p.pl
-  local o=p.dev2
+  local d1=p.d1
+  local d2=p.d2
+  local pl=d1.cl=="F" and d2.pl or d1.pl
   local v=p.v
-  p:delete()
-  packets:del(p)
-  if o.pl==pl then
+  if d1.deleted or d1.takeover then
+    return
+  end
+  if d2.deleted or d2.takeover then
+    return
+  end
+  d1.pt=0.7
+  d2.pt=0.7
+  if d2.pl==pl then
     -- Enqueued at friendly device
-    o.dt2=0
-    if o.health<o.maxhealth then
-      o.health=o.health+v
-      if o.health>o.maxhealth then
-        o.health=o.maxhealth
+    d2.dt2=0
+    if d2.health<d2.maxhealth then
+      d2.health=d2.health+v
+      if d2.health>d2.maxhealth then
+        d2.health=d2.maxhealth
       end
-      mput("Ph:%d:%d",o.idx,o.health)
+      if d1.rtr then
+        mput("Ph:%d:%d:%d:%d",d1.idx,d2.idx,d2.health,d1.pkt)
+      else
+        mput("Ph:%d:%d:%d",d1.idx,d2.idx,d2.health)
+      end
       return
     end
-    if o.cl=="G" or o.cl=="B" then
-      return
-    end
-    if o.cl=="D" then
+    if d2.cl=="D" then
       if pl.cash<pl.maxcash then
         pl.cash=pl.cash+math.floor(v/3)
         if pl.cash>pl.maxcash then
           pl.cash=pl.maxcash
         end
-        mput("Pc:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+        mput("Pc:%d:%d:%d:%d",d1.idx,d2.idx,pl.cash,d1.pkt)
       end
       return
     end
-    o.pkt=o.pkt+v
-    if o.pkt>MAXP then
-      o.pkt=MAXP
+    if not d2.rtr then
+      if d1.rtr then
+        mput("Ph:%d:%d:%d:%d",d1.idx,d2.idx,d2.health,d1.pkt)
+      else
+        mput("Ph:%d:%d:%d",d1.idx,d2.idx,d2.health)
+      end
+      return
     end
-    o.pupd=true
+    d2.pkt=d2.pkt+v
+    if d2.pkt>MAXP then
+      d2.pkt=MAXP
+    end
+    if d1.rtr then
+      mput("Pr:%d:%d:%d:%d",d1.idx,d2.idx,d1.pkt,d2.pkt)
+    else
+      mput("Pr:%d:%d::%d",d1.idx,d2.idx,d2.pkt)
+    end
     return
   end
   -- Attacking enemy device
-  o.health=o.health-v
-  if o.health<1 then
-    if o.cl=="G" then
-      o:del_packets()
-      o:del_links()
-      o.pl=pl
-      o.health=math.floor(o.maxhealth/2)
-      o.online=false
-      cput("Do:%d:%d:%d",o.idx,pl.idx,o.health)
+  d2.health=d2.health-v
+  if d2.health<1 then
+    if d2.cl=="G" then
+      d2:del_links()
+      d2.pl=pl
+      d2.health=math.floor(d2.maxhealth/2)
+      d2.online=false
+      d2.takeover=true
+      cput("Po:%d:%d:%d:%d",d1.idx,d2.idx,d2.health,d1.pkt)
       return
     end
-    cput("Dd:%d",o.idx)
-    o:delete()
-    devices:del(o)
-    if o.cl=="D" then
-      cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+    d2:delete()
+    cput("Pd:%d:%d:%d",d1.idx,d2.idx,d1.pkt)
+    if d2.cl=="D" then
+      cput("PC:%d:%d:%d",d2.pl.idx,d2.pl.cash,d2.pl.maxcash)
     end
+    devices:del(d2)
     return
   end
-  mput("Ph:%d:%d",o.idx,o.health)
-end
-
-function flow_packets(dt)
-  local d1,d2,v
-  for _,p in pairs(packets) do
-    if p:flow(dt) then
-      packet_hit(p)
-    end
-  end
+  mput("Ph:%d:%d:%d:%d",d1.idx,d2.idx,d2.health,d1.pkt)
 end
 
 function emit_packets(dt)
-  local i,d,p,l,c,v,ok
+  local i,d,p,l,c,e,v,ok
+  local pkts={}
   for _,o in pairs(devices) do
+    o.pt=o.pt-dt
+    o.takeover=false
     if not o.gotpwr then
       o.dt2=o.dt2+dt
       if o.dt2>=DEGT then
         o.dt2=o.dt-DEGT
         o.health=o.health-DEGV
         if o.health<1 then
-          cput("Dd:%d",o.idx)
           o:delete()
-          devices:del(o)
+          cput("Dd:%d",o.idx)
           if o.cl=="D" then
-            cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+            cput("PC:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
           end
+          devices:del(o)
         else
-          mput("Ph:%d:%d",o.idx,o.health)
+          mput("Dh:%d:%d",o.idx,o.health)
         end
       end
     end
@@ -242,71 +255,75 @@ function emit_packets(dt)
           o.pl.dcnt=o.pl.dcnt-1
           o.pl.maxcash=o.pl.dcnt*1000
           o.attch=false
-          cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+          cput("PC:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
         end
         if (not nok) and (not o.attch) then
           o.pl.dcnt=o.pl.dcnt+1
           o.pl.maxcash=o.pl.dcnt*1000
           o.attch=true
-          cput("Pc:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
+          cput("PC:%d:%d:%d",o.pl.idx,o.pl.cash,o.pl.maxcash)
         end
       end
     end
-    ok=nil
-    if o.pl and (not o.deleted) then
-      if o.cl=="G" or o.cl=="B" then
-        o.dt=o.dt+dt
-        if o.dt>=1.0 then
-          o.dt=o.dt-1.0
-          if o.dt>1.0 then
-            o.dt=1.0
-          end
-          v=o.pwr
-          ok=1
-        end
-      end
-      if o.pkt>0 then
-        o.dt=o.dt+dt
-        if o.dt>=1.0 then
-          o.dt=o.dt-1.0
-          if o.dt>1.0 then
-            o.dt=1.0
-          end
-          v=o.pkt>MAXV and MAXV or o.pkt
-          ok=2
-        end
-      end
-    end
-    if ok and v>0 then
+    ok=0
+    if (not o.deleted) and o.pl then
       l=#o.links
+      if l>0 then
+        if o.pwr then
+          o.dt=o.dt+dt
+          if o.dt>=2.0 then
+            o.dt=o.dt-2.0
+            ok=1
+          end
+        end
+        if o.rtr then
+          o.dt=o.dt+dt
+          if o.dt>=2.0 then
+            o.dt=o.dt-2.0
+            ok=o.pkt>0 and 2 or 0
+          end
+        end
+      else
+        o.dt=0
+      end
+    end
+    if ok>0 then
       c=l
+      e=o.ec
       i=o.li>l and 1 or o.li
-      while c>0 do
+      while c>0 and e>0 do
         d=o.links[i].dev2
         i=i<l and i+1 or 1
         if o.pl~=d.pl or d.online then
           if ok==1 then
-            p=Packet:new(o,d,v)
-            packets:add(p)
-            mput("Pe:%d:%d:%d",o.idx,d.idx,v)
-            break
+            v=o.pwr
+            p={}
+            p.d1=o
+            p.d2=d
+            p.v=v
+            pkts[#pkts+1]=p
+            e=e-1
           end
           if ok==2 then
+            v=o.pkt>MAXV and MAXV or o.pkt
             o.pkt=o.pkt-v
-            p=Packet:new(o,d,v)
-            packets:add(p)
-            mput("Pr:%d:%d:%d:%d",o.idx,d.idx,v,o.pkt)
-            break
+            p={}
+            p.d1=o
+            p.d2=d
+            p.v=v
+            pkts[#pkts+1]=p
+            e=e-1
+            if o.pkt<1 then
+              break
+            end
           end
-          break
         end
         c=c-1
       end
       o.li=i
-      if c<1 and o.pupd then
-        mput("Pi:%d:%d",o.idx,o.pkt)
-        o.pupd=false
-      end
     end
+  end
+  for _,p in pairs(pkts) do
+    packet_hit(p)
   end
 end

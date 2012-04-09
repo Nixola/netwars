@@ -58,53 +58,84 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="Pr" then -- Routed:dev1:dev2:val:val
+  if a[1]=="Pr" then -- Routed:dev1:dev2:pkt:pkt
     if a.n<5 then
       return
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
+    local pkt1=tonumber(a[4])
+    local pkt2=tonumber(a[5])
     if d1 and d2 then
-      d1.pkt=tonumber(a[5])
-      local p=Packet:new(d1,d2,tonumber(a[4]))
+      d1.pkt=pkt1 or 0
+      d2.pkt=pkt2
+      local p=Packet:new(d1,d2)
       packets:add(p)
     end
     return
   end
-  if a[1]=="Pi" then -- Info:dev:val
-    if a.n<3 then
+  if a[1]=="Pc" then -- Cash:dev1:dev2:cash:pkt
+    if a.n<5 then
       return
     end
-    local o=devices[tonumber(a[2])]
-    if o then
-      o.pkt=tonumber(a[3])
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    local pl=d2 and d2.pl or nil
+    if pl then
+      pl.cash=tonumber(a[4])
+      d1.pkt=tonumber(a[5])
+      local p=Packet:new(d1,d2)
+      packets:add(p)
     end
     return
   end
-  if a[1]=="Pe" then -- Emit:dev1:dev2:val
+  if a[1]=="Ph" then -- Hit:dev1:dev2:health:[pkt]
     if a.n<4 then
       return
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
     if d1 and d2 then
-      local p=Packet:new(d1,d2,tonumber(a[4]))
+      d2.health=tonumber(a[4])
+      if a.n>=5 then
+        d1.pkt=tonumber(a[5])
+      end
+      local p=Packet:new(d1,d2)
       packets:add(p)
     end
     return
   end
-  if a[1]=="Pc" then -- Cash:idx:cash:maxcash
+  if a[1]=="Po" then -- Takeover:dev1:dev2:health:pkt
+    if a.n<5 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    local pl=d1.pl
+    d1.pkt=tonumber(a[5])
+    d2:del_links()
+    d2.pl=pl
+    d2.health=tonumber(a[4])
+    d2.online=false
+    local p=Packet:new(d1,d2)
+    packets:add(p)
+    return
+  end
+  if a[1]=="Pd" then -- Destroy:dev1:dev2:pkt
     if a.n<4 then
       return
     end
-    local pl=players[tonumber(a[2])]
-    if pl then
-      pl.cash=tonumber(a[3])
-      pl.maxcash=tonumber(a[4])
-    end
+    local idx=tonumber(a[3])
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[idx]
+    d1.pkt=tonumber(a[4])
+    d2:delete()
+    devices[idx]=nil
+    local p=Packet:new(d1,d2)
+    packets:add(p)
     return
   end
-  if a[1]=="Ph" then -- Hit:dev:health
+  if a[1]=="Dh" then -- Health:idx:health
     if a.n<3 then
       return
     end
@@ -165,19 +196,6 @@ local function parse_server(msg)
     devhash:add(o)
     return
   end
-  if a[1]=="Do" then -- Del:idx:pl:health
-    if a.n<4 then
-      return
-    end
-    local idx=tonumber(a[2])
-    local o=devices[idx]
-    o:del_packets()
-    o:del_links()
-    o.pl=players[tonumber(a[3])]
-    o.health=tonumber(a[4])
-    o.online=false
-    return
-  end
   if a[1]=="Dd" then -- Del:idx
     if a.n<2 then
       return
@@ -226,8 +244,18 @@ local function parse_server(msg)
     local d2=devices[tonumber(a[3])]
     local l=d1:unlink(d2)
     if l then
-      l:del_packets()
       links:del(l)
+    end
+    return
+  end
+  if a[1]=="PC" then -- Cash:idx:cash:maxcash
+    if a.n<4 then
+      return
+    end
+    local pl=players[tonumber(a[2])]
+    if pl then
+      pl.cash=tonumber(a[3])
+      pl.maxcash=tonumber(a[4])
     end
     return
   end

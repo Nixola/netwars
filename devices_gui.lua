@@ -2,6 +2,67 @@
 
 local pi2=math.pi*2
 
+class "Packet"
+
+function Packet:initialize(d1,d2)
+  local vx,vy=d2.x-d1.x,d2.y-d1.y
+  local l=math.sqrt(vx*vx+vy*vy)
+  self.dev1=d1
+  self.dev2=d2
+  self.pl=d1.cl=="F" and d2.pl or d1.pl
+  vx,vy=vx/l,vy/l
+  self.x1=d1.x+vx*d1.r
+  self.y1=d1.y+vy*d1.r
+  self.x4=d2.x-vx*d2.r
+  self.y4=d2.y-vy*d2.r
+  l=l/2-3
+  local tx,ty
+  if math.random()>0.5 then
+    tx,ty=vy*9,-vx*9
+  else
+    tx,ty=-vy*9,vx*9
+  end
+  self.x2=d1.x+vx*l+tx
+  self.y2=d1.y+vy*l+ty
+  self.x3=d2.x-vx*l-tx
+  self.y3=d2.y-vy*l-ty
+  self.ttl=255
+  d1.pc=d1.pc+1
+  d2.pc=d2.pc+1
+  if self.pl==ME then
+    ME.pkts=ME.pkts+1
+  end
+end
+
+function Packet:delete()
+  local d1=self.dev1
+  local d2=self.dev2
+  d1.pc=d1.pc-1
+  d2.pc=d2.pc-1
+  if self.pl==ME then
+    ME.pkts=ME.pkts-1
+  end
+end
+
+function Packet:flow(dt)
+  self.ttl=self.ttl-dt*400
+  return self.ttl<56
+end
+
+function Packet:draw()
+  if eye.in_view(self.dev1.x,self.dev1.y,self.dev1.r) or eye.in_view(self.dev2.x,self.dev2.y,self.dev2.r) then
+    if self.pl==ME then
+      graph.setColor(0,self.ttl,0)
+    else
+      graph.setColor(self.ttl,0,0)
+    end
+    graph.setLine(2,"smooth")
+    graph.line(self.x1,self.y1,self.x2,self.y2)
+    graph.line(self.x2,self.y2,self.x3,self.y3)
+    graph.line(self.x3,self.y3,self.x4,self.y4)
+  end
+end
+
 function Device:draw_bar()
   local p=self.health/self.maxhealth
   local x,y,w=self.x-self.r,self.y-self.r-6,self.r*2
@@ -177,10 +238,10 @@ function Device:net_connect(dev)
   if self==dev then
     return
   end
-  if self.cl=="G" and dev.cl~="R" then
+  if self.cl=="G" and (self.pl~=dev.pl or dev.cl~="R") then
     return
   end
-  if self.cl=="B" and dev.cl~="R" then
+  if self.cl=="B" and (self.pl~=dev.pl or dev.cl~="R") then
     return
   end
   if #self.links>=self.maxlinks then
@@ -234,18 +295,6 @@ function Link:draw()
     graph.setColor(200,200,200)
     graph.setLine(1,"rough")
     graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
-  end
-end
-
-function Packet:draw()
-  if eye.in_view(self.x,self.y,self.r) then
-    if self.pl==ME then
-      graph.setColor(0,255,0)
-    else
-      graph.setColor(255,0,0)
-    end
-    graph.setLine(1,"rough")
-    graph.circle("line",self.x,self.y,self.r,8)
   end
 end
 

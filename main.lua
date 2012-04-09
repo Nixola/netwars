@@ -378,7 +378,7 @@ local function draw_scoreboard()
     player_count = player_count + 1
   end
   local x,y=eye.cx-200,eye.cy-(padding*(4+player_count))/2
-  graph.setColor(0,0,120,127)
+  graph.setColor(0,0,120,192)
   graph.rectangle("fill",x,y,400,padding*(4+player_count))
 
   graph.print("Name",x+padding,y+padding)
@@ -444,7 +444,7 @@ function main_draw()
     else
       if kshift then
         graph.setColor(255,0,0)
-        graph.setLineWidth(1,"rough")
+        graph.setLine(1,"rough")
         graph.line(conn.x,conn.y,mox,moy)
       else
         local tx,ty=mox-conn.x,moy-conn.y
@@ -454,7 +454,7 @@ function main_draw()
         else
           graph.setColor(255,255,255)
         end
-        graph.setLineWidth(1,"rough")
+        graph.setLine(1,"rough")
         graph.line(conn.x,conn.y,mox,moy)
       end
     end
@@ -515,14 +515,7 @@ function main_update(dt)
     end
   end
   flow_dt=flow_dt+dt
-  if flow_dt>=0.2 then
-    lsi=lsi>7 and 1 or lsi+1
-    flow_dt=0
-    for _,p in pairs(packets) do
-      p:delete()
-      packets:del(p)
-    end
-  elseif flow_dt>=0.05 then
+  if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
     for _,p in pairs(packets) do
       if p:flow(flow_dt) then

@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=5 -- network protocol version
+NVER=6 -- network protocol version
 MAXP=1000 -- max pkt queue
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
@@ -19,10 +19,12 @@ function Player:initialize(cash)
 end
 
 function Player:disconnect()
-  for _,p in pairs(packets) do
-    if p.dev1.pl==self or p.dev2.pl==self then
-      p:delete()
-      packets:del(p)
+  if packets then
+    for _,p in pairs(packets) do
+      if p.dev1.pl==self or p.dev2.pl==self then
+        p:delete()
+        packets:del(p)
+      end
     end
   end
   for k,o in pairs(devices) do
@@ -54,9 +56,9 @@ function Device:initialize(pl,x,y)
   self.li=1 -- link index, used to forward packets (cyclic)
   self.dt=0 -- dt for packet forward
   self.dt2=0 -- dt for degradation
-  self.pc=0 -- packet cnt on wire
+  self.pt=0 -- dt for packet on wire (server side)
+  self.pc=0 -- packet cnt on wire (client side)
   self.pkt=0 -- packets in queue
-  self.pupd=false -- update packet info
   self.lupd=false -- link update
   self.gotpwr=false -- connected to power source (G or B)
   self.attch=false -- D attached to power source
@@ -70,6 +72,9 @@ function Device:initialize(pl,x,y)
     self.nomove=true
     self.pwr=0
     self.gotpwr=true
+  end
+  if self.cl=="R" or self.cl=="F" then
+    self.rtr=true
   end
   self.health=self.maxhealth
   self.links={} -- forward links
@@ -171,10 +176,10 @@ function Device:connect(dev)
   if self==dev then
     return nil
   end
-  if self.cl=="G" and dev.cl~="R" then
+  if self.cl=="G" and (self.pl~=dev.pl or dev.cl~="R") then
     return nil
   end
-  if self.cl=="B" and dev.cl~="R" then
+  if self.cl=="B" and (self.pl~=dev.pl or dev.cl~="R") then
     return nil
   end
   if #self.links>=self.maxlinks then
@@ -298,17 +303,7 @@ function Device:del_links()
   end
 end
 
-function Device:del_packets()
-  for _,p in pairs(packets) do
-    if p.dev1==self or p.dev2==self then
-      p:delete()
-      packets:del(p)
-    end
-  end
-end
-
 function Device:delete()
-  self:del_packets()
   self:del_links()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
@@ -333,69 +328,9 @@ function Link:initialize(d1,d2)
   self.dev2=d2
 end
 
-function Link:del_packets()
-  local d1=self.dev1
-  local d2=self.dev2
-  for _,p in pairs(packets) do
-    if p.dev1==d1 and p.dev2==d2 then
-      p:delete()
-      packets:del(p)
-    end
-  end
-end
-
-class "Packet" {
-r=3;
-}
-
-function Packet:initialize(d1,d2,v)
-  local vx,vy=d2.x-d1.x,d2.y-d1.y
-  local l=math.sqrt(vx*vx+vy*vy)
-  self.dev1=d1
-  self.dev2=d2
-  if d1.cl=="F" and d2.pl then
-    self.pl=d2.pl
-  else
-    self.pl=d1.pl
-  end
-  self.v=v
-  vx,vy=vx/l,vy/l
-  self.x=d1.x+vx*d1.r
-  self.y=d1.y+vy*d1.r
-  self.vx=vx*50
-  self.vy=vy*50
-  d1.pc=d1.pc+1
-  d2.pc=d2.pc+1
-  if self.pl==ME then
-    ME.pkts=ME.pkts+1
-  end
-end
-
-function Packet:delete()
-  local d1=self.dev1
-  local d2=self.dev2
-  d1.pc=d1.pc-1
-  d2.pc=d2.pc-1
-  if self.pl==ME then
-    ME.pkts=ME.pkts-1
-  end
-end
-
-function Packet:flow(dt)
-  local d1=self.dev1
-  local d2=self.dev2
-  self.x=self.x+self.vx*dt
-  self.y=self.y+self.vy*dt
-  local tx,ty=d2.x-self.x,d2.y-self.y
-  local r=math.sqrt(tx*tx+ty*ty)
-  if r<=d2.r then
-    return true
-  end
-  return false
-end
-
 class "Generator" : extends(Device) {
 cl="G";
+ec=1;
 maxhealth=200;
 maxlinks=3;
 maxblinks=2;
@@ -404,6 +339,7 @@ price=0;
 
 class "Router" : extends(Device) {
 cl="R";
+ec=2;
 maxhealth=200;
 maxlinks=5;
 maxblinks=5;
@@ -412,6 +348,7 @@ price=50;
 
 class "Friend" : extends(Router) {
 cl="F";
+ec=2;
 maxhealth=100;
 maxlinks=2;
 maxblinks=3;
@@ -428,6 +365,7 @@ price=200;
 
 class "DataBase" : extends(Device) {
 cl="B";
+ec=1;
 maxhealth=300;
 maxlinks=3;
 maxblinks=2;
