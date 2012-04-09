@@ -4,6 +4,8 @@ local function history(sz)
   local object={}
   object.size=sz or 1000
   object.len=0
+  object.offp=nil
+  object.offv=0
   function object:push(str)
     if self.len>=self.size then
       self:del()
@@ -31,18 +33,37 @@ local function history(sz)
       else
         self.head=nil
         self.tail=nil
+        self.offp=nil
+        self.offv=0
         self.len=0
       end
     end
   end
-  function object:iter(_n)
+  function object:set_off(n,s)
+    if (not n) or n<=0 then
+      self.offp=nil
+      self.offv=0
+      return
+    end
+    if s>=self.len then
+      self.offp=nil
+      self.offv=0
+      return
+    end
+    if n>self.len-s then
+      n=self.len-s
+    end
     local i=self.head
-    local n=_n
+    self.offv=n
+    while i and n>0 do
+      i=i.link
+      n=n-1
+    end
+    self.offp=i
+  end
+  function object:iter()
+    local i=self.offp or self.head
     return function()
-      while i and n>0 do
-        i=i.link
-        n=n-1
-      end
       if i then
         local v=i.val
         i=i.link
@@ -54,14 +75,17 @@ local function history(sz)
   function object:clear()
     self.head=nil
     self.tail=nil
+    self.offp=nil
+    self.offv=0
     self.len=0
   end
   return object
 end
 
+local chatq=queue(5)
+local histq=history()
+
 chat={
-chatq=queue(5);
-hist=history();
 input=false;
 console=false;
 timeout=5.0;
@@ -85,10 +109,7 @@ function chat.enter()
   return chat.console
 end
 
-local con_skip=0
-local skipv
 function chat.keypressed(key,ch)
-  skipv=math.floor(eye.cy/15/2)
   if key=="escape" then
     buf={}
     str=""
@@ -98,6 +119,7 @@ function chat.keypressed(key,ch)
     return chat.enter()
   end
   if chat.console then
+    local step=math.floor((eye.cy-25)/15/2)
     if key=="`" then
       chat.console=false
       buf={}
@@ -105,19 +127,11 @@ function chat.keypressed(key,ch)
       return false
     end
     if key=="pageup" then
-      if chat.hist.len>skipv then
-        con_skip=con_skip+skipv
-        if con_skip>chat.hist.len-skipv then
-          con_skip=chat.hist.len-skipv
-        end
-      end
+      histq:set_off(histq.offv+step,step)
       return true
     end
     if key=="pagedown" then
-      con_skip=con_skip-skipv
-      if con_skip<0 then
-        con_skip=0
-      end
+      histq:set_off(histq.offv-step,step)
       return true
     end
   end
@@ -148,7 +162,7 @@ function chat.draw()
     local y=con_off-20
     graph.print(string.format("> %s",str),5,y)
     y=y-20
-    for m in chat.hist:iter(con_skip) do
+    for m in histq:iter() do
       if y<5 then
         break
       end
@@ -162,7 +176,7 @@ function chat.draw()
     graph.print(string.format("> %s",str),5,eye.sy-70)
   end
   local y=5
-  for m in chat.chatq:iter() do
+  for m in chatq:iter() do
     graph.print(m,5,y)
     y=y+15
   end
@@ -183,11 +197,11 @@ function chat.update(dt)
       con_off=math.floor(con_off-offv*dt)
       if con_off<0 then
         con_off=0
-        con_skip=0
+        histq:set_off()
       end
     end
   end
-  if chat.chatq.len<1 then
+  if chatq.len<1 then
     my_dt=0
     return
   end
@@ -196,13 +210,13 @@ function chat.update(dt)
     return
   end
   my_dt=my_dt-chat.timeout
-  chat.chatq:del()
+  chatq:del()
 end
 
 function chat.msg(str)
-  chat.chatq:push(str)
-  chat.hist:push(str)
-  if chat.chatq.len>=chat.chatq.size then
+  chatq:push(str)
+  histq:push(str)
+  if chatq.len>=chatq.size then
     my_dt=0
   end
 end
