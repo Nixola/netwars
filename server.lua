@@ -139,10 +139,10 @@ local function packet_hit(p)
   local d2=p.d2
   local pl=d1.cl=="F" and d2.pl or d1.pl
   local v=p.v
-  if d1.deleted or d1.takeover then
+  if d1.deleted or d1.blocked then
     return
   end
-  if d2.deleted or d2.takeover then
+  if d2.deleted or d2.blocked then
     return
   end
   d1.pt=0.7
@@ -195,12 +195,9 @@ local function packet_hit(p)
   d2.health=d2.health-v
   if d2.health<1 then
     if d2.cl=="G" then
-      d2:del_links()
-      d2.pl=pl
-      d2.health=math.floor(d2.maxhealth/2)
-      d2.online=false
-      d2.takeover=true
-      cput("Po:%d:%d:%d:%d",d1.idx,d2.idx,d2.health,d1.pkt)
+      d2:takeover(pl)
+      d2.blocked=true
+      cput("Po:%d:%d:%d",d1.idx,d2.idx,d1.pkt)
       return
     end
     d2:delete()
@@ -219,7 +216,7 @@ function emit_packets(dt)
   local pkts={}
   for _,o in pairs(devices) do
     o.pt=o.pt-dt
-    o.takeover=false
+    o.blocked=false
     if not o.gotpwr then
       o.dt2=o.dt2+dt
       if o.dt2>=DEGT then

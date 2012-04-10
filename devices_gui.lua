@@ -27,6 +27,8 @@ function Packet:initialize(d1,d2)
   self.x3=d2.x-vx*l-tx
   self.y3=d2.y-vy*l-ty
   self.ttl=255
+  self.dt=0
+  self.cnt=1
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
   if self.pl==ME then
@@ -46,20 +48,43 @@ end
 
 function Packet:flow(dt)
   self.ttl=self.ttl-dt*400
+  self.dt=self.dt+dt
+  if self.dt>=0.05 then
+    self.dt=self.dt-0.05
+    self.cnt=self.cnt+1
+  end
   return self.ttl<56
 end
 
 function Packet:draw()
   if eye.in_view(self.dev1.x,self.dev1.y,self.dev1.r) or eye.in_view(self.dev2.x,self.dev2.y,self.dev2.r) then
-    if self.pl==ME then
-      graph.setColor(0,self.ttl,0)
-    else
-      graph.setColor(self.ttl,0,0)
-    end
+    local col={0,0,0}
+    local i=self.pl==ME and 2 or 1
     graph.setLine(2,"smooth")
+    if self.cnt>=3 then
+      col[i]=self.ttl-40
+      graph.setColor(col)
+      graph.line(self.x1,self.y1,self.x2,self.y2)
+      col[i]=self.ttl-20
+      graph.setColor(col)
+      graph.line(self.x2,self.y2,self.x3,self.y3)
+      col[i]=self.ttl
+      graph.setColor(col)
+      graph.line(self.x3,self.y3,self.x4,self.y4)
+      return
+    end
+    if self.cnt==2 then
+      col[i]=self.ttl-20
+      graph.setColor(col)
+      graph.line(self.x1,self.y1,self.x2,self.y2)
+      col[i]=self.ttl
+      graph.setColor(col)
+      graph.line(self.x2,self.y2,self.x3,self.y3)
+      return
+    end
+    col[i]=self.ttl
+    graph.setColor(col)
     graph.line(self.x1,self.y1,self.x2,self.y2)
-    graph.line(self.x2,self.y2,self.x3,self.y3)
-    graph.line(self.x3,self.y3,self.x4,self.y4)
   end
 end
 

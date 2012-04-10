@@ -105,18 +105,15 @@ local function parse_server(msg)
     end
     return
   end
-  if a[1]=="Po" then -- Takeover:dev1:dev2:health:pkt
-    if a.n<5 then
+  if a[1]=="Po" then -- Takeover:dev1:dev2:pkt
+    if a.n<4 then
       return
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
     local pl=d1.pl
-    d1.pkt=tonumber(a[5])
-    d2:del_links()
-    d2.pl=pl
-    d2.health=tonumber(a[4])
-    d2.online=false
+    d1.pkt=tonumber(a[4])
+    d2:takeover(pl)
     local p=Packet:new(d1,d2)
     packets:add(p)
     return

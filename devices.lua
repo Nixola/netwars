@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=6 -- network protocol version
+NVER=7 -- network protocol version
 MAXP=1000 -- max pkt queue
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
@@ -300,6 +300,19 @@ function Device:del_links()
     self:del_elink(l.dev1)
     l.dev1:del_link(self)
     links:del(l)
+  end
+end
+
+function Device:takeover(pl)
+  if self.pl then
+    self.pl.devcnt=self.pl.devcnt-1
+  end
+  self:del_links()
+  self.pl=pl
+  self.health=math.floor(self.maxhealth/2)
+  self.online=false
+  if pl then
+    pl.devcnt=pl.devcnt+1
   end
 end
 
