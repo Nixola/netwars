@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=7 -- network protocol version
+NVER=8 -- network protocol version
 MAXP=1000 -- max pkt queue
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
@@ -344,6 +344,7 @@ end
 class "Generator" : extends(Device) {
 cl="G";
 ec=1;
+em=1;
 maxhealth=200;
 maxlinks=3;
 maxblinks=2;
@@ -352,20 +353,24 @@ price=0;
 
 class "Router" : extends(Device) {
 cl="R";
-ec=2;
+ec=1;
+em=3;
 maxhealth=200;
 maxlinks=5;
 maxblinks=5;
 price=50;
+uprice=250;
 }
 
 class "Friend" : extends(Router) {
 cl="F";
-ec=2;
+ec=1;
+em=2;
 maxhealth=100;
 maxlinks=2;
 maxblinks=3;
 price=250;
+uprice=500;
 }
 
 class "DataCenter" : extends(Device) {
@@ -379,6 +384,7 @@ price=200;
 class "DataBase" : extends(Device) {
 cl="B";
 ec=1;
+em=1;
 maxhealth=300;
 maxlinks=3;
 maxblinks=2;

@@ -88,10 +88,28 @@ function parse_client(msg,pl)
     local o=devices[idx]
     if o and o.pl==pl then
       o.online=b
-      o.li=1
-      o.edt=0
       b=b and 1 or 0
       cput("Ds:%d:%d",idx,b)
+    end
+    return
+  end
+  if a[1]=="Up" then -- Upgrade:idx
+    if a.n<2 then
+      return
+    end
+    local idx=tonumber(a[2])
+    local o=devices[idx]
+    if o and o.pl==pl then
+      if pl.cash<o.uprice then
+        return
+      end
+      if o.ec>=o.em then
+        return
+      end
+      o.ec=o.ec+1
+      pl.cash=pl.cash-o.uprice
+      cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+      cput("Du:%d:%d",idx,o.ec)
     end
     return
   end

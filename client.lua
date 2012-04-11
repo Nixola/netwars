@@ -221,6 +221,14 @@ local function parse_server(msg)
     o:switch(b)
     return
   end
+  if a[1]=="Du" then -- Upgrade:idx:v
+    if a.n<3 then
+      return
+    end
+    local o=devices[tonumber(a[2])]
+    o.ec=tonumber(a[3])
+    return
+  end
   if a[1]=="La" then -- Link:dev1:dev2
     if a.n<3 then
       return

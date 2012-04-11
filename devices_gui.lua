@@ -315,6 +315,12 @@ function Device:net_switch()
   end
 end
 
+function Device:net_upgrade()
+  if self.rtr then
+    net_send("Up:%d",self.idx)
+  end
+end
+
 function Link:draw()
   if eye.in_view(self.dev1.x,self.dev1.y,self.dev1.r) or eye.in_view(self.dev2.x,self.dev2.y,self.dev2.r) then
     graph.setColor(200,200,200)
@@ -343,11 +349,19 @@ end
 
 function Router:draw_st()
   local p=self.pkt/MAXP
-  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
+  local w=self.r*2
   local n=math.floor(w*p)
+  local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,255,255)
     graph.rectangle("fill",x,y,n,3)
+  end
+  p=self.ec/self.em
+  n=math.floor(w*p)
+  x,y=self.x-self.r-6,self.y+self.r-n
+  if n>0 then
+    graph.setColor(128,192,240)
+    graph.rectangle("fill",x,y,3,n)
   end
 end
 
@@ -385,12 +399,7 @@ end
 function Router:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
-end
-
-function Friend:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Delete",Device.net_delete)
 end
 
