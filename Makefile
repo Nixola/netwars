@@ -4,13 +4,14 @@ EXTRA = LICENSE
 SRCS = conf.lua main.lua menu.lua client.lua chat.lua init.lua \
 	devices_gui.lua
 IMGS = imgs
+EXCL = imgs/.gitattributes
 SRVS = netwars.lua server.lua
 APPN = netwars
 
 .PHONY: build srvpkg
 
 build:
-	zip -r $(APPN).love $(LIBS) $(COMMON) $(SRCS) $(EXTRA) $(IMGS)
+	zip -r $(APPN).love $(LIBS) $(COMMON) $(SRCS) $(EXTRA) $(IMGS) -x $(EXCL)
 
 srvpkg:
 	tar -czf $(APPN).tgz $(LIBS) $(COMMON) $(SRVS) $(EXTRA)

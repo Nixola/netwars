@@ -103,6 +103,7 @@ local function new_client(str,ts,ip,port)
       o.sendq:put(msg)
     end
   end
+  print(string.format("%s has connected.",pl.name))
 end
 
 function del_client(pl)
@@ -115,6 +116,7 @@ function del_client(pl)
   for _,o in pairs(players) do
     o.sendq:put(msg)
   end
+  print(string.format("%s disconnected.",pl.name))
 end
 
 local function read_socket(ts)
