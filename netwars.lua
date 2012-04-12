@@ -14,7 +14,7 @@ SRV=true
 players=ctable()
 devices=ctable()
 links=ctable()
-devhash=sphash(100)
+devhash=sphash(200)
 
 local sock=socket.udp()
 local iptab={}

@@ -95,7 +95,7 @@ players=ctable()
 devices=ctable()
 links=ctable()
 packets=ctable()
-devhash=sphash(100)
+devhash=sphash(200)
 
 local buydevs={}
 local huddevs={}
