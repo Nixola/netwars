@@ -419,12 +419,16 @@ function main_draw()
   end
   graph.setLineStipple(ls[lsi])
   for _,o in pairs(links) do
-    o:draw()
+    if t[o.dev1] or t[o.dev2] then
+      o:draw()
+    end
   end
   graph.setLineStipple()
   if eye.s>0.4 then
     for _,o in pairs(packets) do
-      o:draw()
+      if t[o.dev1] or t[o.dev2] then
+        o:draw()
+      end
     end
   end
   for _,o in pairs(t) do

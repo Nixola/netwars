@@ -57,35 +57,33 @@ function Packet:flow(dt)
 end
 
 function Packet:draw()
-  if eye.in_view(self.dev1.x,self.dev1.y,self.dev1.r) or eye.in_view(self.dev2.x,self.dev2.y,self.dev2.r) then
-    local col={0,0,0}
-    local i=self.pl==ME and 2 or 1
-    graph.setLine(2,"smooth")
-    if self.cnt>=3 then
-      col[i]=self.ttl-40
-      graph.setColor(col)
-      graph.line(self.x1,self.y1,self.x2,self.y2)
-      col[i]=self.ttl-20
-      graph.setColor(col)
-      graph.line(self.x2,self.y2,self.x3,self.y3)
-      col[i]=self.ttl
-      graph.setColor(col)
-      graph.line(self.x3,self.y3,self.x4,self.y4)
-      return
-    end
-    if self.cnt==2 then
-      col[i]=self.ttl-20
-      graph.setColor(col)
-      graph.line(self.x1,self.y1,self.x2,self.y2)
-      col[i]=self.ttl
-      graph.setColor(col)
-      graph.line(self.x2,self.y2,self.x3,self.y3)
-      return
-    end
-    col[i]=self.ttl
+  local col={0,0,0}
+  local i=self.pl==ME and 2 or 1
+  graph.setLine(2,"smooth")
+  if self.cnt>=3 then
+    col[i]=self.ttl-40
     graph.setColor(col)
     graph.line(self.x1,self.y1,self.x2,self.y2)
+    col[i]=self.ttl-20
+    graph.setColor(col)
+    graph.line(self.x2,self.y2,self.x3,self.y3)
+    col[i]=self.ttl
+    graph.setColor(col)
+    graph.line(self.x3,self.y3,self.x4,self.y4)
+    return
   end
+  if self.cnt==2 then
+    col[i]=self.ttl-20
+    graph.setColor(col)
+    graph.line(self.x1,self.y1,self.x2,self.y2)
+    col[i]=self.ttl
+    graph.setColor(col)
+    graph.line(self.x2,self.y2,self.x3,self.y3)
+    return
+  end
+  col[i]=self.ttl
+  graph.setColor(col)
+  graph.line(self.x1,self.y1,self.x2,self.y2)
 end
 
 function Device:draw_bar()
@@ -175,14 +173,10 @@ function Device:draw_eborder(_x,_y,c)
 end
 
 function Device:draw()
-  if eye.in_view(self.x,self.y,self.er) then
-    self:draw_sym()
-    if eye.s>0.4 then
-      self:draw_bar()
-    end
-    return true
+  self:draw_sym()
+  if eye.s>0.4 then
+    self:draw_bar()
   end
-  return false
 end
 
 function Device:chk_border2(x,y)
@@ -322,11 +316,9 @@ function Device:net_upgrade()
 end
 
 function Link:draw()
-  if eye.in_view(self.dev1.x,self.dev1.y,self.dev1.r) or eye.in_view(self.dev2.x,self.dev2.y,self.dev2.r) then
-    graph.setColor(200,200,200)
-    graph.setLine(1,"rough")
-    graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
-  end
+  graph.setColor(200,200,200)
+  graph.setLine(1,"rough")
+  graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
 end
 
 function Generator:draw_st()
@@ -340,10 +332,9 @@ function Generator:draw_st()
 end
 
 function Generator:draw()
-  if self:super("draw") then
-    if eye.s>0.4 then
-      self:draw_st()
-    end
+  self:super("draw")
+  if eye.s>0.4 then
+    self:draw_st()
   end
 end
 
@@ -366,10 +357,9 @@ function Router:draw_st()
 end
 
 function Router:draw()
-  if self:super("draw") then
-    if eye.s>0.4 then
-      self:draw_st()
-    end
+  self:super("draw")
+  if eye.s>0.4 then
+    self:draw_st()
   end
 end
 
@@ -384,10 +374,9 @@ function DataBase:draw_st()
 end
 
 function DataBase:draw()
-  if self:super("draw") then
-    if eye.s>0.4 then
-      self:draw_st()
-    end
+  self:super("draw")
+  if eye.s>0.4 then
+    self:draw_st()
   end
 end
 
