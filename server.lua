@@ -212,7 +212,7 @@ local function packet_hit(p)
   -- Attacking enemy device
   d2.health=d2.health-v
   if d2.health<1 then
-    if d2.cl=="G" then
+    if d2.cl=="G" and (not d2.pl) then
       d2:takeover(pl)
       d2.blocked=true
       cput("Po:%d:%d:%d",d1.idx,d2.idx,d1.pkt)
@@ -281,7 +281,7 @@ function emit_packets(dt)
       end
     end
     ok=0
-    if (not o.deleted) and o.pl then
+    if (not o.deleted) then
       l=#o.links
       if l>0 then
         if o.pwr then

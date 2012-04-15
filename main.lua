@@ -93,8 +93,8 @@ end
 ME=nil
 players=ctable()
 devices=ctable()
-links=ctable()
-packets=ctable()
+links=storage()
+packets=storage()
 devhash=sphash(200)
 
 local buydevs={}

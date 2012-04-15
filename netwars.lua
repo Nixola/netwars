@@ -10,10 +10,12 @@ require "devices"
 require "server"
 
 SRV=true
+dirty=false
 
 players=ctable()
+player_cnt=0
 devices=ctable()
-links=ctable()
+links=storage()
 devhash=sphash(200)
 
 local sock=socket.udp()
@@ -72,6 +74,7 @@ local function new_client(str,ts,ip,port)
   pl.seq=1
   pl.insync=false
   pl.idx=players:add(pl)
+  player_cnt=player_cnt+1
   iptab[h]=pl
   local m=queue(5000)
   for _,o in pairs(players) do
@@ -87,6 +90,8 @@ local function new_client(str,ts,ip,port)
     i=o.pl and o.pl.idx or 0
     if o.cl=="G" or o.cl=="B" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
+    elseif o.rtr then
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec))
     else
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y))
     end
@@ -104,6 +109,7 @@ local function new_client(str,ts,ip,port)
     end
   end
   print(string.format("%s has connected.",pl.name))
+  dirty=true
 end
 
 function del_client(pl)
@@ -111,6 +117,7 @@ function del_client(pl)
   local h=pl.ip..":"..pl.port
   pl:disconnect()
   players:del(pl)
+  player_cnt=player_cnt-1
   iptab[h]=nil
   local msg=string.format("PLd:%d",idx)
   for _,o in pairs(players) do
@@ -158,25 +165,42 @@ local function read_socket(ts)
   end
 end
 
-if not sock:setsockname("*",6352) then
-  print("Error: bind() failed")
-  return
-end
-
 function add_G(x,y,pwr)
   local o=Generator:new(nil,x,y)
   o.pwr=pwr>MAXV and MAXV or pwr
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
+    o.dt=math.random()*2
+    o.online=true
     devhash:add(o)
-    return true
+    return o
   end
-  return false
+  return nil
 end
 
+function add_R(x,y,ec)
+  local o=Router:new(nil,x,y)
+  o.ec=ec>o.em and o.em or ec
+  if o:chk_border(x,y) then
+    o.idx=devices:add(o)
+    o.dt=math.random()*2
+    o.online=true
+    devhash:add(o)
+    return o
+  end
+  return nil
+end
+
+if not sock:setsockname("*",6352) then
+  print("Error: bind() failed")
+  return
+end
+
+mapchunk=nil
 if arg[1] then
   local chunk=loadfile(arg[1])
-  chunk()
+  mapchunk=chunk()
+  mapchunk()
 end
 
 local ret
@@ -186,6 +210,15 @@ local allsocks={sock}
 local q=queue()
 local msg
 while true do
+  if dirty and player_cnt<1 then
+    for _,o in pairs(devices) do
+      o:del_links()
+      devices:del(o)
+      devhash:del(o)
+    end
+    mapchunk()
+    dirty=false
+  end
   ret=socket.select(allsocks,nil,0.3)
   ts=socket.gettime()
   if ret[sock] then

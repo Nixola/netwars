@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=8 -- network protocol version
+NVER=9 -- network protocol version
 MAXP=1000 -- max pkt queue
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
@@ -30,14 +30,8 @@ function Player:disconnect()
   for k,o in pairs(devices) do
     if o.pl==self then
       o:del_links()
-      if o.cl=="G" then
-        o.pl=nil
-        o.health=o.maxhealth
-        o.online=false
-      else
-        devices[k]=nil
-        devhash:del(o)
-      end
+      devices[k]=nil
+      devhash:del(o)
     end
   end
 end
@@ -218,6 +212,13 @@ function Device:connect(dev)
     return l
   end
   return nil
+end
+
+function Device:link(dev) -- use only in map generators
+  local l=self:connect(dev)
+  if l then
+    links:add(l)
+  end
 end
 
 function Device:unlink(dev)

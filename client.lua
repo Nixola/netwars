@@ -161,6 +161,12 @@ local function parse_server(msg)
       end
       o.pwr=tonumber(a[9])
     end
+    if o.rtr then
+      if a.n<9 then
+        return
+      end
+      o.ec=tonumber(a[9])
+    end
     o.idx=idx
     o.health=tonumber(a[5])
     o:init_gui()
