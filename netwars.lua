@@ -12,11 +12,13 @@ require "server"
 SRV=true
 dirty=false
 
-players=ctable()
 player_cnt=0
+players=ctable()
 devices=ctable()
+units=ctable()
 links=storage()
-devhash=sphash(200)
+dhash=sphash(200)
+uhash=sphash(100)
 
 local sock=socket.udp()
 local iptab={}
@@ -71,6 +73,8 @@ local function new_client(str,ts,ip,port)
   pl.recvq=rqueue()
   pl.syncq=squeue(500)
   pl.ts=ts+30
+  pl.ping=0
+  pl.pts=ts
   pl.seq=1
   pl.insync=false
   pl.idx=players:add(pl)
@@ -79,7 +83,7 @@ local function new_client(str,ts,ip,port)
   local m=queue(5000)
   for _,o in pairs(players) do
     if o==pl then
-      m:put(string.format("PLa:%d:%s:%d:me",o.idx,o.name,o.cash))
+      m:put(string.format("PLa:%d:%s:%d:me:%s",o.idx,o.name,o.cash,ts))
     else
       m:put(string.format("PLa:%d:%s:%d",o.idx,o.name,o.cash))
     end
@@ -88,7 +92,7 @@ local function new_client(str,ts,ip,port)
   for _,o in pairs(devices) do
     b=o.online and 1 or 0
     i=o.pl and o.pl.idx or 0
-    if o.cl=="G" or o.cl=="B" then
+    if o.cl=="G" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
     elseif o.rtr then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec))
@@ -98,6 +102,10 @@ local function new_client(str,ts,ip,port)
   end
   for _,o in pairs(links) do
     m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
+  end
+  for _,o in pairs(units) do
+    i=o.pl and o.pl.idx or 0
+    m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,o.pkt,o.x,o.y))
   end
   m:put("DONE")
   enqueue(pl.syncq,m)
@@ -156,12 +164,18 @@ local function read_socket(ts)
     return del_client(pl)
   end
   local a=str_split(str,":")
-  if a.n==2 and a[1]=="ACK" then
+  if a[1]=="ACK" and a.n==2 then
     if pl.insync then
       pl.sendq:del(tonumber(a[2]))
     else
       pl.syncq:del(tonumber(a[2]))
     end
+    return
+  end
+  if a[1]=="PONG" and a.n==2 then
+    local ping=(ts-tonumber(a[2]))/2
+    pl.ping=(pl.ping+ping)/2
+    return
   end
 end
 
@@ -172,7 +186,7 @@ function add_G(x,y,pwr)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    devhash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -185,7 +199,7 @@ function add_R(x,y,ec)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    devhash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -214,9 +228,11 @@ while true do
     for _,o in pairs(devices) do
       o:del_links()
       devices:del(o)
-      devhash:del(o)
+      dhash:del(o)
     end
-    mapchunk()
+    if mapchunk then
+      mapchunk()
+    end
     dirty=false
   end
   ret=socket.select(allsocks,nil,0.3)
@@ -234,14 +250,15 @@ while true do
       msg=o.recvq:get(o.seq)
       if msg then
         o.seq=o.seq+1
-        parse_client(msg,o)
+        parse_client(msg,o,ts)
       end
     end
   end
   if ts>tm+0.25 then
     dt=ts-tm
     tm=ts
-    emit_packets(dt)
+    devs_proc(dt)
+    units_proc(dt)
   end
   enqueue(q,ctlq)
   ctlq:clear()
@@ -269,6 +286,12 @@ while true do
       if o.insync then
         sock:sendto(p,o.ip,o.port)
       end
+    end
+  end
+  for _,o in pairs(players) do
+    if o.insync and ts>=o.pts then
+      sock:sendto(string.format("PING:%s:%s",ts,o.ping),o.ip,o.port)
+      o.pts=ts+1.0
     end
   end
 end

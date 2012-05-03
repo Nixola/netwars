@@ -12,7 +12,7 @@ require "chat"
 CVER=1 -- config version
 
 graph=love.graphics
-dtime=0
+srvts=0
 msx,msy=0,0 -- mouse real (screen) position
 mox,moy=0,0 -- mouse virtual position
 
@@ -83,26 +83,31 @@ function eye.scroll()
       scroll.ks=0
     end
   end
-  eye.vx=eye.vx+scroll.x
-  eye.vy=eye.vy+scroll.y
-  eye.x=eye.vx+eye.cx/eye.s
-  eye.y=eye.vy+eye.cy/eye.s
+  eye.vx=math.floor(eye.vx+scroll.x)
+  eye.vy=math.floor(eye.vy+scroll.y)
+  eye.x=math.floor(eye.vx+eye.cx/eye.s)
+  eye.y=math.floor(eye.vy+eye.cy/eye.s)
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
 ME=nil
 players=ctable()
 devices=ctable()
+units=ctable()
 links=storage()
 packets=storage()
-devhash=sphash(200)
+shots=storage()
+dhash=sphash(200)
+uhash=sphash(100)
 
 local buydevs={}
-local huddevs={}
+local buyidx=3
 
 local drag=nil
 local bdrag=nil
 local bdev=nil
+local umove=nil
+local utarg=nil
 local hover=nil
 local hint=nil
 local hover_dt=0
@@ -112,7 +117,7 @@ local kshift=false
 local scoreboard=false
 
 local function get_device(x,y)
-  local t=devhash:get(x,y)
+  local t=dhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) then
       return o
@@ -122,7 +127,17 @@ local function get_device(x,y)
 end
 
 local function get_my_device(x,y)
-  local t=devhash:get(x,y)
+  local t=dhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl==ME then
+      return o
+    end
+  end
+  return nil
+end
+
+local function get_my_unit(x,y)
+  local t=uhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl==ME then
       return o
@@ -132,7 +147,7 @@ local function get_my_device(x,y)
 end
 
 local function get_buydev(x,y)
-  for _,o in pairs(buydevs) do
+  for _,o in pairs(buydevs[buyidx]) do
     if o:is_pointed(x,y) then
       return o
     end
@@ -141,9 +156,8 @@ local function get_buydev(x,y)
 end
 
 local function get_enemydev(x,y)
-  local t=devhash:get(x,y)
-  for _,o in pairs(t) do
-    if o:is_epointed(x,y) and o.pl~=ME then
+  for _,o in pairs(buydevs[buyidx]) do
+    if o:is_pointed(x,y) then
       return o
     end
   end
@@ -196,19 +210,29 @@ function main_mousepressed(mx,my,b)
     return
   end
   if b=="l" then
-    local dev=get_my_device(x,y)
-    if dev then
+    local obj=get_my_unit(x,y)
+    if obj then
+      umove=obj
+      return
+    end
+    obj=get_my_device(x,y)
+    if obj then
       if kshift then
-        dev:net_switch()
+        obj:net_switch()
         return
       end
-      if (not dev.nomove) and (not dev.online) and dev.pc<1 and #dev.elinks<1 then
-        drag=dev
+      if (not obj.nomove) and (not obj.online) and obj.pc<1 then
+        drag=obj
       end
     end
     return
   end
   if b=="r" then
+    local obj=get_my_unit(x,y)
+    if obj then
+      utarg=obj
+      return
+    end
     conn=get_my_device(x,y)
     return
   end
@@ -255,6 +279,21 @@ function main_mousereleased(mx,my,b)
     end
     return
   end
+  if umove then
+    if b=="l" then
+      umove:net_move(x,y)
+      umove=nil
+    end
+    return
+  end
+  if utarg then
+    if b=="r" then
+      local obj=get_device(x,y)
+      utarg:net_targ(obj)
+      utarg=nil
+    end
+    return
+  end
 end
 
 function main_keypressed(k,ch)
@@ -283,20 +322,32 @@ function main_keypressed(k,ch)
     chat.input=true
     return
   end
+  if k==" " then
+    buyidx=buyidx<2 and buyidx+1 or 1
+    return
+  end
   if k=="1" or k=="kp1" then
-    bdev=huddevs[1]
+    bdev=buydevs[buyidx][1]
     return
   end
   if k=="2" or k=="kp2" then
-    bdev=huddevs[2]
+    bdev=buydevs[buyidx][2]
     return
   end
   if k=="3" or k=="kp3" then
-    bdev=huddevs[3]
+    bdev=buydevs[buyidx][3]
     return
   end
   if k=="4" or k=="kp4" then
-    bdev=huddevs[4]
+    bdev=buydevs[buyidx][4]
+    return
+  end
+  if k=="5" or k=="kp5" then
+    bdev=buydevs[buyidx][5]
+    return
+  end
+  if k=="6" or k=="kp6" then
+    bdev=buydevs[buyidx][6]
     return
   end
   if k=="w" or k=="up" then
@@ -355,7 +406,7 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
-  for _,v in ipairs(huddevs) do
+  for _,v in ipairs(buydevs[buyidx]) do
     v:draw_sym()
   end
   graph.setColor(255,255,255)
@@ -406,42 +457,51 @@ function main_draw()
   local sy=eye.cy/eye.s
   local x1,y1=-eye.vx-sx,-eye.vy-sy
   local x2,y2=-eye.vx+sx,-eye.vy+sy
-  local t=devhash:get(x1,y1,x2,y2)
-  for _,o in pairs(t) do
-    if o.pl==ME then
-      o:draw_border()
-    end
-  end
-  for _,o in pairs(t) do
-    if o.pl~=ME then
-      o:draw_border()
-    end
-  end
+  local hd=dhash:get(x1,y1,x2,y2)
+  local hu=uhash:get(x1,y1,x2,y2)
   graph.setLineStipple(ls[lsi])
   for _,o in pairs(links) do
-    if t[o.dev1] or t[o.dev2] then
+    if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
   end
   graph.setLineStipple()
   if eye.s>0.4 then
     for _,o in pairs(packets) do
-      if t[o.dev1] or t[o.dev2] then
+      if hd[o.dev1] or hd[o.dev2] then
         o:draw()
       end
     end
   end
-  for _,o in pairs(t) do
+  -- draw devices
+  for _,o in pairs(hd) do
     o:draw()
   end
   if drag or bdrag or bdev then
     local d=drag or bdrag or bdev
-    for _,o in pairs(t) do
-      if o~=d then
-        o:draw_cborder()
+    if buyidx==1 then
+      for _,o in pairs(hd) do
+        if o~=d then
+          o:draw_cborder()
+        end
       end
     end
   end
+  -- draw units
+  for _,o in pairs(hu) do
+    o:draw()
+  end
+  -- draw shots
+  if eye.s>0.4 then
+    for _,o in pairs(shots) do
+      ok1=o.obj1.isdev and hd[o.obj1] or hu[o.obj1]
+      ok1=o.obj2.isdev and hd[o.obj2] or hu[o.obj2]
+      if ok1 or ok2 then
+        o:draw()
+      end
+    end
+  end
+  -- draw commands
   if conn then
     if conn.deleted then
       conn=nil
@@ -476,6 +536,17 @@ function main_draw()
   if bdev then
     bdev:drag(mox,moy)
   end
+  if umove then
+    local x,y=umove:calc_xy(mox,moy)
+    graph.setColor(255,255,255)
+    graph.setLine(1,"rough")
+    graph.line(umove.x,umove.y,x,y)
+  end
+  if utarg then
+    graph.setColor(0,0,255)
+    graph.setLine(1,"rough")
+    graph.line(utarg.x,utarg.y,mox,moy)
+  end
   -- hud display
   graph.pop()
   graph.setScissor()
@@ -491,7 +562,8 @@ end
 
 local flow_dt=0
 function main_update(dt)
-  dtime=dt
+  net_proc()
+  srvts=srvts+dt
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x
   moy=msy/eye.s-eye.y
@@ -524,6 +596,17 @@ function main_update(dt)
       packets:del(p)
     end
   end
+  for _,o in pairs(units) do
+    o:step(dt)
+    if o.targ and o.targ.deleted then
+      o.targ=nil
+    end
+  end
+  for _,s in pairs(shots) do
+    if s:flow(dt) then
+      shots:del(s)
+    end
+  end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
@@ -534,91 +617,6 @@ end
 
 function main_quit()
   net_close()
-end
-
-function love.run()
-  love.load()
-  local dt=0
-
-  -- init
-  while true do
-    if love.timer then
-      love.timer.step()
-      dt=love.timer.getDelta()
-    end
-    if love.update then
-      love.update(dt)
-    end
-    if love.graphics then
-      love.graphics.clear()
-      love.draw()
-    end
-    if love.event then
-      for e,a,b,c in love.event.poll() do
-        if e=="q" then
-          if love.quit then
-            love.quit()
-          end
-          if love.audio then
-            love.audio.stop()
-          end
-          return
-        end
-        love.handlers[e](a,b,c)
-      end
-    end
-    if love.graphics then
-      love.graphics.present()
-    end
-    if net_sync() then
-      break
-    end
-  end
-
-  if ME then
-    love.draw=main_draw
-    love.update=main_update
-    love.quit=main_quit
-    love.keypressed=main_keypressed
-    love.keyreleased=main_keyreleased
-    love.mousepressed=main_mousepressed
-    love.mousereleased=main_mousereleased
-  else
-    love.event.push("q")
-  end
-
-  -- main
-  while true do
-    if love.timer then
-      love.timer.step()
-      dt=love.timer.getDelta()
-    end
-    if love.update then
-      love.update(dt)
-    end
-    if love.graphics then
-      love.graphics.clear()
-      love.draw()
-    end
-    if love.event then
-      for e,a,b,c in love.event.poll() do
-        if e=="q" then
-          if love.quit then
-            love.quit()
-          end
-          if love.audio then
-            love.audio.stop()
-          end
-          return
-        end
-        love.handlers[e](a,b,c)
-      end
-    end
-    if love.graphics then
-      love.graphics.present()
-    end
-    net_proc()
-  end
 end
 
 local function set_cl_fonts(imgfont)
@@ -632,19 +630,31 @@ local function set_cl_fonts(imgfont)
   local img
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,0,8,16,16)
-  devcl.G.__members.img=graph.newImage(img)
+  d_cl.G.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,16,8,16,16)
-  devcl.R.__members.img=graph.newImage(img)
+  d_cl.R.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,32,8,16,16)
-  devcl.F.__members.img=graph.newImage(img)
+  d_cl.F.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
-  devcl.D.__members.img=graph.newImage(img)
+  d_cl.V.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,64,8,16,16)
-  devcl.B.__members.img=graph.newImage(img)
+  d_cl.T.__members.img=graph.newImage(img)
+  img=love.image.newImageData(8,8)
+  img:paste(imgfont,0,0,4,36,8,8)
+  u_cl.e.__members.img=graph.newImage(img)
+  img=love.image.newImageData(8,8)
+  img:paste(imgfont,0,0,20,36,8,8)
+  u_cl.t.__members.img=graph.newImage(img)
+  img=love.image.newImageData(8,8)
+  img:paste(imgfont,0,0,36,36,8,8)
+  u_cl.s.__members.img=graph.newImage(img)
+  img=love.image.newImageData(8,8)
+  img:paste(imgfont,0,0,52,36,8,8)
+  u_cl.c.__members.img=graph.newImage(img)
 end
 
 local function reconf()
@@ -683,16 +693,36 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  local devs={"B","R","F","D"}
+  local cl={"R","T","F","V"}
   local x=25
-  for i,v in ipairs(devs) do
-    o=devcl[v]:new(nil,x,eye.sy-25)
+  local objs={}
+  for i,v in ipairs(cl) do
+    o=d_cl[v]:new(nil,x,eye.sy-25)
     o.hud=true
-    buydevs[v]=o
-    huddevs[i]=o
+    objs[i]=o
     x=x+40
   end
-  buydevs["B"].buyonce=true
+  buydevs[1]=objs
+  cl={"t","s","e"}
+  x=25
+  objs={}
+  for i,v in ipairs(cl) do
+    o=u_cl[v]:new(nil,x,eye.sy-25)
+    o.hud=true
+    objs[i]=o
+    x=x+40
+  end
+  buydevs[2]=objs
+  cl={"c"}
+  x=25
+  objs={}
+  for i,v in ipairs(cl) do
+    o=u_cl[v]:new(nil,x,eye.sy-25)
+    o.hud=true
+    objs[i]=o
+    x=x+40
+  end
+  buydevs[3]=objs
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed

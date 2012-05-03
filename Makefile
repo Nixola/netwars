@@ -8,10 +8,13 @@ EXCL = imgs/.gitattributes
 SRVS = netwars.lua server.lua
 APPN = netwars
 
-.PHONY: build srvpkg
+.PHONY: build srvpkg clean
 
 build:
 	zip -r $(APPN).love $(LIBS) $(COMMON) $(SRCS) $(EXTRA) $(IMGS) -x $(EXCL)
 
 srvpkg:
 	tar -czf $(APPN).tgz $(LIBS) $(COMMON) $(SRVS) $(EXTRA)
+
+clean:
+	rm -f $(APPN).love $(APPN).tgz

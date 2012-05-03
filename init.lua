@@ -86,4 +86,19 @@ function init_update(dt)
     net_conn(addr,nick)
     init_st=9
   end
+  if init_st>8 then
+    if net_sync() then
+      if ME then
+        love.draw=main_draw
+        love.update=main_update
+        love.quit=main_quit
+        love.keypressed=main_keypressed
+        love.keyreleased=main_keyreleased
+        love.mousepressed=main_mousepressed
+        love.mousereleased=main_mousereleased
+      else
+        love.event.push("q")
+      end
+    end
+  end
 end

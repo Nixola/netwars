@@ -9,7 +9,6 @@ function Packet:initialize(d1,d2)
   local l=math.sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
-  self.pl=d1.cl=="F" and d2.pl or d1.pl
   vx,vy=vx/l,vy/l
   self.x1=d1.x+vx*d1.r
   self.y1=d1.y+vy*d1.r
@@ -58,7 +57,7 @@ end
 
 function Packet:draw()
   local col={0,0,0}
-  local i=self.pl==ME and 2 or 1
+  local i=2
   graph.setLine(2,"smooth")
   if self.cnt>=3 then
     col[i]=self.ttl-40
@@ -86,11 +85,61 @@ function Packet:draw()
   graph.line(self.x1,self.y1,self.x2,self.y2)
 end
 
+class "Shot"
+
+function Shot:initialize(o1,o2)
+  local vx,vy=o2.x-o1.x,o2.y-o1.y
+  local l=math.sqrt(vx*vx+vy*vy)
+  self.obj1=o1
+  self.obj2=o2
+  self.pl=o1.pl
+  vx,vy=vx/l,vy/l
+  self.x1=o1.x+vx*o1.r
+  self.y1=o1.y+vy*o1.r
+  self.x3=o2.x
+  self.y3=o2.y
+  l=l/2-o1.r/2
+  self.x2=o1.x+vx*l
+  self.y2=o1.y+vy*l
+  self.ttl=255
+  self.dt=0
+  self.cnt=1
+end
+
+function Shot:flow(dt)
+  self.ttl=self.ttl-dt*400
+  self.dt=self.dt+dt
+  if self.dt>=0.05 then
+    self.dt=self.dt-0.05
+    self.cnt=self.cnt+1
+  end
+  return self.ttl<56
+end
+
+function Shot:draw()
+  local col={0,0,0}
+  local i=self.pl==ME and 3 or 1
+  graph.setLine(3,"smooth")
+  if self.cnt>1 then
+    col[i]=self.ttl-30
+    graph.setColor(col)
+    graph.line(self.x1,self.y1,self.x2,self.y2)
+    col[i]=self.ttl
+    graph.setColor(col)
+    graph.line(self.x2,self.y2,self.x3,self.y3)
+    return
+  end
+  col[i]=self.ttl
+  graph.setColor(col)
+  graph.line(self.x1,self.y1,self.x2,self.y2)
+end
+
 function Device:draw_bar()
+  local w=self.r*2
   local p=self.health/self.maxhealth
-  local x,y,w=self.x-self.r,self.y-self.r-6,self.r*2
   local n=math.floor(w*p)
   local c=math.floor(48*p)
+  local x,y=self.x-self.r,self.y-self.r-6
   local re=c>=32 and 250-((c-32)*15) or 250
   local gr=c<=24 and c*10 or 250
   if n>0 then
@@ -133,17 +182,6 @@ function Device:draw_sym(_x,_y)
   end
 end
 
-function Device:draw_border()
-  if (not self.pl) then
-    graph.setColor(64,64,64)
-  elseif self.pl==ME then
-    graph.setColor(0,0,96)
-  else
-    graph.setColor(96,0,0)
-  end
-  graph.circle("fill",self.x,self.y,self.er,24)
-end
-
 function Device:draw_cborder(_x,_y,c)
   local x=_x or self.x
   local y=_y or self.y
@@ -158,20 +196,6 @@ function Device:draw_cborder(_x,_y,c)
   end
 end
 
-function Device:draw_eborder(_x,_y,c)
-  local x=_x or self.x
-  local y=_y or self.y
-  if self.hud or self.pl==ME then
-    if c==2 then
-      graph.setColor(255,0,0)
-    else
-      graph.setColor(255,255,255)
-    end
-    graph.setLine(1,"rough")
-    graph.circle("line",x,y,self.er,24)
-  end
-end
-
 function Device:draw()
   self:draw_sym()
   if eye.s>0.4 then
@@ -180,7 +204,7 @@ function Device:draw()
 end
 
 function Device:chk_border2(x,y)
-  local t=devhash:get(self:bound_box(x,y))
+  local t=dhash:get(self:bound_box(x,y))
   local ok=true
   local len,vx,vy
   local br,tp,pl
@@ -189,7 +213,7 @@ function Device:chk_border2(x,y)
       vx,vy=x-d.x,y-d.y
       len=math.floor(math.sqrt(vx*vx+vy*vy))
       pl=self.hud and ME or self.pl
-      br=pl==d.pl and d.cr or d.er
+      br=d.cr
       if len<=br*2 then
         ok=false
         tp=pl==d.pl and 1 or 2
@@ -205,19 +229,12 @@ function Device:drag(x,y)
   local ok,tp=self:chk_border2(x,y)
   self:draw_sym(x,y)
   self:draw_cborder(x,y,tp)
-  self:draw_eborder(x,y,tp)
 end
 
 function Device:is_pointed(x,y)
   local tx,ty=self.x-x,self.y-y
   local r=math.sqrt(tx*tx+ty*ty)
   return r<=self.r
-end
-
-function Device:is_epointed(x,y)
-  local tx,ty=self.x-x,self.y-y
-  local r=math.sqrt(tx*tx+ty*ty)
-  return r<=self.er
 end
 
 function Device:switch(b)
@@ -245,7 +262,7 @@ function Device:net_move(x,y)
   if self.nomove then
     return
   end
-  if (not self.online) and self.pc<1 and #self.elinks<1 then
+  if (not self.online) and self.pc<1 then
     x,y=self:calc_xy(x,y)
     if self:chk_border(x,y) then
       net_send("M:%d:%d:%d",self.idx,x,y)
@@ -266,14 +283,8 @@ function Device:net_connect(dev)
   if #self.links>=self.maxlinks then
     return
   end
-  if self.pl==dev.pl then
-    if #dev.blinks>=dev.maxblinks then
-      return nil
-    end
-  else
-    if #dev.elinks>=dev.maxblinks then
-      return nil
-    end
+  if #dev.blinks>=dev.maxblinks then
+    return nil
   end
   local tx,ty=self.x-dev.x,self.y-dev.y
   local len=math.floor(math.sqrt(tx*tx+ty*ty))
@@ -288,14 +299,14 @@ function Device:net_connect(dev)
     end
   end
   if ok then
-    net_send("L:%d:%d",self.idx,dev.idx)
+    net_send("Lc:%d:%d",self.idx,dev.idx)
   end
 end
 
 function Device:net_unlink(dev)
   for _,l in ipairs(self.links) do
     if l.dev2==dev then
-      net_send("U:%d:%d",self.idx,dev.idx)
+      net_send("Lu:%d:%d",self.idx,dev.idx)
       return
     end
   end
@@ -311,7 +322,7 @@ end
 
 function Device:net_upgrade()
   if self.rtr then
-    net_send("Up:%d",self.idx)
+    net_send("U:%d",self.idx)
   end
 end
 
@@ -321,10 +332,106 @@ function Link:draw()
   graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
 end
 
-function Generator:draw_st()
-  local p=self.pwr/MAXV
-  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
+function Unit:draw_bar()
+  local w=self.r*2
+  local p=self.health/self.maxhealth
   local n=math.floor(w*p)
+  local c=math.floor(48*p)
+  local x,y=self.x-self.r,self.y-self.r-6
+  local re=c>=32 and 250-((c-32)*15) or 250
+  local gr=c<=24 and c*10 or 250
+  if n>0 then
+    graph.setColor(re,gr,0)
+    graph.rectangle("fill",x,y,n,3)
+  end
+  if self.maxpkt then
+    p=self.pkt/self.maxpkt
+    n=math.floor(w*p)
+    x,y=self.x-self.r,self.y+self.r+3
+    if n>0 then
+      graph.setColor(255,255,255)
+      graph.rectangle("fill",x,y,n,3)
+    end
+  end
+end
+
+function Unit:draw_sym(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.hud then
+    if self.buyonce then
+      graph.setColor(0,0,160)
+    else
+      graph.setColor(0,0,255)
+    end
+  elseif (not self.pl) then
+    graph.setColor(128,128,128)
+  elseif self.pl==ME then
+    graph.setColor(0,0,255)
+  else
+    graph.setColor(255,0,0)
+  end
+  graph.circle("fill",x,y,self.r,12)
+  graph.setColor(255,255,255)
+  graph.setLine(1,"rough")
+  graph.circle("line",x,y,self.r,12)
+  if self.hud or eye.s>0.9 then
+    graph.setColorMode("replace")
+    graph.draw(self.img,x-4,y-4)
+  end
+end
+
+function Unit:draw()
+  self:draw_sym()
+  if eye.s>0.4 then
+    self:draw_bar()
+  end
+  if self.pl==ME and self.targ then
+    graph.setColor(0,0,192)
+    graph.setLine(1,"rough")
+    graph.line(self.x,self.y,self.targ.x,self.targ.y)
+  end
+  if self.pl==ME and self.vx and self.vy then
+    graph.setColor(192,192,192)
+    graph.setLine(1,"rough")
+    graph.line(self.x,self.y,self.mx,self.my)
+  end
+end
+
+function Unit:drag(x,y)
+  self:draw_sym(x,y)
+end
+
+function Unit:is_pointed(x,y)
+  local tx,ty=self.x-x,self.y-y
+  local r=math.sqrt(tx*tx+ty*ty)
+  return r<=self.r
+end
+
+function Unit:net_buy(x,y)
+  if ME.cash>=self.price then
+    net_send("B:%s:%d:%d",self.cl,x,y)
+  end
+end
+
+function Unit:net_move(x,y)
+  x,y=self:calc_xy(x,y)
+  net_send("Um:%d:%d:%d",self.idx,x,y)
+end
+
+function Unit:net_targ(targ)
+  if targ then
+    net_send("Ut:%d:%d",self.idx,targ.idx)
+  else
+    net_send("Ut:%d:",self.idx)
+  end
+end
+
+function Generator:draw_st()
+  local w=self.r*2
+  local p=self.pwr/MAXV
+  local n=math.floor(w*p)
+  local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,128,255)
     graph.rectangle("fill",x,y,n,3)
@@ -339,8 +446,8 @@ function Generator:draw()
 end
 
 function Router:draw_st()
-  local p=self.pkt/MAXP
   local w=self.r*2
+  local p=self.pkt/self.maxpkt
   local n=math.floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
@@ -363,42 +470,20 @@ function Router:draw()
   end
 end
 
-function DataBase:draw_st()
-  local p=self.pwr/MAXV
-  local x,y,w=self.x-self.r,self.y+self.r+3,self.r*2
-  local n=math.floor(w*p)
-  if n>0 then
-    graph.setColor(255,128,255)
-    graph.rectangle("fill",x,y,n,3)
-  end
-end
-
-function DataBase:draw()
-  self:super("draw")
-  if eye.s>0.4 then
-    self:draw_st()
-  end
-end
-
 function Generator:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
+  return
 end
 
 function Router:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
   self.menu:add("Upgrade",Device.net_upgrade)
-  self.menu:add("Delete",Device.net_delete)
-end
-
-function DataCenter:init_gui()
-  self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end
 
-function DataBase:init_gui()
+function Vault:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)

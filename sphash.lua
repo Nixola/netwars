@@ -1,7 +1,5 @@
 -- vim:et
 
-require "class"
-
 local function spkeys(grid,x1,y1,x2,y2)
   local sx=math.floor(x1/grid)
   local sy=math.floor(y1/grid)
@@ -45,10 +43,10 @@ function sphash(grid)
     for k in spkeys(self.grid,dev:bound_box()) do
       t=self.hash[k]
       if not t then
-        t=storage()
+        t={}
         self.hash[k]=t
       end
-      t:add(dev)
+      t[dev]=dev
     end
   end
   function object:del(dev)
@@ -56,7 +54,7 @@ function sphash(grid)
     for k in spkeys(self.grid,dev:bound_box()) do
       t=self.hash[k]
       if t then
-        t:del(dev)
+        t[dev]=nil
       end
     end
   end

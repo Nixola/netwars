@@ -1,12 +1,14 @@
 -- vim:et
 
-NVER=9 -- network protocol version
-MAXP=1000 -- max pkt queue
+NVER=10 -- network protocol version
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
 LINK2=LINK+2
 DEGT=10 -- degrate timer
-DEGV=10 -- degrate health value
+SHOTR=300 -- shot length
+SUPPR=100 -- device supply length
+BEAMR=70 -- engineering length
+CAPTC=3 -- shots needed to capture
 
 class "Player"
 
@@ -27,11 +29,17 @@ function Player:disconnect()
       end
     end
   end
+  for k,o in pairs(units) do
+    if o.pl==self then
+      units[k]=nil
+      dhash:del(o)
+    end
+  end
   for k,o in pairs(devices) do
     if o.pl==self then
       o:del_links()
       devices[k]=nil
-      devhash:del(o)
+      dhash:del(o)
     end
   end
 end
@@ -39,7 +47,6 @@ end
 class "Device" {
 r=15;
 cr=30; -- collision radius
-er=100; -- enemy border radius
 }
 
 function Device:initialize(pl,x,y)
@@ -47,6 +54,8 @@ function Device:initialize(pl,x,y)
   self.x=x
   self.y=y
   self.online=false
+  self.initok=false
+  self.isdev=true
   self.li=1 -- link index, used to forward packets (cyclic)
   self.dt=0 -- dt for packet forward
   self.dt2=0 -- dt for degradation
@@ -73,7 +82,6 @@ function Device:initialize(pl,x,y)
   self.health=self.maxhealth
   self.links={} -- forward links
   self.blinks={} -- back links
-  self.elinks={} -- enemy connections
   if pl then
     pl.devcnt=pl.devcnt+1
   end
@@ -82,7 +90,7 @@ end
 function Device:bound_box(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
-  return x-self.er,y-self.er,x+self.er,y+self.er
+  return x-self.cr,y-self.cr,x+self.cr,y+self.cr
 end
 
 function Device:calc_xy(x,y)
@@ -108,22 +116,12 @@ function Device:calc_xy(x,y)
       x,y=x-vx,y-vy
     end
   end
-  for _,l in pairs(self.elinks) do
-    d=l.dev1==self and l.dev2 or l.dev1
-    vx,vy=x-d.x,y-d.y
-    len=math.floor(math.sqrt(vx*vx+vy*vy))
-    if len>LINK then
-      s=(len-LINK)/len
-      vx,vy=vx*s,vy*s
-      x,y=x-vx,y-vy
-    end
-  end
   x,y=math.floor(x),math.floor(y)
   return x,y
 end
 
 function Device:chk_border(x,y)
-  local t=devhash:get(self:bound_box(x,y))
+  local t=dhash:get(self:bound_box(x,y))
   local ok=true
   local len,vx,vy
   local br
@@ -131,7 +129,7 @@ function Device:chk_border(x,y)
     if self~=d then
       vx,vy=x-d.x,y-d.y
       len=math.floor(math.sqrt(vx*vx+vy*vy))
-      br=self.pl==d.pl and d.cr or d.er
+      br=d.cr
       if len<=br*2 then
         ok=false
         break
@@ -147,10 +145,10 @@ function Device:move(x,y)
   end
   x,y=self:calc_xy(x,y)
   if self:chk_border(x,y) then
-    devhash:del(self)
+    dhash:del(self)
     self.x=x
     self.y=y
-    devhash:add(self)
+    dhash:add(self)
     return true
   end
   return false
@@ -179,14 +177,8 @@ function Device:connect(dev)
   if #self.links>=self.maxlinks then
     return nil
   end
-  if self.pl==dev.pl then
-    if #dev.blinks>=dev.maxblinks then
-      return nil
-    end
-  else
-    if #dev.elinks>=dev.maxblinks then
-      return nil
-    end
+  if #dev.blinks>=dev.maxblinks then
+    return nil
   end
   local tx,ty=self.x-dev.x,self.y-dev.y
   local len=math.floor(math.sqrt(tx*tx+ty*ty))
@@ -203,12 +195,10 @@ function Device:connect(dev)
   if ok then
     local l=Link:new(self,dev)
     table.insert(self.links,l)
-    if self.pl==dev.pl then
-      table.insert(dev.blinks,l)
-      dev.lupd=true
-    else
-      table.insert(dev.elinks,l)
-    end
+    table.insert(dev.blinks,l)
+    dev.lupd=true
+    self.initok=true
+    dev.initok=true
     return l
   end
   return nil
@@ -255,15 +245,6 @@ function Device:del_blink(dev)
   end
 end
 
-function Device:del_elink(dev)
-  for i,l in ipairs(self.elinks) do
-    if l.dev1==dev then
-      table.remove(self.elinks,i)
-      return
-    end
-  end
-end
-
 function Device:del_links()
   local tmp={}
   for _,l in ipairs(self.links) do
@@ -273,11 +254,7 @@ function Device:del_links()
   end
   for _,l in pairs(tmp) do
     self:del_link(l.dev2)
-    if self.pl==l.dev2.pl then
-      l.dev2:del_blink(self)
-    else
-      l.dev2:del_elink(self)
-    end
+    l.dev2:del_blink(self)
     links:del(l)
   end
   tmp={}
@@ -291,26 +268,13 @@ function Device:del_links()
     l.dev1:del_link(self)
     links:del(l)
   end
-  tmp={}
-  for _,l in ipairs(self.elinks) do
-    if l.dev2==self then
-      tmp[#tmp+1]=l
-    end
-  end
-  for _,l in pairs(tmp) do
-    self:del_elink(l.dev1)
-    l.dev1:del_link(self)
-    links:del(l)
-  end
 end
 
 function Device:takeover(pl)
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
   end
-  self:del_links()
   self.pl=pl
-  self.health=math.floor(self.maxhealth/2)
   self.online=false
   if pl then
     pl.devcnt=pl.devcnt+1
@@ -321,7 +285,7 @@ function Device:delete()
   self:del_links()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
-    if SRV and self.cl=="D" then
+    if SRV and self.cl=="V" then
       if self.attch then
         self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
         self.pl.dcnt=self.pl.dcnt-1
@@ -331,7 +295,7 @@ function Device:delete()
       end
     end
   end
-  devhash:del(self)
+  dhash:del(self)
   self.deleted=true
 end
 
@@ -342,10 +306,94 @@ function Link:initialize(d1,d2)
   self.dev2=d2
 end
 
+class "Unit" {
+r=7;
+}
+
+function Unit:initialize(pl,x,y)
+  self.pl=pl
+  self.x=x
+  self.y=y
+  self.isdev=false
+  self.pkt=0 -- packets in queue
+  self.dt=0 -- dt for attack
+  self.targ=nil -- manual target (device)
+  self.health=self.maxhealth
+end
+
+function Unit:bound_box(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  return x-self.r,y-self.r,x+self.r,y+self.r
+end
+
+function Unit:calc_xy(x,y)
+  local vx,vy=x-self.x,y-self.y
+  local len=math.floor(math.sqrt(vx*vx+vy*vy))
+  if len>LINK then
+    local s=(len-LINK)/len
+    vx,vy=vx*s,vy*s
+    x,y=x-vx,y-vy
+  end
+  x,y=math.floor(x),math.floor(y)
+  return x,y
+end
+
+function Unit:move(x,y)
+  x,y=self:calc_xy(x,y)
+  local vx,vy=x-self.x,y-self.y
+  local len=math.sqrt(vx*vx+vy*vy)
+  if len<=self.r then
+    self.vx=nil
+    self.vy=nil
+    return false
+  end
+  self.dist=math.floor(len)
+  self.ix=self.x
+  self.iy=self.y
+  self.tx=self.x
+  self.ty=self.y
+  self.vx=vx/len*self.speed
+  self.vy=vy/len*self.speed
+  self.mx=x
+  self.my=y
+  return true
+end
+
+function Unit:step(dt)
+  if not (self.vx and self.vy) then
+    return false
+  end
+  local x=self.tx+self.vx*dt
+  local y=self.ty+self.vy*dt
+  local tx,ty=x-self.ix,y-self.iy
+  local len=math.sqrt(tx*tx+ty*ty)
+  uhash:del(self)
+  if len>=self.dist then
+    self.x=self.mx
+    self.y=self.my
+    self.vx=nil
+    self.vy=nil
+    uhash:add(self)
+    return true
+  end
+  self.tx=x
+  self.ty=y
+  self.x=math.floor(x)
+  self.y=math.floor(y)
+  uhash:add(self)
+  return false
+end
+
+function Unit:delete()
+  uhash:del(self)
+  self.deleted=true
+end
+
 class "Generator" : extends(Device) {
 cl="G";
-ec=1;
-em=1;
+ec=1; -- emit count
+em=1; -- max emit count
 maxhealth=200;
 maxlinks=3;
 maxblinks=2;
@@ -354,42 +402,75 @@ price=0;
 
 class "Router" : extends(Device) {
 cl="R";
-ec=1;
-em=3;
+ec=1; -- emit count
+em=3; -- max emit count
 maxhealth=200;
+maxpkt=1000; -- max queue
 maxlinks=5;
 maxblinks=5;
 price=50;
-uprice=250;
 }
 
-class "Friend" : extends(Router) {
+class "Factory" : extends(Device) {
 cl="F";
-ec=1;
-em=2;
+ec=1; -- emit count
+em=3; -- max emit count
 maxhealth=100;
-maxlinks=2;
+maxpkt=1000; -- max queue
+maxlinks=0;
 maxblinks=3;
 price=250;
-uprice=500;
 }
 
-class "DataCenter" : extends(Device) {
-cl="D";
+class "Vault" : extends(Device) {
+cl="V";
 maxhealth=100;
 maxlinks=0;
 maxblinks=5;
 price=200;
 }
 
-class "DataBase" : extends(Device) {
-cl="B";
-ec=1;
-em=1;
-maxhealth=300;
-maxlinks=3;
+class "Tower" : extends(Device) {
+cl="T";
+ec=1; -- shot count
+em=3; -- max shot count
+maxhealth=200;
+maxlinks=0;
 maxblinks=2;
-price=300;
+price=200;
 }
 
-devcl={G=Generator,R=Router,F=Friend,D=DataCenter,B=DataBase}
+d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower}
+
+class "Commander" : extends(Unit) {
+cl="c";
+maxhealth=100;
+speed=15;
+price=0;
+}
+
+class "Engineer" : extends(Unit) {
+cl="e";
+maxhealth=20;
+maxpkt=50; -- max queue
+speed=15;
+price=200;
+}
+
+class "Tank" : extends(Unit) {
+cl="t";
+maxhealth=50;
+maxpkt=20; -- max queue
+speed=20;
+price=50;
+}
+
+class "Supply" : extends(Unit) {
+cl="s";
+maxhealth=50;
+maxpkt=200; -- max queue
+speed=30;
+price=100;
+}
+
+u_cl={e=Engineer,t=Tank,s=Supply,c=Commander}
