@@ -211,11 +211,7 @@ function Device:unlink(dev)
   for _,l in ipairs(self.links) do
     if l.dev2==dev then
       self:del_link(l.dev2)
-      if self.pl==dev.pl then
-        dev:del_blink(self)
-      else
-        dev:del_elink(self)
-      end
+      dev:del_blink(self)
       return l
     end
   end

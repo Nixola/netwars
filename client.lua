@@ -98,15 +98,19 @@ local function parse_server(msg,ts)
     end
     return
   end
-  if a[1]=="Um" then -- Move:idx:ts:x,y
-    if a.n<5 then
+  if a[1]=="Um" then -- Move:idx:ts:x:y:x:y
+    if a.n<7 then
       return
     end
     local o=units[tonumber(a[2])]
     local ts=tonumber(a[3])
-    local x,y=tonumber(a[4]),tonumber(a[5])
+    local x,y=tonumber(a[6]),tonumber(a[7])
+    uhash:del(o)
+    o.x=tonumber(a[4])
+    o.y=tonumber(a[5])
     o:move(x,y)
-    o:step(srvts-ts)
+    o:_step(srvts-ts)
+    uhash:add(o)
     return
   end
   if a[1]=="Up" then -- Move:idx:x,y
@@ -115,8 +119,10 @@ local function parse_server(msg,ts)
     end
     local o=units[tonumber(a[2])]
     local x,y=tonumber(a[3]),tonumber(a[4])
+    uhash:del(o)
     o.x=tonumber(a[3])
     o.y=tonumber(a[4])
+    uhash:add(o)
     o.vx=nil
     o.vy=nil
     return

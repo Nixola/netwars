@@ -61,7 +61,7 @@ function parse_client(msg,pl,ts)
     buy_device(pl,a)
     return
   end
-  if a[1]=="Um" then -- Move:dev:x:y
+  if a[1]=="Um" then -- Move:idx:x:y:x:y
     if a.n<4 then
       return
     end
@@ -69,14 +69,14 @@ function parse_client(msg,pl,ts)
     local x,y=tonumber(a[3]),tonumber(a[4])
     if o and o.pl==pl then
       if o:move(x,y) then
-        cput("Um:%d:%s:%d:%d",o.idx,ts,o.mx,o.my)
+        cput("Um:%d:%s:%d:%d:%d:%d",o.idx,ts,o.x,o.y,o.mx,o.my)
       else
         cput("Up:%d:%d:%d",o.idx,o.x,o.y)
       end
     end
     return
   end
-  if a[1]=="Ut" then -- Target:dev:...
+  if a[1]=="Ut" then -- Target:idx:...
     if a.n<2 then
       return
     end
@@ -210,7 +210,7 @@ local function packet_hit(p)
   -- Enqueued at device
   d2.dt2=0
   if d2.cl=="V" then
-    v=math.floor(v/3)
+    v=math.floor(v/2)
     if v>0 then
       pl.cash=pl.cash+v
       if pl.cash>pl.maxcash then
@@ -339,7 +339,7 @@ end
 
 function Tower:attack(targ)
   self.pkt=self.pkt-1
-  targ.health=targ.health-10
+  targ.health=targ.health-5
   if targ.health<1 then
     targ:delete()
     cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)

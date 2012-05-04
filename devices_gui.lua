@@ -438,6 +438,28 @@ function Unit:draw()
   end
 end
 
+function Unit:_step(dt)
+  if not (self.vx and self.vy) then
+    return false
+  end
+  local x=self.tx+self.vx*dt
+  local y=self.ty+self.vy*dt
+  local tx,ty=x-self.ix,y-self.iy
+  local len=math.sqrt(tx*tx+ty*ty)
+  if len>=self.dist then
+    self.x=self.mx
+    self.y=self.my
+    self.vx=nil
+    self.vy=nil
+    return true
+  end
+  self.tx=x
+  self.ty=y
+  self.x=math.floor(x)
+  self.y=math.floor(y)
+  return false
+end
+
 function Unit:drag(x,y)
   self:draw_sym(x,y)
 end
