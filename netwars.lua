@@ -94,14 +94,14 @@ local function new_client(str,ts,ip,port)
     i=o.pl and o.pl.idx or 0
     if o.cl=="G" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
-    elseif o.rtr then
+    elseif o.ec then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec))
     else
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y))
     end
   end
   for _,o in pairs(links) do
-    m:put(string.format("La:%d:%d",o.dev1.idx,o.dev2.idx))
+    m:put(string.format("Lc:%d:%d",o.dev1.idx,o.dev2.idx))
   end
   for _,o in pairs(units) do
     i=o.pl and o.pl.idx or 0
@@ -205,6 +205,19 @@ function add_R(x,y,ec)
   return nil
 end
 
+function add_T(x,y,ec)
+  local o=Tower:new(nil,x,y)
+  o.ec=ec>o.em and o.em or ec
+  if o:chk_border(x,y) then
+    o.idx=devices:add(o)
+    o.dt=math.random()*2
+    o.online=true
+    dhash:add(o)
+    return o
+  end
+  return nil
+end
+
 if not sock:setsockname("*",6352) then
   print("Error: bind() failed")
   return
@@ -257,8 +270,8 @@ while true do
   if ts>tm+0.25 then
     dt=ts-tm
     tm=ts
-    devs_proc(dt)
     units_proc(dt)
+    devs_proc(dt)
   end
   enqueue(q,ctlq)
   ctlq:clear()

@@ -38,34 +38,34 @@ function sphash(grid)
   local object={}
   object.grid=grid or 100
   object.hash={}
-  function object:add(dev)
+  function object:add(o)
     local t
-    for k in spkeys(self.grid,dev:bound_box()) do
+    for k in spkeys(self.grid,o:bound_box()) do
       t=self.hash[k]
       if not t then
         t={}
         self.hash[k]=t
       end
-      t[dev]=dev
+      t[o]=o
     end
   end
-  function object:del(dev)
+  function object:del(o)
     local t
-    for k in spkeys(self.grid,dev:bound_box()) do
+    for k in spkeys(self.grid,o:bound_box()) do
       t=self.hash[k]
       if t then
-        t[dev]=nil
+        t[o]=nil
       end
     end
   end
   function object:get(x1,y1,x2,y2)
     local ret={}
-    local t,v
+    local t
     for k in spkeys(self.grid,x1,y1,x2,y2) do
       t=self.hash[k]
       if t then
-        for _,v in pairs(t) do
-          ret[v]=v
+        for _,o in pairs(t) do
+          ret[o]=o
         end
       end
     end

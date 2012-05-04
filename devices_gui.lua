@@ -98,40 +98,70 @@ function Shot:initialize(o1,o2)
   self.y1=o1.y+vy*o1.r
   self.x3=o2.x
   self.y3=o2.y
-  l=l/2-o1.r/2
+  l=l/2+o1.r/2
   self.x2=o1.x+vx*l
   self.y2=o1.y+vy*l
-  self.ttl=255
+  self.lt=0
   self.dt=0
   self.cnt=1
 end
 
 function Shot:flow(dt)
-  self.ttl=self.ttl-dt*400
+  self.lt=self.lt+dt*320
   self.dt=self.dt+dt
   if self.dt>=0.05 then
     self.dt=self.dt-0.05
     self.cnt=self.cnt+1
   end
-  return self.ttl<56
+  return self.lt>64
 end
 
 function Shot:draw()
-  local col={0,0,0}
-  local i=self.pl==ME and 3 or 1
-  graph.setLine(3,"smooth")
-  if self.cnt>1 then
-    col[i]=self.ttl-30
-    graph.setColor(col)
+  if self.pl==ME then
+    local col={128,192,240}
+    local r,g,b
+    graph.setLine(2,"smooth")
+    if self.cnt>1 then
+      r=col[1]-self.lt-32
+      g=col[2]-self.lt-32
+      b=col[3]-self.lt-32
+      graph.setColor(r,g,b)
+      graph.line(self.x1,self.y1,self.x2,self.y2)
+      r=col[1]-self.lt
+      g=col[2]-self.lt
+      b=col[3]-self.lt
+      graph.setColor(r,g,b)
+      graph.line(self.x2,self.y2,self.x3,self.y3)
+      return
+    end
+    r=col[1]-self.lt
+    g=col[2]-self.lt
+    b=col[3]-self.lt
+    graph.setColor(r,g,b)
     graph.line(self.x1,self.y1,self.x2,self.y2)
-    col[i]=self.ttl
-    graph.setColor(col)
-    graph.line(self.x2,self.y2,self.x3,self.y3)
-    return
+  else
+    local col={255,96,64}
+    local r,g,b
+    graph.setLine(2,"smooth")
+    if self.cnt>1 then
+      r=col[1]-self.lt
+      g=col[2]-self.lt-32
+      b=col[3]-self.lt
+      graph.setColor(r,g,b)
+      graph.line(self.x1,self.y1,self.x2,self.y2)
+      r=col[1]-self.lt
+      g=col[2]-self.lt
+      b=col[3]-self.lt
+      graph.setColor(r,g,b)
+      graph.line(self.x2,self.y2,self.x3,self.y3)
+      return
+    end
+    r=col[1]-self.lt
+    g=col[2]-self.lt
+    b=col[3]-self.lt
+    graph.setColor(r,g,b)
+    graph.line(self.x1,self.y1,self.x2,self.y2)
   end
-  col[i]=self.ttl
-  graph.setColor(col)
-  graph.line(self.x1,self.y1,self.x2,self.y2)
 end
 
 function Device:draw_bar()
@@ -193,6 +223,16 @@ function Device:draw_cborder(_x,_y,c)
     end
     graph.setLine(1,"rough")
     graph.circle("line",x,y,self.cr,24)
+  end
+end
+
+function Device:draw_sborder(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.pl==ME and self.cl=="F" then
+    graph.setColor(0,0,255)
+    graph.setLine(1,"rough")
+    graph.circle("line",x,y,SUPPR,24)
   end
 end
 
@@ -321,7 +361,7 @@ function Device:net_switch()
 end
 
 function Device:net_upgrade()
-  if self.rtr then
+  if self.em then
     net_send("U:%d",self.idx)
   end
 end
@@ -470,6 +510,15 @@ function Router:draw()
   end
 end
 
+Tower.draw_st=Router.draw_st
+Tower.draw=Router.draw
+
+Factory.draw_st=Router.draw_st
+Factory.draw=Router.draw
+
+SupplyBay.draw_st=Router.draw_st
+SupplyBay.draw=Router.draw
+
 function Generator:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
@@ -485,6 +534,27 @@ end
 
 function Vault:init_gui()
   self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function Factory:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Upgrade",Device.net_upgrade)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function Tower:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Upgrade",Device.net_upgrade)
+  self.menu:add("Online",Device.net_switch)
+  self.menu:add("Delete",Device.net_delete)
+end
+
+function SupplyBay:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end

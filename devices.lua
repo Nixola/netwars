@@ -1,14 +1,17 @@
 -- vim:et
 
 NVER=10 -- network protocol version
+
+VCASH=1000 -- vault cash storage
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
 LINK2=LINK+2
 DEGT=10 -- degrate timer
+MOVER=500 -- move length
 SHOTR=300 -- shot length
-SUPPR=100 -- device supply length
-BEAMR=70 -- engineering length
-CAPTC=3 -- shots needed to capture
+SUPPR=150 -- device supply length
+BEAMR=100 -- engineering length
+CAPTC=5 -- shots needed to capture
 
 class "Player"
 
@@ -67,17 +70,10 @@ function Device:initialize(pl,x,y)
   self.attch=false -- D attached to power source
   self.nomove=false
   self.bdevs={} -- devices connected to us (back links)
-  if self.cl=="B" then
-    self.pwr=0
-    self.gotpwr=true
-  end
   if self.cl=="G" then
     self.nomove=true
     self.pwr=0
     self.gotpwr=true
-  end
-  if self.cl=="R" or self.cl=="F" then
-    self.rtr=true
   end
   self.health=self.maxhealth
   self.links={} -- forward links
@@ -289,7 +285,7 @@ function Device:delete()
       if self.attch then
         self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
         self.pl.dcnt=self.pl.dcnt-1
-        self.pl.maxcash=self.pl.dcnt*1000
+        self.pl.maxcash=self.pl.dcnt*VCASH
       else
         self.pl.cash=self.pl.cash-math.floor(self.pl.cash/(self.pl.dcnt+1))
       end
@@ -330,13 +326,30 @@ end
 function Unit:calc_xy(x,y)
   local vx,vy=x-self.x,y-self.y
   local len=math.floor(math.sqrt(vx*vx+vy*vy))
-  if len>LINK then
-    local s=(len-LINK)/len
+  if len>MOVER then
+    local s=(len-MOVER)/len
     vx,vy=vx*s,vy*s
     x,y=x-vx,y-vy
   end
   x,y=math.floor(x),math.floor(y)
   return x,y
+end
+
+function Unit:chk_supply(x,y)
+  local t=dhash:get(self:bound_box(x,y))
+  local ok=false
+  local len,vx,vy
+  for _,d in pairs(t) do
+    if self~=d and d.cl=="F" and self.pl==d.pl then
+      vx,vy=x-d.x,y-d.y
+      len=math.floor(math.sqrt(vx*vx+vy*vy))
+      if len<=SUPPR then
+        ok=true
+        break
+      end
+    end
+  end
+  return ok
 end
 
 function Unit:move(x,y)
@@ -394,7 +407,7 @@ class "Generator" : extends(Device) {
 cl="G";
 ec=1; -- emit count
 em=1; -- max emit count
-maxhealth=200;
+maxhealth=100;
 maxlinks=3;
 maxblinks=2;
 price=0;
@@ -404,7 +417,7 @@ class "Router" : extends(Device) {
 cl="R";
 ec=1; -- emit count
 em=3; -- max emit count
-maxhealth=200;
+maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=5;
 maxblinks=5;
@@ -419,7 +432,7 @@ maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=0;
 maxblinks=3;
-price=250;
+price=200;
 }
 
 class "Vault" : extends(Device) {
@@ -435,41 +448,53 @@ cl="T";
 ec=1; -- shot count
 em=3; -- max shot count
 maxhealth=200;
+maxpkt=100; -- max queue
 maxlinks=0;
 maxblinks=2;
 price=200;
 }
 
-d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower}
+class "SupplyBay" : extends(Device) {
+cl="S";
+ec=1; -- shot count
+em=3; -- max shot count
+maxhealth=100;
+maxpkt=1000; -- max queue
+maxlinks=0;
+maxblinks=2;
+price=100;
+}
+
+d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower,S=SupplyBay}
 
 class "Commander" : extends(Unit) {
 cl="c";
 maxhealth=100;
-speed=15;
+speed=20;
 price=0;
 }
 
 class "Engineer" : extends(Unit) {
 cl="e";
 maxhealth=20;
-maxpkt=50; -- max queue
-speed=15;
+maxpkt=100; -- max queue
+speed=20;
 price=200;
 }
 
 class "Tank" : extends(Unit) {
 cl="t";
 maxhealth=50;
-maxpkt=20; -- max queue
-speed=20;
+maxpkt=50; -- max queue
+speed=25;
 price=50;
 }
 
 class "Supply" : extends(Unit) {
 cl="s";
 maxhealth=50;
-maxpkt=200; -- max queue
-speed=30;
+maxpkt=300; -- max queue
+speed=35;
 price=100;
 }
 

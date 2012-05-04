@@ -486,6 +486,11 @@ function main_draw()
         end
       end
     end
+    if buyidx==2 then
+      for _,o in pairs(hd) do
+        o:draw_sborder()
+      end
+    end
   end
   -- draw units
   for _,o in pairs(hu) do
@@ -495,7 +500,7 @@ function main_draw()
   if eye.s>0.4 then
     for _,o in pairs(shots) do
       ok1=o.obj1.isdev and hd[o.obj1] or hu[o.obj1]
-      ok1=o.obj2.isdev and hd[o.obj2] or hu[o.obj2]
+      ok2=o.obj2.isdev and hd[o.obj2] or hu[o.obj2]
       if ok1 or ok2 then
         o:draw()
       end
@@ -643,6 +648,9 @@ local function set_cl_fonts(imgfont)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,64,8,16,16)
   d_cl.T.__members.img=graph.newImage(img)
+  img=love.image.newImageData(16,16)
+  img:paste(imgfont,0,0,80,8,16,16)
+  d_cl.S.__members.img=graph.newImage(img)
   img=love.image.newImageData(8,8)
   img:paste(imgfont,0,0,4,36,8,8)
   u_cl.e.__members.img=graph.newImage(img)
@@ -693,7 +701,7 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  local cl={"R","T","F","V"}
+  local cl={"R","T","S","F","V"}
   local x=25
   local objs={}
   for i,v in ipairs(cl) do

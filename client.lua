@@ -138,72 +138,82 @@ local function parse_server(msg,ts)
     if a.n<5 then
       return
     end
-    local d1=units[tonumber(a[2])]
-    local d2=units[tonumber(a[3])]
-    d1.pkt=tonumber(a[4])
-    d2.pkt=tonumber(a[5])
-    local s=Shot:new(d1,d2)
-    shots:add(s)
+    local u1=units[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if u1 and u2 then
+      u1.pkt=tonumber(a[4])
+      u2.pkt=tonumber(a[5])
+      local s=Shot:new(u1,u2)
+      shots:add(s)
+    end
     return
   end
-  if a[1]=="SP" then -- Hit:u1:d2:pkt:pkt
+  if a[1]=="SP" then -- Hit:d1:u2:pkt:pkt
     if a.n<5 then
       return
     end
     local d1=devices[tonumber(a[2])]
-    local d2=units[tonumber(a[3])]
-    d1.pkt=tonumber(a[4])
-    d2.pkt=tonumber(a[5])
-    local s=Shot:new(d1,d2)
-    shots:add(s)
+    local u2=units[tonumber(a[3])]
+    if d1 and u2 then
+      d1.pkt=tonumber(a[4])
+      u2.pkt=tonumber(a[5])
+      local s=Shot:new(d1,u2)
+      shots:add(s)
+    end
     return
   end
   if a[1]=="Sh" then -- Hit:u1:u2:pkt:health
     if a.n<5 then
       return
     end
-    local d1=units[tonumber(a[2])]
-    local d2=units[tonumber(a[3])]
-    d1.pkt=tonumber(a[4])
-    d2.health=tonumber(a[5])
-    local s=Shot:new(d1,d2)
-    shots:add(s)
+    local u1=units[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if u1 and u2 then
+      u1.pkt=tonumber(a[4])
+      u2.health=tonumber(a[5])
+      local s=Shot:new(u1,u2)
+      shots:add(s)
+    end
     return
   end
   if a[1]=="SH" then -- Hit:u1:d2:pkt:health
     if a.n<5 then
       return
     end
-    local d1=units[tonumber(a[2])]
+    local u1=units[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    d1.pkt=tonumber(a[4])
-    d2.health=tonumber(a[5])
-    local s=Shot:new(d1,d2)
-    shots:add(s)
+    if u1 and d2 then
+      u1.pkt=tonumber(a[4])
+      d2.health=tonumber(a[5])
+      local s=Shot:new(u1,d2)
+      shots:add(s)
+    end
     return
   end
   if a[1]=="Sc" then -- Capture:u1:d2:pkt
     if a.n<4 then
       return
     end
-    local d1=units[tonumber(a[2])]
+    local u1=units[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    d1.pkt=tonumber(a[4])
-    local s=Shot:new(d1,d2)
-    shots:add(s)
+    if u1 and d2 then
+      u1.pkt=tonumber(a[4])
+      local s=Shot:new(u1,d2)
+      shots:add(s)
+    end
     return
   end
   if a[1]=="SO" then -- Takeover:u1:d2:pkt
     if a.n<4 then
       return
     end
-    local d1=units[tonumber(a[2])]
+    local u1=units[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    local pl=d1.pl
-    d1.pkt=tonumber(a[4])
+    local pl=u1.pl
+    u1.pkt=tonumber(a[4])
     d2:takeover(pl)
-    d1.targ=nil
-    local s=Shot:new(d1,d2)
+    u1.targ=nil
+    local s=Shot:new(u1,d2)
     shots:add(s)
     return
   end
@@ -212,12 +222,12 @@ local function parse_server(msg,ts)
       return
     end
     local idx=tonumber(a[3])
-    local d1=units[tonumber(a[2])]
-    local d2=units[idx]
-    d1.pkt=tonumber(a[4])
-    d2:delete()
+    local u1=units[tonumber(a[2])]
+    local u2=units[idx]
+    u1.pkt=tonumber(a[4])
+    u2:delete()
     units[idx]=nil
-    local s=Shot:new(d1,d2)
+    local s=Shot:new(u1,u2)
     shots:add(s)
     return
   end
@@ -226,23 +236,41 @@ local function parse_server(msg,ts)
       return
     end
     local idx=tonumber(a[3])
-    local d1=units[tonumber(a[2])]
+    local u1=units[tonumber(a[2])]
     local d2=devices[idx]
-    d1.pkt=tonumber(a[4])
+    u1.pkt=tonumber(a[4])
     d2:delete()
     devices[idx]=nil
-    local p=Packet:new(d1,d2)
-    packets:add(p)
+    local s=Shot:new(u1,d2)
+    shots:add(s)
     return
   end
-  if a[1]=="Dh" then -- Health:idx:health
-    if a.n<3 then
+  if a[1]=="Th" then -- Hit:d1:u2:pkt:health
+    if a.n<5 then
       return
     end
-    local o=devices[tonumber(a[2])]
-    if o then
-      o.health=tonumber(a[3])
+    local d1=devices[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if d1 and u2 then
+      d1.pkt=tonumber(a[4])
+      u2.health=tonumber(a[5])
+      local s=Shot:new(d1,u2)
+      shots:add(s)
     end
+    return
+  end
+  if a[1]=="Td" then -- Destroy:d1:u2:pkt
+    if a.n<4 then
+      return
+    end
+    local idx=tonumber(a[3])
+    local d1=devices[tonumber(a[2])]
+    local u2=units[idx]
+    d1.pkt=tonumber(a[4])
+    u2:delete()
+    units[idx]=nil
+    local s=Shot:new(d1,u2)
+    shots:add(s)
     return
   end
   if a[1]=="Dn" then -- New:pl:cl:idx:x:y:...
@@ -370,13 +398,13 @@ local function parse_server(msg,ts)
       return
     end
     local o=cl:new(pl,x,y)
-    if a[3]=="G" or a[3]=="B" then
+    if a[3]=="G" then
       if a.n<9 then
         return
       end
       o.pwr=tonumber(a[9])
     end
-    if o.rtr then
+    if o.ec then
       if a.n<9 then
         return
       end
