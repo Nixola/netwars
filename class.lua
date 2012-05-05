@@ -250,7 +250,7 @@ function squeue(sz)
   function object:get(ts,dt)
     local i=self.head
     while i do
-      if (not i.ts) or ts>=i.ts then
+      if not i.ts or ts>=i.ts then
         i.ts=ts+dt
         return i.val
       end
@@ -292,7 +292,7 @@ function squeue(sz)
     local dt=_dt
     return function()
       while i do
-        if (not i.ts) or ts>=i.ts then
+        if not i.ts or ts>=i.ts then
           local v=i.val
           i.ts=ts+dt
           i=i.link

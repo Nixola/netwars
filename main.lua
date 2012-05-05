@@ -126,7 +126,7 @@ local function get_device(x,y)
   return nil
 end
 
-local function get_my_device(x,y)
+local function get_my_dev(x,y)
   local t=dhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl==ME then
@@ -155,9 +155,20 @@ local function get_buydev(x,y)
   return nil
 end
 
-local function get_enemydev(x,y)
-  for _,o in pairs(buydevs[buyidx]) do
-    if o:is_pointed(x,y) then
+local function get_enemy_dev(x,y)
+  local t=dhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl~=ME then
+      return o
+    end
+  end
+  return nil
+end
+
+local function get_enemy_unit(x,y)
+  local t=uhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl~=ME then
       return o
     end
   end
@@ -215,13 +226,13 @@ function main_mousepressed(mx,my,b)
       umove=obj
       return
     end
-    obj=get_my_device(x,y)
+    obj=get_my_dev(x,y)
     if obj then
       if kshift then
         obj:net_switch()
         return
       end
-      if (not obj.nomove) and (not obj.online) and obj.pc<1 then
+      if not obj.nomove and not obj.online and obj.pc<1 then
         drag=obj
       end
     end
@@ -233,7 +244,7 @@ function main_mousepressed(mx,my,b)
       utarg=obj
       return
     end
-    conn=get_my_device(x,y)
+    conn=get_my_dev(x,y)
     return
   end
 end
@@ -323,7 +334,11 @@ function main_keypressed(k,ch)
     return
   end
   if k==" " then
-    buyidx=buyidx<2 and buyidx+1 or 1
+    if ME.havecmd then
+      buyidx=buyidx<2 and buyidx+1 or 1
+    else
+      buyidx=3
+    end
     return
   end
   if k=="1" or k=="kp1" then
@@ -417,7 +432,7 @@ local function draw_hud()
     graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
     graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
   end
-  if hint and hint.pl and hint.pl.name then
+  if hint and hint.pl and hint.pl~=ME and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
   end
 end
@@ -484,11 +499,16 @@ function main_draw()
         if o~=d then
           o:draw_cborder()
         end
+        if o.cl=="R" then
+          o:draw_rng()
+        end
       end
     end
     if buyidx==2 then
       for _,o in pairs(hd) do
-        o:draw_sborder()
+        if o.cl=="F" then
+          o:draw_rng()
+        end
       end
     end
   end
@@ -507,7 +527,9 @@ function main_draw()
     end
   end
   -- draw commands
+  local cmd=false
   if conn then
+    cmd=true
     if conn.deleted then
       conn=nil
     else
@@ -518,6 +540,7 @@ function main_draw()
       else
         local tx,ty=mox-conn.x,moy-conn.y
         local len=math.floor(math.sqrt(tx*tx+ty*ty))
+        conn:draw_rng(x,y)
         if len>LINK then
           graph.setColor(128,128,128)
         else
@@ -529,6 +552,7 @@ function main_draw()
     end
   end
   if drag then
+    cmd=true
     if drag.deleted then
       drag=nil
     else
@@ -536,21 +560,30 @@ function main_draw()
     end
   end
   if bdrag then
+    cmd=true
     bdrag:drag(mox,moy)
   end
   if bdev then
+    cmd=true
     bdev:drag(mox,moy)
   end
   if umove then
     local x,y=umove:calc_xy(mox,moy)
+    cmd=true
+    umove:draw_rng(x,y)
     graph.setColor(255,255,255)
     graph.setLine(1,"rough")
     graph.line(umove.x,umove.y,x,y)
   end
   if utarg then
+    cmd=true
+    utarg:draw_rng()
     graph.setColor(0,0,255)
     graph.setLine(1,"rough")
     graph.line(utarg.x,utarg.y,mox,moy)
+  end
+  if not cmd and hint and hint.pl==ME then
+    hint:draw_rng()
   end
   -- hud display
   graph.pop()
@@ -589,9 +622,11 @@ function main_update(dt)
     else
       hover=nil
       if eye.s<0.6 then
-        hint=get_enemydev(mox,moy)
+        local obj=get_enemy_dev(mox,moy)
+        hint=obj or get_enemy_unit(mox,moy)
       else
-        hint=nil
+        local obj=get_my_dev(mox,moy)
+        hint=obj or get_my_unit(mox,moy)
       end
     end
   end

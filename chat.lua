@@ -40,7 +40,7 @@ local function history(sz)
     end
   end
   function object:set_off(n,s)
-    if (not n) or n<=0 then
+    if not n or n<=0 then
       self.offp=nil
       self.offv=0
       return

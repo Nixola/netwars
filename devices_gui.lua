@@ -30,7 +30,7 @@ function Packet:initialize(d1,d2)
   self.cnt=1
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
-  if self.pl==ME then
+  if d2.pl==ME then
     ME.pkts=ME.pkts+1
   end
 end
@@ -40,7 +40,7 @@ function Packet:delete()
   local d2=self.dev2
   d1.pc=d1.pc-1
   d2.pc=d2.pc-1
-  if self.pl==ME then
+  if d2.pl==ME then
     ME.pkts=ME.pkts-1
   end
 end
@@ -187,7 +187,7 @@ function Device:draw_sym(_x,_y)
     else
       graph.setColor(0,0,255)
     end
-  elseif (not self.pl) then
+  elseif not self.pl then
     graph.setColor(128,128,128)
   elseif self.pl==ME then
     if self.online then
@@ -226,13 +226,23 @@ function Device:draw_cborder(_x,_y,c)
   end
 end
 
-function Device:draw_sborder(_x,_y)
-  local x=_x or self.x
-  local y=_y or self.y
-  if self.pl==ME and self.cl=="F" then
-    graph.setColor(0,0,255)
+function Device:draw_rng()
+  if self.pl~=ME then
+    return
+  end
+  if self.cl=="G" or self.cl=="R" then
     graph.setLine(1,"rough")
-    graph.circle("line",x,y,SUPPR,24)
+    graph.setColor(0,255,0)
+    graph.circle("line",self.x,self.y,LINK,24)
+  elseif self.cl=="S" or self.cl=="F" then
+    graph.setLine(1,"rough")
+    graph.setColor(0,0,255)
+    graph.circle("line",self.x,self.y,SUPPR,24)
+    return
+  elseif self.cl=="T" then
+    graph.setLine(1,"rough")
+    graph.setColor(255,0,0)
+    graph.circle("line",self.x,self.y,SHOTR,24)
   end
 end
 
@@ -302,7 +312,7 @@ function Device:net_move(x,y)
   if self.nomove then
     return
   end
-  if (not self.online) and self.pc<1 then
+  if not self.online and self.pc<1 then
     x,y=self:calc_xy(x,y)
     if self:chk_border(x,y) then
       net_send("M:%d:%d:%d",self.idx,x,y)
@@ -314,10 +324,10 @@ function Device:net_connect(dev)
   if self==dev then
     return
   end
-  if self.cl=="G" and (self.pl~=dev.pl or dev.cl~="R") then
+  if self.cl=="G" and dev.cl~="R" then
     return
   end
-  if self.cl=="B" and (self.pl~=dev.pl or dev.cl~="R") then
+  if self.cl=="R" and dev.cl=="G" then
     return
   end
   if #self.links>=self.maxlinks then
@@ -404,7 +414,7 @@ function Unit:draw_sym(_x,_y)
     else
       graph.setColor(0,0,255)
     end
-  elseif (not self.pl) then
+  elseif not self.pl then
     graph.setColor(128,128,128)
   elseif self.pl==ME then
     graph.setColor(0,0,255)
@@ -418,6 +428,20 @@ function Unit:draw_sym(_x,_y)
   if self.hud or eye.s>0.9 then
     graph.setColorMode("replace")
     graph.draw(self.img,x-4,y-4)
+  end
+end
+
+function Unit:draw_rng(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  graph.setLine(1,"rough")
+  if self.cl=="s" or self.cl=="e" or self.cl=="c" then
+    graph.setColor(0,0,255)
+    graph.circle("line",x,y,BEAMR,24)
+  end
+  if self.cl=="t" or self.cl=="c" then
+    graph.setColor(255,0,0)
+    graph.circle("line",x,y,SHOTR,24)
   end
 end
 

@@ -7,6 +7,7 @@ end
 require "class"
 require "sphash"
 require "devices"
+require "devices_srv"
 require "server"
 
 SRV=true
@@ -64,7 +65,7 @@ local function new_client(str,ts,ip,port)
     sock:sendto("ERR:~Client version mismatch.",ip,port)
     return
   end
-  local pl=Player:new(1000)
+  local pl=Player:new(3000)
   local h=ip..":"..port
   pl.ip=ip
   pl.port=port
@@ -95,7 +96,7 @@ local function new_client(str,ts,ip,port)
     if o.cl=="G" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
     elseif o.ec then
-      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec))
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec,o.pkt))
     else
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y))
     end
@@ -226,7 +227,7 @@ end
 mapchunk=nil
 if arg[1] then
   local chunk=loadfile(arg[1])
-  mapchunk=chunk()
+  mapchunk=chunk(arg[2])
   mapchunk()
 end
 
@@ -257,7 +258,7 @@ while true do
     if ts>=o.ts then
       del_client(o)
     else
-      if (not o.insync) and o.gotok and o.syncq.len<1 then
+      if not o.insync and o.gotok and o.syncq.len<1 then
         o.insync=true
       end
       msg=o.recvq:get(o.seq)

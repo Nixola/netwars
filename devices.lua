@@ -1,8 +1,8 @@
 -- vim:et
 
-NVER=10 -- network protocol version
+NVER=11 -- network protocol version
 
-VCASH=1000 -- vault cash storage
+VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
 LINK2=LINK+2
@@ -35,7 +35,7 @@ function Player:disconnect()
   for k,o in pairs(units) do
     if o.pl==self then
       units[k]=nil
-      dhash:del(o)
+      uhash:del(o)
     end
   end
   for k,o in pairs(devices) do
@@ -164,10 +164,10 @@ function Device:connect(dev)
   if self==dev then
     return nil
   end
-  if self.cl=="G" and (self.pl~=dev.pl or dev.cl~="R") then
+  if self.cl=="G" and dev.cl~="R" then
     return nil
   end
-  if self.cl=="B" and (self.pl~=dev.pl or dev.cl~="R") then
+  if self.cl=="R" and dev.cl=="G" then
     return nil
   end
   if #self.links>=self.maxlinks then
@@ -270,6 +270,9 @@ function Device:takeover(pl)
   self.online=false
   if pl then
     pl.devcnt=pl.devcnt+1
+    if SRV and self.cl=="V" then
+      self:update("takeover")
+    end
   end
 end
 
@@ -278,13 +281,7 @@ function Device:delete()
   if self.pl then
     self.pl.devcnt=self.pl.devcnt-1
     if SRV and self.cl=="V" then
-      if self.attch then
-        self.pl.cash=self.pl.cash-math.floor(self.pl.cash/self.pl.dcnt)
-        self.pl.dcnt=self.pl.dcnt-1
-        self.pl.maxcash=self.pl.dcnt*VCASH
-      else
-        self.pl.cash=self.pl.cash-math.floor(self.pl.cash/(self.pl.dcnt+1))
-      end
+      self:update("delete")
     end
   end
   dhash:del(self)
@@ -417,7 +414,7 @@ maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=5;
 maxblinks=5;
-price=50;
+price=100;
 }
 
 class "Factory" : extends(Device) {
@@ -428,7 +425,7 @@ maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=0;
 maxblinks=3;
-price=200;
+price=1000;
 }
 
 class "Vault" : extends(Device) {
@@ -436,7 +433,7 @@ cl="V";
 maxhealth=100;
 maxlinks=0;
 maxblinks=5;
-price=200;
+price=300;
 }
 
 class "Tower" : extends(Device) {
@@ -447,7 +444,7 @@ maxhealth=200;
 maxpkt=100; -- max queue
 maxlinks=0;
 maxblinks=2;
-price=200;
+price=400;
 }
 
 class "SupplyBay" : extends(Device) {
@@ -458,7 +455,7 @@ maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=0;
 maxblinks=2;
-price=100;
+price=300;
 }
 
 d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower,S=SupplyBay}
@@ -475,7 +472,7 @@ cl="e";
 maxhealth=20;
 maxpkt=100; -- max queue
 speed=20;
-price=200;
+price=500;
 }
 
 class "Tank" : extends(Unit) {
@@ -483,7 +480,7 @@ cl="t";
 maxhealth=50;
 maxpkt=50; -- max queue
 speed=25;
-price=50;
+price=100;
 }
 
 class "Supply" : extends(Unit) {
@@ -491,7 +488,7 @@ cl="s";
 maxhealth=50;
 maxpkt=300; -- max queue
 speed=35;
-price=100;
+price=200;
 }
 
 u_cl={e=Engineer,t=Tank,s=Supply,c=Commander}

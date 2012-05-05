@@ -318,6 +318,9 @@ local function parse_server(msg,ts)
     o.idx=idx
     units[idx]=o
     uhash:add(o)
+    if o.cl=="c" then
+      pl.havecmd=true
+    end
     return
   end
   if a[1]=="Dd" then -- Del:idx
@@ -409,12 +412,12 @@ local function parse_server(msg,ts)
         return
       end
       o.pwr=tonumber(a[9])
-    end
-    if o.ec then
-      if a.n<9 then
+    elseif o.ec then
+      if a.n<10 then
         return
       end
       o.ec=tonumber(a[9])
+      o.pkt=tonumber(a[10])
     end
     o.idx=idx
     o.health=tonumber(a[5])

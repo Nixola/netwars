@@ -5,7 +5,7 @@ SRCS = conf.lua main.lua menu.lua client.lua chat.lua init.lua \
 	devices_gui.lua
 IMGS = imgs
 EXCL = imgs/.gitattributes
-SRVS = netwars.lua server.lua
+SRVS = netwars.lua server.lua devices_srv.lua
 APPN = netwars
 
 .PHONY: build srvpkg clean
