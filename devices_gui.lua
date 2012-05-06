@@ -9,6 +9,7 @@ function Packet:initialize(d1,d2)
   local l=math.sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
+  self.pl=d2.pl
   vx,vy=vx/l,vy/l
   self.x1=d1.x+vx*d1.r
   self.y1=d1.y+vy*d1.r
@@ -30,7 +31,7 @@ function Packet:initialize(d1,d2)
   self.cnt=1
   d1.pc=d1.pc+1
   d2.pc=d2.pc+1
-  if d2.pl==ME then
+  if self.pl==ME then
     ME.pkts=ME.pkts+1
   end
 end
@@ -40,7 +41,7 @@ function Packet:delete()
   local d2=self.dev2
   d1.pc=d1.pc-1
   d2.pc=d2.pc-1
-  if d2.pl==ME then
+  if self.pl==ME then
     ME.pkts=ME.pkts-1
   end
 end
@@ -226,8 +227,17 @@ function Device:draw_cborder(_x,_y,c)
   end
 end
 
-function Device:draw_rng()
-  if self.pl~=ME then
+function Device:draw_rng(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.hud then
+    graph.setLine(1,"rough")
+    graph.setColor(0,255,0)
+    graph.circle("line",x,y,LINK,24)
+    if self.cl=="T" then
+      graph.setColor(255,0,0)
+      graph.circle("line",x,y,SHOTR,24)
+    end
     return
   end
   if self.cl=="G" or self.cl=="R" then
@@ -279,6 +289,7 @@ function Device:drag(x,y)
   local ok,tp=self:chk_border2(x,y)
   self:draw_sym(x,y)
   self:draw_cborder(x,y,tp)
+  self:draw_rng(x,y)
 end
 
 function Device:is_pointed(x,y)

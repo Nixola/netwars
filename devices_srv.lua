@@ -5,6 +5,52 @@ function Device:link(dev) -- use only in map generators
   if l then
     links:add(l)
   end
+  dev:upd_bdevs()
+end
+
+function Device:upd_bdevs()
+  local tmp={}
+  for _,l in ipairs(self.blinks) do
+    if l.dev2==self then
+      tmp[#tmp+1]=l.dev1
+    end
+  end
+  self.bdevs=tmp
+  self.lupd=false
+end
+
+function Device:chk_bdevs()
+  if self.cl=="R" and #self.bdevs>0 then
+    local path={}
+    local ok=false
+    local tmp=self.bdevs
+    local tmp2={}
+    path[self]=self
+    while #tmp>0 do
+      for _,d in pairs(tmp) do
+        if not path[d] then
+          if d.pwr then
+            ok=true
+            break
+          end
+          path[d]=d
+          for _,o in pairs(d.bdevs) do
+            tmp2[#tmp2+1]=o
+          end
+        end
+      end
+      if ok then
+        break
+      end
+      tmp=tmp2
+      tmp2={}
+    end
+    if self.gotpwr~=ok then
+      for _,d in pairs(path) do
+        d.gotpwr=ok
+      end
+    end
+  end
 end
 
 function Device:check(dt)
@@ -22,25 +68,28 @@ function Device:check(dt)
       devices:del(self)
       return
     end
+  else
+    self.dt2=0
   end
   if not self.pwr then
     if self.lupd then
       self:upd_bdevs()
-      self.lupd=false
+      self:chk_bdevs()
+      return
     end
-    local nok=true
+    local ok=false
     for _,d in pairs(self.bdevs) do
       if d.gotpwr then
-        nok=false
+        ok=true
         break
       end
     end
-    self.gotpwr=not nok
+    self.gotpwr=ok
     if self.cl=="V" then
-      if nok and self.attch then
+      if not ok and self.attch then
         self:update("detach")
       end
-      if not (nok or self.attch) then
+      if ok and not self.attch then
         self:update("attach")
       end
     end

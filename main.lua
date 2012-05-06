@@ -499,15 +499,6 @@ function main_draw()
         if o~=d then
           o:draw_cborder()
         end
-        if d.cl=="R" then
-          if o.cl=="R" or o.cl=="G" then
-            o:draw_rng()
-          end
-        else
-          if o.cl=="R" then
-            o:draw_rng()
-          end
-        end
       end
     end
     if buyidx==2 then

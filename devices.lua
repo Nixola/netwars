@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=11 -- network protocol version
+NVER=12 -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -8,7 +8,7 @@ LINK=300 -- max link dinstance
 LINK2=LINK+2
 DEGT=10 -- degrate timer
 MOVER=500 -- move length
-SHOTR=300 -- shot length
+SHOTR=250 -- shot length
 SUPPR=150 -- device supply length
 BEAMR=100 -- engineering length
 CAPTC=5 -- shots needed to capture
@@ -36,6 +36,7 @@ function Player:disconnect()
     if o.pl==self then
       units[k]=nil
       uhash:del(o)
+      o.deleted=true
     end
   end
   for k,o in pairs(devices) do
@@ -43,6 +44,7 @@ function Player:disconnect()
       o:del_links()
       devices[k]=nil
       dhash:del(o)
+      o.deleted=true
     end
   end
 end
@@ -60,7 +62,7 @@ function Device:initialize(pl,x,y)
   self.initok=false
   self.isdev=true
   self.li=1 -- link index, used to forward packets (cyclic)
-  self.dt=0 -- dt for packet forward
+  self.dt=0 -- dt for logic
   self.dt2=0 -- dt for degradation
   self.pt=0 -- dt for packet on wire (server side)
   self.pc=0 -- packet cnt on wire (client side)
@@ -150,16 +152,6 @@ function Device:move(x,y)
   return false
 end
 
-function Device:upd_bdevs()
-  local tmp={}
-  for _,l in ipairs(self.blinks) do
-    if l.dev2==self then
-      tmp[#tmp+1]=l.dev1
-    end
-  end
-  self.bdevs=tmp
-end
-
 function Device:connect(dev)
   if self==dev then
     return nil
@@ -203,7 +195,7 @@ end
 function Device:unlink(dev)
   for _,l in ipairs(self.links) do
     if l.dev2==dev then
-      self:del_link(l.dev2)
+      self:del_link(dev)
       dev:del_blink(self)
       return l
     end
@@ -264,7 +256,7 @@ function Device:takeover(pl)
   if pl then
     pl.devcnt=pl.devcnt+1
     if SRV and self.cl=="V" then
-      self:update("takeover")
+      self:update("takeover",pl)
     end
   end
 end
@@ -298,7 +290,7 @@ function Unit:initialize(pl,x,y)
   self.y=y
   self.isdev=false
   self.pkt=0 -- packets in queue
-  self.dt=0 -- dt for attack
+  self.dt=0 -- dt for logic
   self.targ=nil -- manual target (device)
   self.health=self.maxhealth
 end
@@ -403,7 +395,7 @@ class "Router" : extends(Device) {
 cl="R";
 ec=1; -- emit count
 em=3; -- max emit count
-maxhealth=100;
+maxhealth=50;
 maxpkt=1000; -- max queue
 maxlinks=5;
 maxblinks=5;
