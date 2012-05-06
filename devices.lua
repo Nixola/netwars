@@ -200,13 +200,6 @@ function Device:connect(dev)
   return nil
 end
 
-function Device:link(dev) -- use only in map generators
-  local l=self:connect(dev)
-  if l then
-    links:add(l)
-  end
-end
-
 function Device:unlink(dev)
   for _,l in ipairs(self.links) do
     if l.dev2==dev then

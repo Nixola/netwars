@@ -1,5 +1,7 @@
 -- vim:et
 
+require "readline"
+
 local function history(sz)
   local object={}
   object.size=sz or 1000
@@ -84,6 +86,7 @@ end
 
 local chatq=queue(5)
 local histq=history()
+local readline=Readline:new(100)
 
 chat={
 input=false;
@@ -96,23 +99,22 @@ local str=""
 
 function chat.enter()
   buf={}
-  if str:len()>100 or str:len()<1 then
-    str=""
+  if readline.str:len()>readline.sz or readline.str:len()<1 then
+    readline:clr()
     return chat.console
   end
-  if str:match("[%a%d_\\ :;\"\'%,%.%<%>%(%)%[%]%{%}%/%?%!%@%#%$%%%^%&%*%-%+%=]*")~=str then
-    str=""
+  if readline.str:match("[%a%d_\\ :;\"\'%,%.%<%>%(%)%[%]%{%}%/%?%!%@%#%$%%%^%&%*%-%+%=]*")~=readline.str then
+    readline:clr()
     return chat.console
   end
-  net_send("MSG:~%s",str)
-  str=""
+  net_send("MSG:~%s",readline.str)
+  readline:clr()
   return chat.console
 end
 
 function chat.keypressed(key,ch)
   if key=="escape" then
-    buf={}
-    str=""
+    readline:clr()
     return chat.console
   end
   if key=="return" then
@@ -122,8 +124,7 @@ function chat.keypressed(key,ch)
     local step=math.floor((eye.cy-25)/15/2)
     if key=="`" then
       chat.console=false
-      buf={}
-      str=""
+      readline:clr()
       return false
     end
     if key=="pageup" then
@@ -135,18 +136,7 @@ function chat.keypressed(key,ch)
       return true
     end
   end
-  if key=="backspace" then
-    table.remove(buf)
-    str=table.concat(buf)
-    return true
-  end
-  if ch<32 or ch>127 then
-    return true
-  end
-  if table.maxn(buf)<100 then
-    table.insert(buf,string.char(ch))
-    str=table.concat(buf)
-  end
+  readline:key(key,ch)
   return true
 end
 
@@ -158,10 +148,10 @@ function chat.draw()
     graph.rectangle("fill",0,0,eye.sx-1,con_off)
     graph.setColor(64,64,192)
     graph.line(0,con_off,eye.sx-1,con_off)
-    graph.setColor(255,255,255)
     local y=con_off-20
-    graph.print(string.format("> %s",str),5,y)
+    readline:draw(5,y,"> ")
     y=y-20
+    graph.setColor(255,255,255)
     for m in histq:iter() do
       if y<5 then
         break
@@ -171,20 +161,26 @@ function chat.draw()
     end
     return
   end
-  graph.setColor(255,255,255)
   if chat.input then
-    graph.print(string.format("> %s",str),5,eye.sy-70)
+    readline:draw(5,eye.sy-70,"> ")
   end
   local y=5
+  graph.setColor(255,255,255)
   for m in chatq:iter() do
     graph.print(m,5,y)
     y=y+15
   end
 end
 
+local cr_dt=0
 local my_dt=0
 function chat.update(dt)
   local offv=eye.cy/0.3
+  cr_dt=cr_dt+dt
+  if cr_dt>=0.5 then
+    cr_dt=cr_dt-0.5
+    readline.cr=not readline.cr
+  end
   if chat.console then
     if con_off<eye.cy then
       con_off=math.floor(con_off+offv*dt)
@@ -206,11 +202,10 @@ function chat.update(dt)
     return
   end
   my_dt=my_dt+dt
-  if my_dt<chat.timeout then
-    return
+  if my_dt>=chat.timeout then
+    my_dt=my_dt-chat.timeout
+    chatq:del()
   end
-  my_dt=my_dt-chat.timeout
-  chatq:del()
 end
 
 function chat.msg(str)

@@ -1,39 +1,41 @@
 -- vim:et
 
+require "readline"
+
+local readline=Readline:new(15)
 local nick=""
 local addr=""
-local buf={}
-local str=""
 local init_st=1
 net_err=nil
 
 local function init_enter()
   buf={}
   if init_st==1 then
-    if str:len()>15 or str:len()<1 then
-      str=""
+    if readline.str:len()>15 or readline.str:len()<1 then
+      readline:clr()
       return
     end
-    if str:match("[%a%d_%-]*")~=str then
-      str=""
+    if readline.str:match("[%a%d_%-]*")~=readline.str then
+      readline:clr()
       return
     end
-    nick=str
-    str=""
+    nick=readline.str
+    readline:clr()
+    readline.sz=30
     init_st=2
     return
   end
   if init_st==2 then
-    if str:len()>30 or str:len()<1 then
-      str=""
+    if readline.str:len()>30 or readline.str:len()<1 then
+      readline:clr()
       return
     end
-    if str:match("[%a%d%.%-]*")~=str then
-      str=""
+    if readline.str:match("[%a%d%.%-]*")~=readline.str then
+      readline:clr()
       return
     end
-    addr=str
-    str=""
+    addr=readline.str
+    readline:clr()
     init_st=3
     return
   end
@@ -47,27 +49,24 @@ function init_keypressed(key,ch)
   if key=="return" then
     return init_enter()
   end
-  if key=="backspace" then
-    table.remove(buf)
-    str=table.concat(buf)
-    return
-  end
-  if ch<32 or ch>127 then
-    return
-  end
-  if table.maxn(buf)<30 then
-    table.insert(buf,string.char(ch))
-    str=table.concat(buf)
-  end
+  readline:key(key,ch)
 end
 
 function init_draw()
-  graph.setColor(255,255,255)
-  graph.setPoint(2,"rough")
   graph.scale(2)
-  graph.print("Nick: "..nick,50,eye.cy/2-20)
-  graph.print("Host: "..addr,50,eye.cy/2)
+  graph.setColor(255,255,255)
+  if init_st==1 then
+    readline:draw(50,eye.cy/2-20,"Nick: ")
+    graph.print("Host: "..addr,50,eye.cy/2)
+    return
+  end
+  if init_st==2 then
+    graph.print("Nick: "..nick,50,eye.cy/2-20)
+    readline:draw(50,eye.cy/2,"Host: ")
+  end
   if init_st>2 then
+    graph.print("Nick: "..nick,50,eye.cy/2-20)
+    graph.print("Host: "..addr,50,eye.cy/2)
     graph.print("connecting...",50,eye.cy/2+30)
   end
   if init_st>8 and net_err then
@@ -75,12 +74,12 @@ function init_draw()
   end
 end
 
+local cr_dt=0
 function init_update(dt)
-  if init_st==1 then
-    nick=str
-  end
-  if init_st==2 then
-    addr=str
+  cr_dt=cr_dt+dt
+  if cr_dt>=0.5 then
+    cr_dt=cr_dt-0.5
+    readline.cr=not readline.cr
   end
   if init_st==3 then
     net_conn(addr,nick)

@@ -499,8 +499,14 @@ function main_draw()
         if o~=d then
           o:draw_cborder()
         end
-        if o.cl=="R" then
-          o:draw_rng()
+        if d.cl=="R" then
+          if o.cl=="R" or o.cl=="G" then
+            o:draw_rng()
+          end
+        else
+          if o.cl=="R" then
+            o:draw_rng()
+          end
         end
       end
     end
@@ -726,6 +732,7 @@ function love.load()
     graph.setMode(t.graph_width,t.graph_height)
     chat.timeout=t.chat_timeout
   end
+  graph.setFont(12)
   eye.sx=graph.getWidth()
   eye.sy=graph.getHeight()
   eye.cx=eye.sx/2

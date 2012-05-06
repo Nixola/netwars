@@ -1,5 +1,12 @@
 -- vim:et
 
+function Device:link(dev) -- use only in map generators
+  local l=self:connect(dev)
+  if l then
+    links:add(l)
+  end
+end
+
 function Device:check(dt)
   if self.deleted then
     return
