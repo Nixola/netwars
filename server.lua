@@ -76,20 +76,69 @@ function parse_client(msg,pl,ts)
     end
     return
   end
-  if a[1]=="Ut" then -- Target:idx:...
-    if a.n<2 then
+  if a[1]=="Sh" then -- Shot:u1:u2
+    if a.n<3 then
       return
     end
-    local o=units[tonumber(a[2])]
-    local idx=tonumber(a[3])
-    if o and o.pl==pl then
-      if idx and devices[idx] then
-        o.targ=devices[idx]
-        cput("Ut:%d:%d",o.idx,idx)
-      else
-        o.targ=nil
-        cput("Ut:%d:",o.idx)
-      end
+    local u1=units[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if u1 and u2 then
+      u1:shot(u2)
+    end
+    return
+  end
+  if a[1]=="SH" then -- Shot:u1:d2
+    if a.n<3 then
+      return
+    end
+    local u1=units[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if u1 and d2 then
+      u1:shot(d2)
+    end
+    return
+  end
+  if a[1]=="Ts" then -- Shot:d1:u2
+    if a.n<3 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if d1 and u2 then
+      d1:shot(u2)
+    end
+    return
+  end
+  if a[1]=="Sp" then -- Shot:u1:u2
+    if a.n<3 then
+      return
+    end
+    local u1=units[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if u1 and u2 then
+      u1:transfer(u2)
+    end
+    return
+  end
+  if a[1]=="SP" then -- Shot:d1:u2
+    if a.n<3 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local u2=units[tonumber(a[3])]
+    if d1 and u2 then
+      d1:transfer(u2)
+    end
+    return
+  end
+  if a[1]=="SC" then -- Capture:u1:d2
+    if a.n<3 then
+      return
+    end
+    local u1=units[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if u1 and d2 then
+      u1:capture(d2)
     end
     return
   end
@@ -197,13 +246,11 @@ function devs_proc(dt)
   for _,o in pairs(devices) do
     o.pt=o.pt-dt
     o:check(dt)
-    if not o.deleted and o.online then
+    if not o.deleted and o.online and o.logic then
       o.dt=o.dt+dt
       if o.dt>=2.0 then
         o.dt=o.dt-2.0
-        if o.logic then
-          o:logic()
-        end
+        o:logic()
       end
     else
       o.dt=0
@@ -216,11 +263,6 @@ function units_proc(dt)
     if not o.deleted then
       if o:step(dt) then
         cput("Up:%d:%d:%d",o.idx,o.x,o.y)
-      end
-      o.dt=o.dt+dt
-      if o.dt>=2.0 then
-        o.dt=o.dt-2.0
-        o:logic()
       end
     end
   end

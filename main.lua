@@ -300,7 +300,7 @@ function main_mousereleased(mx,my,b)
   if utarg then
     if b=="r" then
       local obj=get_device(x,y)
-      utarg:net_targ(obj)
+      utarg.targ=obj
       utarg=nil
     end
     return
@@ -596,6 +596,35 @@ function main_draw()
 end
 
 local flow_dt=0
+
+function devs_proc(dt)
+  for _,o in pairs(devices) do
+    if o.pl==ME then
+      if not o.deleted and o.online and o.logic then
+        o.dt=o.dt+dt
+        if o.dt>=2.0 then
+          o.dt=o.dt-2.0
+          o:logic()
+        end
+      else
+        o.dt=0
+      end
+    end
+  end
+end
+
+function units_proc(dt)
+  for _,o in pairs(units) do
+    if o.pl==ME and not o.deleted then
+      o.dt=o.dt+dt
+      if o.dt>=2.0 then
+        o.dt=o.dt-2.0
+        o:logic()
+      end
+    end
+  end
+end
+
 function main_update(dt)
   net_proc()
   srvts=srvts+dt
@@ -644,6 +673,8 @@ function main_update(dt)
       shots:del(s)
     end
   end
+  units_proc(dt)
+  devs_proc(dt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1

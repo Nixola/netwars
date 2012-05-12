@@ -34,8 +34,8 @@ function net_sync()
     msg=net_read(ts)
   end
   if ts>=timeout then
-    love.event.push("q")
-    return
+    net_err="timeout..."
+    return true
   end
   net_parse(msg,ts)
   return insync
@@ -127,19 +127,6 @@ local function parse_server(msg,ts)
     o.vy=nil
     return
   end
-  if a[1]=="Ut" then -- Target:idx:...
-    if a.n<2 then
-      return
-    end
-    local o=units[tonumber(a[2])]
-    local idx=tonumber(a[3])
-    if idx and devices[idx] then
-      o.targ=devices[idx]
-    else
-      o.targ=nil
-    end
-    return
-  end
   if a[1]=="Sp" then -- Hit:u1:u2:pkt:pkt
     if a.n<5 then
       return
@@ -196,7 +183,7 @@ local function parse_server(msg,ts)
     end
     return
   end
-  if a[1]=="Sc" then -- Capture:u1:d2:pkt
+  if a[1]=="SC" then -- Capture:u1:d2:pkt
     if a.n<4 then
       return
     end

@@ -516,14 +516,6 @@ function Unit:net_move(x,y)
   net_send("Um:%d:%d:%d",self.idx,x,y)
 end
 
-function Unit:net_targ(targ)
-  if targ then
-    net_send("Ut:%d:%d",self.idx,targ.idx)
-  else
-    net_send("Ut:%d:",self.idx)
-  end
-end
-
 function Generator:draw_st()
   local w=self.r*2
   local p=self.pwr/MAXV
@@ -575,6 +567,186 @@ Factory.draw=Router.draw
 
 SupplyBay.draw_st=Router.draw_st
 SupplyBay.draw=Router.draw
+
+function Tower:logic()
+  if self.pkt<1 then
+    return
+  end
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local tx,ty,len
+  local e=self.ec
+  for _,u in pairs(t) do
+    if u.pl~=self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<SHOTR then
+        net_send("Ts:%d:%d",self.idx,u)
+        e=e-1
+        if e<1 then
+          break
+        end
+      end
+    end
+  end
+end
+
+function SupplyBay:logic()
+  if self.pkt<1 then
+    return
+  end
+  local t=uhash:get(self.x-SUPPR,self.y-SUPPR,self.x+SUPPR,self.y+SUPPR)
+  local tx,ty,len
+  local e=self.ec
+  for _,u in pairs(t) do
+    if u.pl==self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<SUPPR and u.maxpkt and u.pkt<u.maxpkt then
+        net_send("SP:%d:%d",self.idx,u.idx)
+        e=e-1
+        if e<1 then
+          break
+        end
+      end
+    end
+  end
+end
+
+Factory.logic=SupplyBay.logic
+
+function Commander:logic()
+  if self.targ then
+    if self.targ.deleted then
+      self.targ=nil
+    else
+      local targ=self.targ
+      local tx,ty=targ.x-self.x,targ.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<BEAMR and targ.pl~=self.pl then
+        net_send("SC:%d:%d",self.idx,targ.idx)
+        return
+      end
+    end
+  end
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ
+  local tlen=SHOTR
+  local tx,ty,len
+  for _,u in pairs(t) do
+    if u~=self and u.pl~=self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<tlen then
+        targ=u
+        tlen=len
+      end
+    end
+  end
+  if targ then
+    net_send("Sh:%d:%d",self.idx,targ.idx)
+  end
+end
+
+function Engineer:logic()
+  if self.pkt<1 then
+    return
+  end
+  if self.targ then
+    if self.targ.deleted then
+      self.targ=nil
+    else
+      local targ=self.targ
+      local tx,ty=targ.x-self.x,targ.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<BEAMR then
+        if targ.pl~=self.pl then
+          net_send("SC:%d:%d",self.idx,targ.idx)
+          return
+        elseif targ.health<targ.maxhealth then
+          net_send("SH:%d:%d",self.idx,targ.idx)
+          return
+        end
+      end
+    end
+  end
+  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
+  local targ=nil
+  local tlen=BEAMR
+  local tx,ty,len
+  for _,u in pairs(t) do
+    if u~=self and u.pl==self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<tlen and u.health<u.maxhealth then
+        targ=u
+        tlen=len
+      end
+    end
+  end
+  if targ then
+    net_send("Sh:%d:%d",self.idx,targ.idx)
+  end
+end
+
+function Tank:logic()
+  if self.pkt<1 then
+    return
+  end
+  if self.targ then
+    if self.targ.deleted then
+      self.targ=nil
+    else
+      local targ=self.targ
+      local tx,ty=targ.x-self.x,targ.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<SHOTR then
+        net_send("SH:%d:%d",self.idx,targ.idx)
+        return
+      end
+    end
+  end
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ=nil
+  local tlen=SHOTR
+  local tx,ty,len
+  for _,u in pairs(t) do
+    if u~=self and u.pl~=self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<tlen then
+        targ=u
+        tlen=len
+        break
+      end
+    end
+  end
+  if targ then
+    net_send("Sh:%d:%d",self.idx,targ.idx)
+  end
+end
+
+function Supply:logic()
+  if self.pkt<1 then
+    return
+  end
+  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
+  local targ=nil
+  local tlen=BEAMR
+  local tx,ty,len
+  for _,u in pairs(t) do
+    if u~=self and u.pl==self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<tlen and u.cl~="s" and u.maxpkt and u.pkt<u.maxpkt then
+        targ=u
+        tlen=len
+      end
+    end
+  end
+  if targ then
+    net_send("Sp:%d:%d",self.idx,targ.idx)
+  end
+end
 
 function Generator:init_gui()
   self.menu=Menu:new(self)

@@ -220,7 +220,11 @@ function Router:logic()
   self.li=i
 end
 
-function Tower:attack(targ)
+function Tower:shot(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
+    return
+  end
   self.pkt=self.pkt-1
   targ.health=targ.health-5
   if targ.health<1 then
@@ -233,6 +237,9 @@ function Tower:attack(targ)
 end
 
 function Tower:logic()
+  if self.pl then
+    return
+  end
   if self.pkt<1 then
     return
   end
@@ -244,7 +251,7 @@ function Tower:logic()
       tx,ty=u.x-self.x,u.y-self.y
       len=math.sqrt(tx*tx+ty*ty)
       if len<SHOTR then
-        self:attack(u)
+        self:shot(u)
         e=e-1
         if e<1 then
           break
@@ -255,42 +262,29 @@ function Tower:logic()
 end
 
 function SupplyBay:transfer(targ)
-  local v=self.pkt>MAXV and MAXV or self.pkt
-  self.pkt=self.pkt-v
-  targ.pkt=targ.pkt+v
-  if targ.pkt>targ.maxpkt then
-    targ.pkt=targ.maxpkt
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=SUPPR then
+    return
+  end
+  if targ.pkt<targ.maxpkt then
+    local v=self.pkt>MAXV and MAXV or self.pkt
+    self.pkt=self.pkt-v
+    targ.pkt=targ.pkt+v
+    if targ.pkt>targ.maxpkt then
+      targ.pkt=targ.maxpkt
+    end
   end
   mput("SP:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.pkt)
 end
 
-function SupplyBay:logic()
-  if self.pkt<1 then
-    return
-  end
-  local t=uhash:get(self.x-SUPPR,self.y-SUPPR,self.x+SUPPR,self.y+SUPPR)
-  local tx,ty,len
-  local e=self.ec
-  for _,u in pairs(t) do
-    if u~=self and u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<SUPPR and u.maxpkt and u.pkt<u.maxpkt then
-        self:transfer(u)
-        e=e-1
-        if e<1 then
-          break
-        end
-      end
-    end
-  end
-end
-
-Factory.logic=SupplyBay.logic
 Factory.transfer=SupplyBay.transfer
 
 function Commander:capture(targ)
   if targ.pl==self.pl then
+    return
+  end
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
   if targ.cpl~=self.pl then
@@ -299,7 +293,7 @@ function Commander:capture(targ)
   end
   targ.ccnt=targ.ccnt+1
   if targ.ccnt<CAPTC then
-    mput("Sc:%d:%d:%d",self.idx,targ.idx,self.pkt)
+    mput("SC:%d:%d:%d",self.idx,targ.idx,self.pkt)
     return
   end
   cput("SO:%d:%d:%d",self.idx,targ.idx,self.pkt)
@@ -307,7 +301,11 @@ function Commander:capture(targ)
   self.targ=nil
 end
 
-function Commander:attack(targ)
+function Commander:shot(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
+    return
+  end
   targ.health=targ.health-10
   if targ.health<1 then
     targ:delete()
@@ -318,54 +316,29 @@ function Commander:attack(targ)
   end
 end
 
-function Commander:logic()
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<BEAMR and targ.pl~=self.pl then
-        self:capture(targ)
-        return
-      end
-    end
+function Engineer:shot(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+    return
   end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ
-  local tlen=SHOTR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<tlen then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    self:attack(targ)
-  end
-end
-
-function Engineer:heal(targ)
   if targ.isdev then
-    local v=self.pkt>MAXV and MAXV or self.pkt
-    self.pkt=self.pkt-v
-    targ.health=targ.health+v*2
-    if targ.health>targ.maxhealth then
-      targ.health=targ.maxhealth
+    if targ.health<targ.maxhealth then
+      local v=self.pkt>MAXV and MAXV or self.pkt
+      self.pkt=self.pkt-v
+      targ.health=targ.health+v*2
+      if targ.health>targ.maxhealth then
+        targ.health=targ.maxhealth
+      end
     end
     mput("SH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
   else
-    local v=self.pkt>MAXV and MAXV or self.pkt
-    self.pkt=self.pkt-v
-    targ.health=targ.health+v*2
-    if targ.health>targ.maxhealth then
-      targ.health=targ.maxhealth
+    if targ.health<targ.maxhealth then
+      local v=self.pkt>MAXV and MAXV or self.pkt
+      self.pkt=self.pkt-v
+      targ.health=targ.health+v*2
+      if targ.health>targ.maxhealth then
+        targ.health=targ.maxhealth
+      end
     end
     mput("Sh:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
   end
@@ -378,6 +351,10 @@ function Engineer:capture(targ)
   if self.pkt<MAXV then
     return
   end
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+    return
+  end
   self.pkt=self.pkt-MAXV
   if targ.cpl~=self.pl then
     targ.cpl=self.pl
@@ -385,7 +362,7 @@ function Engineer:capture(targ)
   end
   targ.ccnt=targ.ccnt+1
   if targ.ccnt<CAPTC then
-    mput("Sc:%d:%d:%d",self.idx,targ.idx,self.pkt)
+    mput("SC:%d:%d:%d",self.idx,targ.idx,self.pkt)
     return
   end
   cput("SO:%d:%d:%d",self.idx,targ.idx,self.pkt)
@@ -393,48 +370,12 @@ function Engineer:capture(targ)
   self.targ=nil
 end
 
-function Engineer:logic()
-  if self.pkt<1 then
+
+function Tank:shot(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<BEAMR then
-        if targ.pl~=self.pl then
-          self:capture(targ)
-          return
-        elseif targ.health<targ.maxhealth then
-          self:heal(targ)
-          return
-        end
-      end
-    end
-  end
-  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
-  local targ=nil
-  local tlen=BEAMR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<tlen and u.health<u.maxhealth then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    self:heal(targ)
-  end
-end
-
-function Tank:attack(targ)
   if targ.isdev then
     self.pkt=self.pkt-1
     targ.health=targ.health-5
@@ -459,72 +400,18 @@ function Tank:attack(targ)
   end
 end
 
-function Tank:logic()
-  if self.pkt<1 then
+function Supply:transfer(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<SHOTR then
-        self:attack(targ)
-        return
-      end
+  if targ.pkt<targ.maxpkt then
+    local v=self.pkt>MAXV and MAXV or self.pkt
+    self.pkt=self.pkt-v
+    targ.pkt=targ.pkt+v
+    if targ.pkt>targ.maxpkt then
+      targ.pkt=targ.maxpkt
     end
-  end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ=nil
-  local tlen=SHOTR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<tlen then
-        targ=u
-        tlen=len
-        break
-      end
-    end
-  end
-  if targ then
-    self:attack(targ)
-  end
-end
-
-function Supply:transfer(targ)
-  local v=self.pkt>MAXV and MAXV or self.pkt
-  self.pkt=self.pkt-v
-  targ.pkt=targ.pkt+v
-  if targ.pkt>targ.maxpkt then
-    targ.pkt=targ.maxpkt
   end
   mput("Sp:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.pkt)
-end
-
-function Supply:logic()
-  if self.pkt<1 then
-    return
-  end
-  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
-  local targ=nil
-  local tlen=BEAMR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
-      if len<tlen and u.cl~="s" and u.maxpkt and u.pkt<u.maxpkt then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    self:transfer(targ)
-  end
 end

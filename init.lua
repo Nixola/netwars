@@ -58,7 +58,6 @@ function init_draw()
   if init_st==1 then
     readline:draw(50,eye.cy/2-20,"Nick: ")
     graph.print("Host: "..addr,50,eye.cy/2)
-    return
   end
   if init_st==2 then
     graph.print("Nick: "..nick,50,eye.cy/2-20)
@@ -69,7 +68,7 @@ function init_draw()
     graph.print("Host: "..addr,50,eye.cy/2)
     graph.print("connecting...",50,eye.cy/2+30)
   end
-  if init_st>8 and net_err then
+  if net_err then
     graph.print(net_err,50,eye.cy/2+50)
   end
 end
@@ -82,6 +81,7 @@ function init_update(dt)
     readline.cr=not readline.cr
   end
   if init_st==3 then
+    net_err=nil
     net_conn(addr,nick)
     init_st=9
   end
@@ -96,7 +96,7 @@ function init_update(dt)
         love.mousepressed=main_mousepressed
         love.mousereleased=main_mousereleased
       else
-        love.event.push("q")
+        init_st=1
       end
     end
   end
