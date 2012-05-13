@@ -106,8 +106,8 @@ local buyidx=3
 local drag=nil
 local bdrag=nil
 local bdev=nil
-local umove=nil
-local utarg=nil
+local move=nil
+local targ=nil
 local hover=nil
 local hint=nil
 local hover_dt=0
@@ -223,7 +223,7 @@ function main_mousepressed(mx,my,b)
   if b=="l" then
     local obj=get_my_unit(x,y)
     if obj then
-      umove=obj
+      move=obj
       return
     end
     obj=get_my_dev(x,y)
@@ -241,10 +241,17 @@ function main_mousepressed(mx,my,b)
   if b=="r" then
     local obj=get_my_unit(x,y)
     if obj then
-      utarg=obj
+      targ=obj
       return
     end
-    conn=get_my_dev(x,y)
+    obj=get_my_dev(x,y)
+    if obj then
+      if obj.cl=="T" then
+        targ=obj
+      else
+        conn=obj
+      end
+    end
     return
   end
 end
@@ -290,18 +297,18 @@ function main_mousereleased(mx,my,b)
     end
     return
   end
-  if umove then
+  if move then
     if b=="l" then
-      umove:net_move(x,y)
-      umove=nil
+      move:net_move(x,y)
+      move=nil
     end
     return
   end
-  if utarg then
+  if targ then
     if b=="r" then
       local obj=get_device(x,y)
-      utarg.targ=obj
-      utarg=nil
+      targ.targ=obj
+      targ=nil
     end
     return
   end
@@ -564,20 +571,20 @@ function main_draw()
     cmd=true
     bdev:drag(mox,moy)
   end
-  if umove then
-    local x,y=umove:calc_xy(mox,moy)
+  if move then
+    local x,y=move:calc_xy(mox,moy)
     cmd=true
-    umove:draw_rng(x,y)
+    move:draw_rng(x,y)
     graph.setColor(255,255,255)
     graph.setLine(1,"rough")
-    graph.line(umove.x,umove.y,x,y)
+    graph.line(move.x,move.y,x,y)
   end
-  if utarg then
+  if targ then
     cmd=true
-    utarg:draw_rng()
+    targ:draw_rng()
     graph.setColor(0,0,255)
     graph.setLine(1,"rough")
-    graph.line(utarg.x,utarg.y,mox,moy)
+    graph.line(targ.x,targ.y,mox,moy)
   end
   if not cmd and hint and hint.pl==ME then
     hint:draw_rng()

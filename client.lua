@@ -266,6 +266,34 @@ local function parse_server(msg,ts)
     shots:add(s)
     return
   end
+  if a[1]=="TH" then -- Hit:d1:d2:pkt:health
+    if a.n<5 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
+      d1.pkt=tonumber(a[4])
+      d2.health=tonumber(a[5])
+      local s=Shot:new(d1,d2)
+      shots:add(s)
+    end
+    return
+  end
+  if a[1]=="TD" then -- Destroy:d1:d2:pkt
+    if a.n<4 then
+      return
+    end
+    local idx=tonumber(a[3])
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[idx]
+    d1.pkt=tonumber(a[4])
+    d2:delete()
+    devices[idx]=nil
+    local s=Shot:new(d1,d2)
+    shots:add(s)
+    return
+  end
   if a[1]=="Dn" then -- New:pl:cl:idx:x:y:...
     if a.n<6 then
       return

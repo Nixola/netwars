@@ -103,8 +103,8 @@ function Device:packet(dev,v)
   if not self.maxpkt then
     return
   end
-  dev.pt=0.7
-  self.pt=0.7
+  dev.pt=1.0
+  self.pt=1.0
   dev.pkt=dev.pkt-v
   self.pkt=self.pkt+v
   if self.pkt>self.maxpkt then
@@ -122,8 +122,8 @@ function Vault:packet(dev,v)
     return
   end
   local pl=self.pl
-  dev.pt=0.7
-  self.pt=0.7
+  dev.pt=1.0
+  self.pt=1.0
   dev.pkt=dev.pkt-v
   pl.cash=pl.cash+v
   if pl.cash>pl.maxcash then
@@ -225,14 +225,27 @@ function Tower:shot(targ)
   if math.sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
-  self.pkt=self.pkt-1
-  targ.health=targ.health-5
-  if targ.health<1 then
-    targ:delete()
-    cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
-    units:del(targ)
+  if targ.isdev then
+    self.pkt=self.pkt-1
+    targ.health=targ.health-5
+    targ.pt=1.0
+    if targ.health<1 then
+      targ:delete()
+      cput("TD:%d:%d:%d",self.idx,targ.idx,self.pkt)
+      devices:del(targ)
+    else
+      mput("TH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+    end
   else
-    mput("Th:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+    self.pkt=self.pkt-1
+    targ.health=targ.health-5
+    if targ.health<1 then
+      targ:delete()
+      cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
+      units:del(targ)
+    else
+      mput("Th:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+    end
   end
 end
 
@@ -244,20 +257,22 @@ function Tower:logic()
     return
   end
   local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ
+  local tlen=SHOTR
   local tx,ty,len
   local e=self.ec
   for _,u in pairs(t) do
     if u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
       len=math.sqrt(tx*tx+ty*ty)
-      if len<SHOTR then
-        self:shot(u)
-        e=e-1
-        if e<1 then
-          break
-        end
+      if len<tlen then
+        targ=u
+        tlen=len
       end
     end
+  end
+  if targ then
+    self:shot(targ)
   end
 end
 
@@ -326,6 +341,7 @@ function Engineer:shot(targ)
       local v=self.pkt>MAXV and MAXV or self.pkt
       self.pkt=self.pkt-v
       targ.health=targ.health+v*2
+      targ.pt=1.0
       if targ.health>targ.maxhealth then
         targ.health=targ.maxhealth
       end
@@ -361,6 +377,7 @@ function Engineer:capture(targ)
     targ.ccnt=0
   end
   targ.ccnt=targ.ccnt+1
+  targ.pt=1.0
   if targ.ccnt<CAPTC then
     mput("SC:%d:%d:%d",self.idx,targ.idx,self.pkt)
     return
@@ -379,6 +396,7 @@ function Tank:shot(targ)
   if targ.isdev then
     self.pkt=self.pkt-1
     targ.health=targ.health-5
+    targ.pt=1.0
     if targ.health<1 then
       targ:delete()
       cput("SD:%d:%d:%d",self.idx,targ.idx,self.pkt)

@@ -559,34 +559,68 @@ function Router:draw()
   end
 end
 
-Tower.draw_st=Router.draw_st
-Tower.draw=Router.draw
+function Tower:draw_st()
+  local w=self.r*2
+  local p=self.pkt/self.maxpkt
+  local n=math.floor(w*p)
+  local x,y=self.x-self.r,self.y+self.r+3
+  if n>0 then
+    graph.setColor(255,255,255)
+    graph.rectangle("fill",x,y,n,3)
+  end
+end
 
-Factory.draw_st=Router.draw_st
-Factory.draw=Router.draw
+function Tower:draw()
+  self:super("draw")
+  if eye.s>0.4 then
+    self:draw_st()
+  end
+  if self.pl==ME and self.targ then
+    graph.setColor(0,0,192)
+    graph.setLine(1,"rough")
+    graph.line(self.x,self.y,self.targ.x,self.targ.y)
+  end
+end
 
-SupplyBay.draw_st=Router.draw_st
-SupplyBay.draw=Router.draw
+Factory.draw_st=Tower.draw_st
+Factory.draw=Tower.draw
+
+SupplyBay.draw_st=Tower.draw_st
+SupplyBay.draw=Tower.draw
 
 function Tower:logic()
   if self.pkt<1 then
     return
   end
+  if self.targ then
+    if self.targ.deleted then
+      self.targ=nil
+    else
+      local targ=self.targ
+      local tx,ty=targ.x-self.x,targ.y-self.y
+      len=math.sqrt(tx*tx+ty*ty)
+      if len<SHOTR then
+        net_send("TS:%d:%d",self.idx,targ.idx)
+        return
+      end
+    end
+  end
   local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ
+  local tlen=SHOTR
   local tx,ty,len
-  local e=self.ec
   for _,u in pairs(t) do
     if u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
       len=math.sqrt(tx*tx+ty*ty)
-      if len<SHOTR then
-        net_send("Ts:%d:%d",self.idx,u)
-        e=e-1
-        if e<1 then
-          break
-        end
+      if len<tlen then
+        targ=u
+        tlen=len
       end
     end
+  end
+  if targ then
+    net_send("Ts:%d:%d",self.idx,targ.idx)
   end
 end
 
@@ -595,20 +629,21 @@ function SupplyBay:logic()
     return
   end
   local t=uhash:get(self.x-SUPPR,self.y-SUPPR,self.x+SUPPR,self.y+SUPPR)
+  local targ
+  local tlen=SUPPR
   local tx,ty,len
-  local e=self.ec
   for _,u in pairs(t) do
     if u.pl==self.pl then
       tx,ty=u.x-self.x,u.y-self.y
       len=math.sqrt(tx*tx+ty*ty)
-      if len<SUPPR and u.maxpkt and u.pkt<u.maxpkt then
-        net_send("SP:%d:%d",self.idx,u.idx)
-        e=e-1
-        if e<1 then
-          break
-        end
+      if len<tlen and u.maxpkt and u.pkt<u.maxpkt then
+        targ=u
+        tlen=len
       end
     end
+  end
+  if targ then
+    net_send("SP:%d:%d",self.idx,targ.idx)
   end
 end
 
@@ -769,21 +804,18 @@ end
 
 function Factory:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end
 
 function Tower:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end
 
 function SupplyBay:init_gui()
   self.menu=Menu:new(self)
-  self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)
 end

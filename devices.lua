@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=13 -- network protocol version
+NVER=14 -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -67,6 +67,7 @@ function Device:initialize(pl,x,y)
   self.pt=0 -- dt for packet on wire (server side)
   self.pc=0 -- packet cnt on wire (client side)
   self.pkt=0 -- packets in queue
+  self.targ=nil -- manual target (device)
   self.lupd=false -- link update
   self.gotpwr=false -- connected to power source (G or B)
   self.attch=false -- D attached to power source
@@ -404,8 +405,6 @@ price=100;
 
 class "Factory" : extends(Device) {
 cl="F";
-ec=1; -- emit count
-em=3; -- max emit count
 maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=0;
@@ -423,24 +422,20 @@ price=300;
 
 class "Tower" : extends(Device) {
 cl="T";
-ec=1; -- shot count
-em=3; -- max shot count
 maxhealth=200;
 maxpkt=100; -- max queue
 maxlinks=0;
 maxblinks=2;
-price=400;
+price=300;
 }
 
 class "SupplyBay" : extends(Device) {
 cl="S";
-ec=1; -- shot count
-em=3; -- max shot count
 maxhealth=100;
 maxpkt=1000; -- max queue
 maxlinks=0;
 maxblinks=2;
-price=300;
+price=500;
 }
 
 d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower,S=SupplyBay}

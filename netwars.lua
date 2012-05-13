@@ -208,7 +208,6 @@ end
 
 function add_T(x,y,ec)
   local o=Tower:new(nil,x,y)
-  o.ec=ec>o.em and o.em or ec
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
     o.dt=math.random()*2

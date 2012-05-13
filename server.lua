@@ -109,6 +109,17 @@ function parse_client(msg,pl,ts)
     end
     return
   end
+  if a[1]=="TS" then -- Shot:d1:d2
+    if a.n<3 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
+      d1:shot(d2)
+    end
+    return
+  end
   if a[1]=="Sp" then -- Shot:u1:u2
     if a.n<3 then
       return
