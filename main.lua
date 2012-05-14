@@ -240,13 +240,13 @@ function main_mousepressed(mx,my,b)
   end
   if b=="r" then
     local obj=get_my_unit(x,y)
-    if obj then
+    if obj and obj.set_targ then
       targ=obj
       return
     end
     obj=get_my_dev(x,y)
     if obj then
-      if obj.cl=="T" then
+      if obj.set_targ then
         targ=obj
       else
         conn=obj
@@ -306,8 +306,7 @@ function main_mousereleased(mx,my,b)
   end
   if targ then
     if b=="r" then
-      local obj=get_device(x,y)
-      targ.targ=obj
+      targ:set_targ(get_device(x,y))
       targ=nil
     end
     return
@@ -607,6 +606,9 @@ local flow_dt=0
 function devs_proc(dt)
   for _,o in pairs(devices) do
     if o.pl==ME then
+      if o.targ and o.targ.deleted then
+        o.targ=nil
+      end
       if not o.deleted and o.online and o.logic then
         o.dt=o.dt+dt
         if o.dt>=2.0 then
@@ -623,6 +625,9 @@ end
 function units_proc(dt)
   for _,o in pairs(units) do
     if o.pl==ME and not o.deleted then
+      if o.targ and o.targ.deleted then
+        o.targ=nil
+      end
       o.dt=o.dt+dt
       if o.dt>=2.0 then
         o.dt=o.dt-2.0
@@ -671,9 +676,6 @@ function main_update(dt)
   end
   for _,o in pairs(units) do
     o:step(dt)
-    if o.targ and o.targ.deleted then
-      o.targ=nil
-    end
   end
   for _,s in pairs(shots) do
     if s:flow(dt) then

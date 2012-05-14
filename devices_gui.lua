@@ -624,6 +624,14 @@ function Tower:logic()
   end
 end
 
+function Tower:set_targ(targ)
+  if targ then
+    self.targ=targ.pl~=self.pl and targ or nil
+  else
+    self.targ=nil
+  end
+end
+
 function SupplyBay:logic()
   if self.pkt<1 then
     return
@@ -682,6 +690,14 @@ function Commander:logic()
   end
 end
 
+function Commander:set_targ(targ)
+  if targ then
+    self.targ=targ.pl~=self.pl and targ or nil
+  else
+    self.targ=nil
+  end
+end
+
 function Engineer:logic()
   if self.pkt<1 then
     return
@@ -723,6 +739,10 @@ function Engineer:logic()
   end
 end
 
+function Engineer:set_targ(targ)
+  self.targ=targ
+end
+
 function Tank:logic()
   if self.pkt<1 then
     return
@@ -757,6 +777,14 @@ function Tank:logic()
   end
   if targ then
     net_send("Sh:%d:%d",self.idx,targ.idx)
+  end
+end
+
+function Tank:set_targ(targ)
+  if targ then
+    self.targ=targ.pl~=self.pl and targ or nil
+  else
+    self.targ=nil
   end
 end
 
