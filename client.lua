@@ -431,8 +431,13 @@ local function parse_server(msg,ts)
       if a.n<10 then
         return
       end
-      o.ec=tonumber(a[9])
-      o.pkt=tonumber(a[10])
+      o.pkt=tonumber(a[9])
+      o.ec=tonumber(a[10])
+    elseif o.maxpkt then
+      if a.n<9 then
+        return
+      end
+      o.pkt=tonumber(a[9])
     end
     o.idx=idx
     o.health=tonumber(a[5])

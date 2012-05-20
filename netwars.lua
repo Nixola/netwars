@@ -96,7 +96,9 @@ local function new_client(str,ts,ip,port)
     if o.cl=="G" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
     elseif o.ec then
-      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.ec,o.pkt))
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt,o.ec))
+    elseif o.maxpkt then
+      m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt))
     else
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y))
     end
