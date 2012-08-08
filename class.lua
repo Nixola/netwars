@@ -1,5 +1,16 @@
 -- vim:et
 
+abs=math.abs
+min=math.min
+max=math.max
+random=math.random
+floor=math.floor
+ceil=math.ceil
+sqrt=math.sqrt
+sin=math.sin
+cos=math.cos
+tan=math.tan
+
 function class(name)
   local newclass={}
   _G[name]=newclass

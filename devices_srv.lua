@@ -135,11 +135,11 @@ end
 function Vault:update(e,pl)
   if e=="delete" then
     if self.attch then
-      local cash=math.floor(self.pl.cash/self.pl.dcnt)
-      self.pl.dcnt=self.pl.dcnt-1
-      self.pl.maxcash=self.pl.dcnt*VCASH
+      local cash=floor(self.pl.cash/self.pl.vcnt)
+      self.pl.vcnt=self.pl.vcnt-1
+      self.pl.maxcash=self.pl.vcnt*VCASH
     else
-      local cash=math.floor(self.pl.cash/(self.pl.dcnt+1))
+      local cash=floor(self.pl.cash/(self.pl.vcnt+1))
       self.pl.cash=self.pl.cash-cash
     end
     cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
@@ -147,13 +147,13 @@ function Vault:update(e,pl)
   end
   if e=="takeover" then
     if self.attch then
-      local cash=math.floor(self.pl.cash/self.pl.dcnt)
+      local cash=floor(self.pl.cash/self.pl.vcnt)
       self.pl.cash=self.pl.cash-cash
-      self.pl.dcnt=self.pl.dcnt-1
-      self.pl.maxcash=self.pl.dcnt*VCASH
+      self.pl.vcnt=self.pl.vcnt-1
+      self.pl.maxcash=self.pl.vcnt*VCASH
       pl.cash=pl.cash+cash
     else
-      local cash=math.floor(self.pl.cash/(self.pl.dcnt+1))
+      local cash=floor(self.pl.cash/(self.pl.vcnt+1))
       self.pl.cash=self.pl.cash-cash
       pl.cash=pl.cash+cash
     end
@@ -161,15 +161,15 @@ function Vault:update(e,pl)
     return
   end
   if e=="detach" then
-    self.pl.dcnt=self.pl.dcnt-1
-    self.pl.maxcash=self.pl.dcnt*VCASH
+    self.pl.vcnt=self.pl.vcnt-1
+    self.pl.maxcash=self.pl.vcnt*VCASH
     self.attch=false
     cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
     return
   end
   if e=="attach" then
-    self.pl.dcnt=self.pl.dcnt+1
-    self.pl.maxcash=self.pl.dcnt*VCASH
+    self.pl.vcnt=self.pl.vcnt+1
+    self.pl.maxcash=self.pl.vcnt*VCASH
     self.attch=true
     cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
     return
@@ -208,7 +208,8 @@ function Router:logic()
     d=self.links[i].dev2
     i=i<l and i+1 or 1
     if d.online and (not d.maxpkt or d.pkt<d.maxpkt) then
-      v=self.pkt>MAXV and MAXV or self.pkt
+      v=d.maxpkt-d.pkt
+      v=min(MAXV,self.pkt,v)
       d:packet(self,v)
       e=e-1
       if self.pkt<1 then
@@ -222,7 +223,7 @@ end
 
 function Tower:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
+  if sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
   if targ.isdev then
@@ -264,7 +265,7 @@ function Tower:logic()
   for _,u in pairs(t) do
     if u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen then
         targ=u
         tlen=len
@@ -278,7 +279,7 @@ end
 
 function SupplyBay:transfer(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=SUPPR then
+  if sqrt(tx*tx+ty*ty)>=SUPPR then
     return
   end
   if targ.pkt<targ.maxpkt then
@@ -299,7 +300,7 @@ function Commander:capture(targ)
     return
   end
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+  if sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
   if targ.cpl~=self.pl then
@@ -318,7 +319,7 @@ end
 
 function Commander:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
+  if sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
   targ.health=targ.health-10
@@ -333,7 +334,7 @@ end
 
 function Engineer:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+  if sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
   if targ.isdev then
@@ -368,7 +369,7 @@ function Engineer:capture(targ)
     return
   end
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+  if sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
   self.pkt=self.pkt-MAXV
@@ -390,7 +391,7 @@ end
 
 function Tank:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=SHOTR then
+  if sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
   if targ.isdev then
@@ -420,7 +421,7 @@ end
 
 function Supply:transfer(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if math.sqrt(tx*tx+ty*ty)>=BEAMR then
+  if sqrt(tx*tx+ty*ty)>=BEAMR then
     return
   end
   if targ.pkt<targ.maxpkt then

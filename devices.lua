@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER=15 -- network protocol version
+NVER="units 1" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -20,7 +20,7 @@ function Player:initialize(cash)
   self.maxcash=0
   self.pkts=0
   self.devcnt=0
-  self.dcnt=0
+  self.vcnt=0
 end
 
 function Player:disconnect()
@@ -98,7 +98,7 @@ function Device:calc_xy(x,y)
   for _,l in pairs(self.links) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
-    len=math.floor(math.sqrt(vx*vx+vy*vy))
+    len=floor(sqrt(vx*vx+vy*vy))
     if len>LINK then
       s=(len-LINK)/len
       vx,vy=vx*s,vy*s
@@ -108,14 +108,14 @@ function Device:calc_xy(x,y)
   for _,l in pairs(self.blinks) do
     d=l.dev1==self and l.dev2 or l.dev1
     vx,vy=x-d.x,y-d.y
-    len=math.floor(math.sqrt(vx*vx+vy*vy))
+    len=floor(sqrt(vx*vx+vy*vy))
     if len>LINK then
       s=(len-LINK)/len
       vx,vy=vx*s,vy*s
       x,y=x-vx,y-vy
     end
   end
-  x,y=math.floor(x),math.floor(y)
+  x,y=floor(x),floor(y)
   return x,y
 end
 
@@ -127,7 +127,7 @@ function Device:chk_border(x,y)
   for _,d in pairs(t) do
     if self~=d then
       vx,vy=x-d.x,y-d.y
-      len=math.floor(math.sqrt(vx*vx+vy*vy))
+      len=floor(sqrt(vx*vx+vy*vy))
       br=d.cr
       if len<=br*2 then
         ok=false
@@ -170,7 +170,7 @@ function Device:connect(dev)
     return nil
   end
   local tx,ty=self.x-dev.x,self.y-dev.y
-  local len=math.floor(math.sqrt(tx*tx+ty*ty))
+  local len=floor(sqrt(tx*tx+ty*ty))
   if len>LINK2 then
     return nil
   end
@@ -304,13 +304,13 @@ end
 
 function Unit:calc_xy(x,y)
   local vx,vy=x-self.x,y-self.y
-  local len=math.floor(math.sqrt(vx*vx+vy*vy))
+  local len=floor(sqrt(vx*vx+vy*vy))
   if len>MOVER then
     local s=(len-MOVER)/len
     vx,vy=vx*s,vy*s
     x,y=x-vx,y-vy
   end
-  x,y=math.floor(x),math.floor(y)
+  x,y=floor(x),floor(y)
   return x,y
 end
 
@@ -321,7 +321,7 @@ function Unit:chk_supply(x,y)
   for _,d in pairs(t) do
     if self~=d and d.cl=="F" and self.pl==d.pl then
       vx,vy=x-d.x,y-d.y
-      len=math.floor(math.sqrt(vx*vx+vy*vy))
+      len=floor(sqrt(vx*vx+vy*vy))
       if len<=SUPPR then
         ok=true
         break
@@ -334,13 +334,13 @@ end
 function Unit:move(x,y)
   x,y=self:calc_xy(x,y)
   local vx,vy=x-self.x,y-self.y
-  local len=math.sqrt(vx*vx+vy*vy)
+  local len=sqrt(vx*vx+vy*vy)
   if len<=self.r then
     self.vx=nil
     self.vy=nil
     return false
   end
-  self.dist=math.floor(len)
+  self.dist=floor(len)
   self.ix=self.x
   self.iy=self.y
   self.tx=self.x
@@ -359,7 +359,7 @@ function Unit:step(dt)
   local x=self.tx+self.vx*dt
   local y=self.ty+self.vy*dt
   local tx,ty=x-self.ix,y-self.iy
-  local len=math.sqrt(tx*tx+ty*ty)
+  local len=sqrt(tx*tx+ty*ty)
   uhash:del(self)
   if len>=self.dist then
     self.x=self.mx
@@ -371,8 +371,8 @@ function Unit:step(dt)
   end
   self.tx=x
   self.ty=y
-  self.x=math.floor(x)
-  self.y=math.floor(y)
+  self.x=floor(x)
+  self.y=floor(y)
   uhash:add(self)
   return false
 end

@@ -6,7 +6,7 @@ class "Packet"
 
 function Packet:initialize(d1,d2)
   local vx,vy=d2.x-d1.x,d2.y-d1.y
-  local l=math.sqrt(vx*vx+vy*vy)
+  local l=sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
   self.pl=d2.pl
@@ -17,7 +17,7 @@ function Packet:initialize(d1,d2)
   self.y4=d2.y-vy*d2.r
   l=l/2-3
   local tx,ty
-  if math.random()>0.5 then
+  if random()>0.5 then
     tx,ty=vy*9,-vx*9
   else
     tx,ty=-vy*9,vx*9
@@ -90,7 +90,7 @@ class "Shot"
 
 function Shot:initialize(o1,o2)
   local vx,vy=o2.x-o1.x,o2.y-o1.y
-  local l=math.sqrt(vx*vx+vy*vy)
+  local l=sqrt(vx*vx+vy*vy)
   self.obj1=o1
   self.obj2=o2
   self.pl=o1.pl
@@ -168,8 +168,8 @@ end
 function Device:draw_bar()
   local w=self.r*2
   local p=self.health/self.maxhealth
-  local n=math.floor(w*p)
-  local c=math.floor(48*p)
+  local n=floor(w*p)
+  local c=floor(48*p)
   local x,y=self.x-self.r,self.y-self.r-6
   local re=c>=32 and 250-((c-32)*15) or 250
   local gr=c<=24 and c*10 or 250
@@ -271,7 +271,7 @@ function Device:chk_border2(x,y)
   for _,d in pairs(t) do
     if self~=d then
       vx,vy=x-d.x,y-d.y
-      len=math.floor(math.sqrt(vx*vx+vy*vy))
+      len=floor(sqrt(vx*vx+vy*vy))
       pl=self.hud and ME or self.pl
       br=d.cr
       if len<=br*2 then
@@ -294,7 +294,7 @@ end
 
 function Device:is_pointed(x,y)
   local tx,ty=self.x-x,self.y-y
-  local r=math.sqrt(tx*tx+ty*ty)
+  local r=sqrt(tx*tx+ty*ty)
   return r<=self.r
 end
 
@@ -348,7 +348,7 @@ function Device:net_connect(dev)
     return nil
   end
   local tx,ty=self.x-dev.x,self.y-dev.y
-  local len=math.floor(math.sqrt(tx*tx+ty*ty))
+  local len=floor(sqrt(tx*tx+ty*ty))
   if len>LINK then
     return
   end
@@ -396,8 +396,8 @@ end
 function Unit:draw_bar()
   local w=self.r*2
   local p=self.health/self.maxhealth
-  local n=math.floor(w*p)
-  local c=math.floor(48*p)
+  local n=floor(w*p)
+  local c=floor(48*p)
   local x,y=self.x-self.r,self.y-self.r-6
   local re=c>=32 and 250-((c-32)*15) or 250
   local gr=c<=24 and c*10 or 250
@@ -407,7 +407,7 @@ function Unit:draw_bar()
   end
   if self.maxpkt then
     p=self.pkt/self.maxpkt
-    n=math.floor(w*p)
+    n=floor(w*p)
     x,y=self.x-self.r,self.y+self.r+3
     if n>0 then
       graph.setColor(255,255,255)
@@ -480,7 +480,7 @@ function Unit:_step(dt)
   local x=self.tx+self.vx*dt
   local y=self.ty+self.vy*dt
   local tx,ty=x-self.ix,y-self.iy
-  local len=math.sqrt(tx*tx+ty*ty)
+  local len=sqrt(tx*tx+ty*ty)
   if len>=self.dist then
     self.x=self.mx
     self.y=self.my
@@ -490,8 +490,8 @@ function Unit:_step(dt)
   end
   self.tx=x
   self.ty=y
-  self.x=math.floor(x)
-  self.y=math.floor(y)
+  self.x=floor(x)
+  self.y=floor(y)
   return false
 end
 
@@ -501,7 +501,7 @@ end
 
 function Unit:is_pointed(x,y)
   local tx,ty=self.x-x,self.y-y
-  local r=math.sqrt(tx*tx+ty*ty)
+  local r=sqrt(tx*tx+ty*ty)
   return r<=self.r
 end
 
@@ -519,7 +519,7 @@ end
 function Generator:draw_st()
   local w=self.r*2
   local p=self.pwr/MAXV
-  local n=math.floor(w*p)
+  local n=floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,128,255)
@@ -537,14 +537,14 @@ end
 function Router:draw_st()
   local w=self.r*2
   local p=self.pkt/self.maxpkt
-  local n=math.floor(w*p)
+  local n=floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,255,255)
     graph.rectangle("fill",x,y,n,3)
   end
   p=self.ec/self.em
-  n=math.floor(w*p)
+  n=floor(w*p)
   x,y=self.x-self.r-6,self.y+self.r-n
   if n>0 then
     graph.setColor(128,192,240)
@@ -562,7 +562,7 @@ end
 function Tower:draw_st()
   local w=self.r*2
   local p=self.pkt/self.maxpkt
-  local n=math.floor(w*p)
+  local n=floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,255,255)
@@ -598,7 +598,7 @@ function Tower:logic()
     else
       local targ=self.targ
       local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<SHOTR then
         net_send("TS:%d:%d",self.idx,targ.idx)
         return
@@ -612,7 +612,7 @@ function Tower:logic()
   for _,u in pairs(t) do
     if u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen then
         targ=u
         tlen=len
@@ -643,7 +643,7 @@ function SupplyBay:logic()
   for _,u in pairs(t) do
     if u.pl==self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen and u.maxpkt and u.pkt<u.maxpkt then
         targ=u
         tlen=len
@@ -664,7 +664,7 @@ function Commander:logic()
     else
       local targ=self.targ
       local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<BEAMR and targ.pl~=self.pl then
         net_send("SC:%d:%d",self.idx,targ.idx)
         return
@@ -678,7 +678,7 @@ function Commander:logic()
   for _,u in pairs(t) do
     if u~=self and u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen then
         targ=u
         tlen=len
@@ -708,7 +708,7 @@ function Engineer:logic()
     else
       local targ=self.targ
       local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<BEAMR then
         if targ.pl~=self.pl then
           net_send("SC:%d:%d",self.idx,targ.idx)
@@ -727,7 +727,7 @@ function Engineer:logic()
   for _,u in pairs(t) do
     if u~=self and u.pl==self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen and u.health<u.maxhealth then
         targ=u
         tlen=len
@@ -753,7 +753,7 @@ function Tank:logic()
     else
       local targ=self.targ
       local tx,ty=targ.x-self.x,targ.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<SHOTR then
         net_send("SH:%d:%d",self.idx,targ.idx)
         return
@@ -767,7 +767,7 @@ function Tank:logic()
   for _,u in pairs(t) do
     if u~=self and u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen then
         targ=u
         tlen=len
@@ -799,7 +799,7 @@ function Supply:logic()
   for _,u in pairs(t) do
     if u~=self and u.pl==self.pl then
       tx,ty=u.x-self.x,u.y-self.y
-      len=math.sqrt(tx*tx+ty*ty)
+      len=sqrt(tx*tx+ty*ty)
       if len<tlen and u.cl~="s" and u.maxpkt and u.pkt<u.maxpkt then
         targ=u
         tlen=len

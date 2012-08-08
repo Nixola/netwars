@@ -121,7 +121,7 @@ function chat.keypressed(key,ch)
     return chat.enter()
   end
   if chat.console then
-    local step=math.floor((eye.cy-25)/15/2)
+    local step=floor((eye.cy-25)/15/2)
     if key=="`" then
       chat.console=false
       readline:clr()
@@ -183,14 +183,14 @@ function chat.update(dt)
   end
   if chat.console then
     if con_off<eye.cy then
-      con_off=math.floor(con_off+offv*dt)
+      con_off=floor(con_off+offv*dt)
       if con_off>eye.cy then
         con_off=eye.cy
       end
     end
   else
     if con_off>0 then
-      con_off=math.floor(con_off-offv*dt)
+      con_off=floor(con_off-offv*dt)
       if con_off<0 then
         con_off=0
         histq:set_off()

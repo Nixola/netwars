@@ -61,7 +61,7 @@ local function new_client(str,ts,ip,port)
   if a[1]~="PLr" or a.n<3 then
     return
   end
-  if tonumber(a[3])~=NVER then
+  if a[3]~=NVER then
     sock:sendto("ERR:~Client version mismatch.",ip,port)
     return
   end

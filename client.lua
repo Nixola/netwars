@@ -17,7 +17,7 @@ function net_conn(addr,nick)
   timeout=ts+5
   seq=1
   sock:setpeername(addr,6352)
-  sock:send(string.format("PLr:%s:%d",nick,NVER))
+  sock:send(string.format("PLr:%s:%s",nick,NVER))
 end
 
 function net_sync()
