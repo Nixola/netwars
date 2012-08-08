@@ -1,17 +1,13 @@
 -- vim:et
 
-NVER="units 1" -- network protocol version
+NVER="master 1" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
 LINK2=LINK+2
 DEGT=10 -- degrate timer
-MOVER=500 -- move length
 SHOTR=250 -- shot length
-SUPPR=150 -- device supply length
-BEAMR=100 -- engineering length
-CAPTC=5 -- shots needed to capture
 
 class "Player"
 
@@ -32,18 +28,11 @@ function Player:disconnect()
       end
     end
   end
-  for k,o in pairs(units) do
-    if o.pl==self then
-      units[k]=nil
-      uhash:del(o)
-      o.deleted=true
-    end
-  end
   for k,o in pairs(devices) do
     if o.pl==self then
       o:del_links()
       devices[k]=nil
-      dhash:del(o)
+      hash:del(o)
       o.deleted=true
     end
   end
@@ -75,8 +64,13 @@ function Device:initialize(pl,x,y)
   self.bdevs={} -- devices connected to us (back links)
   if self.cl=="G" then
     self.nomove=true
-    self.pwr=0
     self.gotpwr=true
+    self.pwr=0
+  end
+  if self.cl=="B" then
+    self.nomove=true
+    self.gotpwr=true
+    self.pwr=10
   end
   self.health=self.maxhealth
   self.links={} -- forward links
@@ -120,7 +114,7 @@ function Device:calc_xy(x,y)
 end
 
 function Device:chk_border(x,y)
-  local t=dhash:get(self:bound_box(x,y))
+  local t=hash:get(self:bound_box(x,y))
   local ok=true
   local len,vx,vy
   local br
@@ -144,10 +138,10 @@ function Device:move(x,y)
   end
   x,y=self:calc_xy(x,y)
   if self:chk_border(x,y) then
-    dhash:del(self)
+    hash:del(self)
     self.x=x
     self.y=y
-    dhash:add(self)
+    hash:add(self)
     return true
   end
   return false
@@ -157,10 +151,13 @@ function Device:connect(dev)
   if self==dev then
     return nil
   end
+  if self.cl=="B" and dev.cl~="R" then
+    return nil
+  end
   if self.cl=="G" and dev.cl~="R" then
     return nil
   end
-  if self.cl=="R" and dev.cl=="G" then
+  if self.cl=="S" and dev.cl~="G" then
     return nil
   end
   if #self.links>=self.maxlinks then
@@ -270,7 +267,7 @@ function Device:delete()
       self:update("delete")
     end
   end
-  dhash:del(self)
+  hash:del(self)
   self.deleted=true
 end
 
@@ -281,106 +278,15 @@ function Link:initialize(d1,d2)
   self.dev2=d2
 end
 
-class "Unit" {
-r=7;
+class "Base" : extends(Device) {
+cl="B";
+ec=1; -- emit count
+em=1; -- max emit count
+maxhealth=200;
+maxlinks=3;
+maxblinks=2;
+price=0;
 }
-
-function Unit:initialize(pl,x,y)
-  self.pl=pl
-  self.x=x
-  self.y=y
-  self.isdev=false
-  self.pkt=0 -- packets in queue
-  self.dt=0 -- dt for logic
-  self.targ=nil -- manual target (device)
-  self.health=self.maxhealth
-end
-
-function Unit:bound_box(_x,_y)
-  local x=_x or self.x
-  local y=_y or self.y
-  return x-self.r,y-self.r,x+self.r,y+self.r
-end
-
-function Unit:calc_xy(x,y)
-  local vx,vy=x-self.x,y-self.y
-  local len=floor(sqrt(vx*vx+vy*vy))
-  if len>MOVER then
-    local s=(len-MOVER)/len
-    vx,vy=vx*s,vy*s
-    x,y=x-vx,y-vy
-  end
-  x,y=floor(x),floor(y)
-  return x,y
-end
-
-function Unit:chk_supply(x,y)
-  local t=dhash:get(self:bound_box(x,y))
-  local ok=false
-  local len,vx,vy
-  for _,d in pairs(t) do
-    if self~=d and d.cl=="F" and self.pl==d.pl then
-      vx,vy=x-d.x,y-d.y
-      len=floor(sqrt(vx*vx+vy*vy))
-      if len<=SUPPR then
-        ok=true
-        break
-      end
-    end
-  end
-  return ok
-end
-
-function Unit:move(x,y)
-  x,y=self:calc_xy(x,y)
-  local vx,vy=x-self.x,y-self.y
-  local len=sqrt(vx*vx+vy*vy)
-  if len<=self.r then
-    self.vx=nil
-    self.vy=nil
-    return false
-  end
-  self.dist=floor(len)
-  self.ix=self.x
-  self.iy=self.y
-  self.tx=self.x
-  self.ty=self.y
-  self.vx=vx/len*self.speed
-  self.vy=vy/len*self.speed
-  self.mx=x
-  self.my=y
-  return true
-end
-
-function Unit:step(dt)
-  if not (self.vx and self.vy) then
-    return false
-  end
-  local x=self.tx+self.vx*dt
-  local y=self.ty+self.vy*dt
-  local tx,ty=x-self.ix,y-self.iy
-  local len=sqrt(tx*tx+ty*ty)
-  uhash:del(self)
-  if len>=self.dist then
-    self.x=self.mx
-    self.y=self.my
-    self.vx=nil
-    self.vy=nil
-    uhash:add(self)
-    return true
-  end
-  self.tx=x
-  self.ty=y
-  self.x=floor(x)
-  self.y=floor(y)
-  uhash:add(self)
-  return false
-end
-
-function Unit:delete()
-  uhash:del(self)
-  self.deleted=true
-end
 
 class "Generator" : extends(Device) {
 cl="G";
@@ -403,13 +309,15 @@ maxblinks=5;
 price=100;
 }
 
-class "Factory" : extends(Device) {
-cl="F";
-maxhealth=100;
-maxpkt=1000; -- max queue
-maxlinks=0;
-maxblinks=3;
-price=1000;
+class "Signal" : extends(Router) {
+cl="S";
+ec=1; -- emit count
+em=3; -- max emit count
+maxhealth=50;
+maxpkt=100; -- max queue
+maxlinks=3;
+maxblinks=2;
+price=200;
 }
 
 class "Vault" : extends(Device) {
@@ -429,46 +337,4 @@ maxblinks=2;
 price=300;
 }
 
-class "SupplyBay" : extends(Device) {
-cl="S";
-maxhealth=100;
-maxpkt=1000; -- max queue
-maxlinks=0;
-maxblinks=2;
-price=500;
-}
-
-d_cl={G=Generator,R=Router,F=Factory,V=Vault,T=Tower,S=SupplyBay}
-
-class "Commander" : extends(Unit) {
-cl="c";
-maxhealth=100;
-speed=20;
-price=0;
-}
-
-class "Engineer" : extends(Unit) {
-cl="e";
-maxhealth=20;
-maxpkt=100; -- max queue
-speed=20;
-price=500;
-}
-
-class "Tank" : extends(Unit) {
-cl="t";
-maxhealth=50;
-maxpkt=50; -- max queue
-speed=25;
-price=100;
-}
-
-class "Supply" : extends(Unit) {
-cl="s";
-maxhealth=50;
-maxpkt=300; -- max queue
-speed=35;
-price=200;
-}
-
-u_cl={e=Engineer,t=Tank,s=Supply,c=Commander}
+d_cl={B=Base,G=Generator,R=Router,S=Signal,V=Vault,T=Tower}

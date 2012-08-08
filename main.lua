@@ -93,15 +93,13 @@ end
 ME=nil
 players=ctable()
 devices=ctable()
-units=ctable()
 links=storage()
 packets=storage()
 shots=storage()
-dhash=sphash(200)
-uhash=sphash(100)
+hash=sphash(200)
 
 local buydevs={}
-local buyidx=3
+local buyidx=2
 
 local drag=nil
 local bdrag=nil
@@ -117,7 +115,7 @@ local kshift=false
 local scoreboard=false
 
 local function get_device(x,y)
-  local t=dhash:get(x,y)
+  local t=hash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) then
       return o
@@ -127,17 +125,7 @@ local function get_device(x,y)
 end
 
 local function get_my_dev(x,y)
-  local t=dhash:get(x,y)
-  for _,o in pairs(t) do
-    if o:is_pointed(x,y) and o.pl==ME then
-      return o
-    end
-  end
-  return nil
-end
-
-local function get_my_unit(x,y)
-  local t=uhash:get(x,y)
+  local t=hash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl==ME then
       return o
@@ -156,17 +144,7 @@ local function get_buydev(x,y)
 end
 
 local function get_enemy_dev(x,y)
-  local t=dhash:get(x,y)
-  for _,o in pairs(t) do
-    if o:is_pointed(x,y) and o.pl~=ME then
-      return o
-    end
-  end
-  return nil
-end
-
-local function get_enemy_unit(x,y)
-  local t=uhash:get(x,y)
+  local t=hash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl~=ME then
       return o
@@ -221,12 +199,7 @@ function main_mousepressed(mx,my,b)
     return
   end
   if b=="l" then
-    local obj=get_my_unit(x,y)
-    if obj then
-      move=obj
-      return
-    end
-    obj=get_my_dev(x,y)
+    local obj=get_my_dev(x,y)
     if obj then
       if kshift then
         obj:net_switch()
@@ -239,12 +212,7 @@ function main_mousepressed(mx,my,b)
     return
   end
   if b=="r" then
-    local obj=get_my_unit(x,y)
-    if obj and obj.set_targ then
-      targ=obj
-      return
-    end
-    obj=get_my_dev(x,y)
+    local obj=get_my_dev(x,y)
     if obj then
       if obj.set_targ then
         targ=obj
@@ -340,10 +308,10 @@ function main_keypressed(k,ch)
     return
   end
   if k==" " then
-    if ME.havecmd then
-      buyidx=buyidx<2 and buyidx+1 or 1
+    if ME.started then
+      buyidx=buyidx<1 and buyidx+1 or 1
     else
-      buyidx=3
+      buyidx=2
     end
     return
   end
@@ -478,53 +446,46 @@ function main_draw()
   local sy=eye.cy/eye.s
   local x1,y1=-eye.vx-sx,-eye.vy-sy
   local x2,y2=-eye.vx+sx,-eye.vy+sy
-  local hd=dhash:get(x1,y1,x2,y2)
-  local hu=uhash:get(x1,y1,x2,y2)
+  local h=hash:get(x1,y1,x2,y2)
   graph.setLineStipple(ls[lsi])
   for _,o in pairs(links) do
-    if hd[o.dev1] or hd[o.dev2] then
+    if h[o.dev1] or h[o.dev2] then
       o:draw()
     end
   end
   graph.setLineStipple()
   if eye.s>0.4 then
     for _,o in pairs(packets) do
-      if hd[o.dev1] or hd[o.dev2] then
+      if h[o.dev1] or h[o.dev2] then
         o:draw()
       end
     end
   end
   -- draw devices
-  for _,o in pairs(hd) do
+  for _,o in pairs(h) do
     o:draw()
   end
   if drag or bdrag or bdev then
     local d=drag or bdrag or bdev
     if buyidx==1 then
-      for _,o in pairs(hd) do
+      for _,o in pairs(h) do
         if o~=d then
           o:draw_cborder()
         end
       end
     end
     if buyidx==2 then
-      for _,o in pairs(hd) do
+      for _,o in pairs(h) do
         if o.cl=="F" then
           o:draw_rng()
         end
       end
     end
   end
-  -- draw units
-  for _,o in pairs(hu) do
-    o:draw()
-  end
   -- draw shots
   if eye.s>0.4 then
     for _,o in pairs(shots) do
-      ok1=o.obj1.isdev and hd[o.obj1] or hu[o.obj1]
-      ok2=o.obj2.isdev and hd[o.obj2] or hu[o.obj2]
-      if ok1 or ok2 then
+      if h[o.obj1] or h[o.obj2] then
         o:draw()
       end
     end
@@ -622,21 +583,6 @@ function devs_proc(dt)
   end
 end
 
-function units_proc(dt)
-  for _,o in pairs(units) do
-    if o.pl==ME and not o.deleted then
-      if o.targ and o.targ.deleted then
-        o.targ=nil
-      end
-      o.dt=o.dt+dt
-      if o.dt>=2.0 then
-        o.dt=o.dt-2.0
-        o:logic()
-      end
-    end
-  end
-end
-
 function main_update(dt)
   net_proc()
   srvts=srvts+dt
@@ -660,11 +606,9 @@ function main_update(dt)
     else
       hover=nil
       if eye.s<0.6 then
-        local obj=get_enemy_dev(mox,moy)
-        hint=obj or get_enemy_unit(mox,moy)
+        hint=get_enemy_dev(mox,moy)
       else
-        local obj=get_my_dev(mox,moy)
-        hint=obj or get_my_unit(mox,moy)
+        hint=get_my_dev(mox,moy)
       end
     end
   end
@@ -674,15 +618,11 @@ function main_update(dt)
       packets:del(p)
     end
   end
-  for _,o in pairs(units) do
-    o:step(dt)
-  end
   for _,s in pairs(shots) do
     if s:flow(dt) then
       shots:del(s)
     end
   end
-  units_proc(dt)
   devs_proc(dt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
@@ -713,7 +653,7 @@ local function set_cl_fonts(imgfont)
   d_cl.R.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,32,8,16,16)
-  d_cl.F.__members.img=graph.newImage(img)
+  d_cl.B.__members.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
   d_cl.V.__members.img=graph.newImage(img)
@@ -723,18 +663,6 @@ local function set_cl_fonts(imgfont)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,80,8,16,16)
   d_cl.S.__members.img=graph.newImage(img)
-  img=love.image.newImageData(8,8)
-  img:paste(imgfont,0,0,4,36,8,8)
-  u_cl.e.__members.img=graph.newImage(img)
-  img=love.image.newImageData(8,8)
-  img:paste(imgfont,0,0,20,36,8,8)
-  u_cl.t.__members.img=graph.newImage(img)
-  img=love.image.newImageData(8,8)
-  img:paste(imgfont,0,0,36,36,8,8)
-  u_cl.s.__members.img=graph.newImage(img)
-  img=love.image.newImageData(8,8)
-  img:paste(imgfont,0,0,52,36,8,8)
-  u_cl.c.__members.img=graph.newImage(img)
 end
 
 local function reconf()
@@ -774,7 +702,7 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  local cl={"R","T","S","F","V"}
+  local cl={"R","T","S","V"}
   local x=25
   local objs={}
   for i,v in ipairs(cl) do
@@ -784,26 +712,16 @@ function love.load()
     x=x+40
   end
   buydevs[1]=objs
-  cl={"t","s","e"}
+  cl={"B"}
   x=25
   objs={}
   for i,v in ipairs(cl) do
-    o=u_cl[v]:new(nil,x,eye.sy-25)
+    o=d_cl[v]:new(nil,x,eye.sy-25)
     o.hud=true
     objs[i]=o
     x=x+40
   end
   buydevs[2]=objs
-  cl={"c"}
-  x=25
-  objs={}
-  for i,v in ipairs(cl) do
-    o=u_cl[v]:new(nil,x,eye.sy-25)
-    o.hud=true
-    objs[i]=o
-    x=x+40
-  end
-  buydevs[3]=objs
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed

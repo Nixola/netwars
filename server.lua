@@ -5,12 +5,7 @@ local function buy_device(pl,a)
     return
   end
   local x,y=tonumber(a[3]),tonumber(a[4])
-  local isdev=true
   local cl=d_cl[a[2]]
-  if not cl then
-    cl=u_cl[a[2]]
-    isdev=false
-  end
   if not cl then
     return
   end
@@ -21,30 +16,19 @@ local function buy_device(pl,a)
   if pl.cash<price then
     return
   end
-  if isdev then
-    local o=cl:new(pl,x,y)
-    if o:chk_border(x,y) then
-      pl.cash=pl.cash-price
-      o.idx=devices:add(o)
-      dhash:add(o)
-      cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
-      cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
-    end
-    return
-  end
-  if a[2]=="c" and pl.havecmd then
+  if a[2]=="B" and pl.started then
     return
   end
   local o=cl:new(pl,x,y)
-  if o.cl=="c" or o:chk_supply(x,y) then
+  if o:chk_border(x,y) then
     pl.cash=pl.cash-price
-    o.idx=units:add(o)
-    uhash:add(o)
-    if a[2]=="c" then
-      pl.havecmd=true
-    end
+    o.idx=devices:add(o)
+    hash:add(o)
     cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
-    cput("Un:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+    cput("Dn:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
+    if a[2]=="B" then
+      pl.started=true
+    end
   end
 end
 
@@ -61,55 +45,7 @@ function parse_client(msg,pl,ts)
     buy_device(pl,a)
     return
   end
-  if a[1]=="Um" then -- Move:idx:x:y:x:y
-    if a.n<4 then
-      return
-    end
-    local o=units[tonumber(a[2])]
-    local x,y=tonumber(a[3]),tonumber(a[4])
-    if o and o.pl==pl then
-      if o:move(x,y) then
-        cput("Um:%d:%s:%d:%d:%d:%d",o.idx,ts,o.x,o.y,o.mx,o.my)
-      else
-        cput("Up:%d:%d:%d",o.idx,o.x,o.y)
-      end
-    end
-    return
-  end
-  if a[1]=="Sh" then -- Shot:u1:u2
-    if a.n<3 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if u1 and u2 then
-      u1:shot(u2)
-    end
-    return
-  end
-  if a[1]=="SH" then -- Shot:u1:d2
-    if a.n<3 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if u1 and d2 then
-      u1:shot(d2)
-    end
-    return
-  end
-  if a[1]=="Ts" then -- Shot:d1:u2
-    if a.n<3 then
-      return
-    end
-    local d1=devices[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if d1 and u2 then
-      d1:shot(u2)
-    end
-    return
-  end
-  if a[1]=="TS" then -- Shot:d1:d2
+  if a[1]=="Ts" then -- Shot:d1:d2
     if a.n<3 then
       return
     end
@@ -117,39 +53,6 @@ function parse_client(msg,pl,ts)
     local d2=devices[tonumber(a[3])]
     if d1 and d2 then
       d1:shot(d2)
-    end
-    return
-  end
-  if a[1]=="Sp" then -- Shot:u1:u2
-    if a.n<3 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if u1 and u2 then
-      u1:transfer(u2)
-    end
-    return
-  end
-  if a[1]=="SP" then -- Shot:d1:u2
-    if a.n<3 then
-      return
-    end
-    local d1=devices[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if d1 and u2 then
-      d1:transfer(u2)
-    end
-    return
-  end
-  if a[1]=="SC" then -- Capture:u1:d2
-    if a.n<3 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if u1 and d2 then
-      u1:capture(d2)
     end
     return
   end
@@ -265,16 +168,6 @@ function devs_proc(dt)
       end
     else
       o.dt=0
-    end
-  end
-end
-
-function units_proc(dt)
-  for _,o in pairs(units) do
-    if not o.deleted then
-      if o:step(dt) then
-        cput("Up:%d:%d:%d",o.idx,o.x,o.y)
-      end
     end
   end
 end

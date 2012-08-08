@@ -100,16 +100,22 @@ function Device:packet(dev,v)
   if self.deleted then
     return
   end
+  if self.health<self.maxhealth then
+    self.health=min(self.health+v,self.maxhealth)
+    if dev.maxpkt then
+      mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
+    else
+      mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
+    end
+    return
+  end
   if not self.maxpkt then
     return
   end
   dev.pt=1.0
   self.pt=1.0
   dev.pkt=dev.pkt-v
-  self.pkt=self.pkt+v
-  if self.pkt>self.maxpkt then
-    self.pkt=self.maxpkt
-  end
+  self.pkt=min(self.pkt+v,self.maxpkt)
   if dev.maxpkt then
     mput("Pr:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
   else
@@ -125,10 +131,7 @@ function Vault:packet(dev,v)
   dev.pt=1.0
   self.pt=1.0
   dev.pkt=dev.pkt-v
-  pl.cash=pl.cash+v
-  if pl.cash>pl.maxcash then
-    pl.cash=pl.maxcash
-  end
+  pl.cash=min(pl.cash+v,pl.maxcash)
   mput("Pc:%d:%d:%d:%d",dev.idx,self.idx,pl.cash,dev.pkt)
 end
 
@@ -176,8 +179,39 @@ function Vault:update(e,pl)
   end
 end
 
+function Generator:check(dt)
+  if self.deleted then
+    return
+  end
+  if not self.pl then
+    return
+  end
+  self.dt2=self.dt2+dt
+  if self.dt2>=DEGT then
+    self:takeover(nil)
+    cput("Do:%d:%d",self.idx,0)
+    return
+  end
+end
+
+function Generator:signal(dev)
+  if self.deleted then
+    return
+  end
+  if self.pl==dev.pl then
+    dev.pt=1.0
+    self.pt=1.0
+    self.dt2=0
+    dev.pkt=dev.pkt-1
+    mput("Ps:%d:%d:%d",dev.idx,self.idx,dev.pkt)
+    return
+  end
+  self:takeover(dev.pl)
+  cput("Po:%d:%d:%d",dev.idx,self.idx,dev.pkt)
+end
+
 function Generator:logic()
-  local i,d,p,l,c,e,v
+  local i,d,l,c,e,v
   l=#self.links
   c=l
   e=self.ec
@@ -195,11 +229,13 @@ function Generator:logic()
   self.li=i
 end
 
+Base.logic=Generator.logic
+
 function Router:logic()
   if self.pkt<1 then
     return
   end
-  local i,d,p,l,c,e,v
+  local i,d,l,c,e,v
   l=#self.links
   c=l
   e=self.ec
@@ -207,10 +243,41 @@ function Router:logic()
   while c>0 and e>0 do
     d=self.links[i].dev2
     i=i<l and i+1 or 1
-    if d.online and (not d.maxpkt or d.pkt<d.maxpkt) then
-      v=d.maxpkt-d.pkt
-      v=min(MAXV,self.pkt,v)
-      d:packet(self,v)
+    if d.online then
+      v=nil
+      if d.health<d.maxhealth then
+        v=d.maxhealth-d.health
+      elseif not d.maxpkt or d.pkt<d.maxpkt then
+        v=d.maxpkt and d.maxpkt-d.pkt or MAXV
+      end
+      if v then
+        v=min(MAXV,self.pkt,v)
+        d:packet(self,v)
+        e=e-1
+        if self.pkt<1 then
+          break
+        end
+      end
+    end
+    c=c-1
+  end
+  self.li=i
+end
+
+function Signal:logic()
+  if self.pkt<1 then
+    return
+  end
+  local i,d,l,c,e
+  l=#self.links
+  c=l
+  e=self.ec
+  i=self.li>l and 1 or self.li
+  while c>0 and e>0 do
+    d=self.links[i].dev2
+    i=i<l and i+1 or 1
+    if d.signal then
+      d:signal(self)
       e=e-1
       if self.pkt<1 then
         break
@@ -226,27 +293,15 @@ function Tower:shot(targ)
   if sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
-  if targ.isdev then
-    self.pkt=self.pkt-1
-    targ.health=targ.health-5
-    targ.pt=1.0
-    if targ.health<1 then
-      targ:delete()
-      cput("TD:%d:%d:%d",self.idx,targ.idx,self.pkt)
-      devices:del(targ)
-    else
-      mput("TH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-    end
+  self.pkt=self.pkt-1
+  targ.health=targ.health-10
+  targ.pt=1.0
+  if targ.health<1 then
+    targ:delete()
+    cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
+    devices:del(targ)
   else
-    self.pkt=self.pkt-1
-    targ.health=targ.health-5
-    if targ.health<1 then
-      targ:delete()
-      cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
-      units:del(targ)
-    else
-      mput("Th:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-    end
+    mput("Th:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
   end
 end
 
@@ -257,17 +312,17 @@ function Tower:logic()
   if self.pkt<1 then
     return
   end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
   local targ
   local tlen=SHOTR
   local tx,ty,len
   local e=self.ec
-  for _,u in pairs(t) do
-    if u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
+  for _,o in pairs(t) do
+    if o.pl~=self.pl and o.initok then
+      tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
-        targ=u
+        targ=o
         tlen=len
       end
     end
@@ -275,162 +330,4 @@ function Tower:logic()
   if targ then
     self:shot(targ)
   end
-end
-
-function SupplyBay:transfer(targ)
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=SUPPR then
-    return
-  end
-  if targ.pkt<targ.maxpkt then
-    local v=self.pkt>MAXV and MAXV or self.pkt
-    self.pkt=self.pkt-v
-    targ.pkt=targ.pkt+v
-    if targ.pkt>targ.maxpkt then
-      targ.pkt=targ.maxpkt
-    end
-  end
-  mput("SP:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.pkt)
-end
-
-Factory.transfer=SupplyBay.transfer
-
-function Commander:capture(targ)
-  if targ.pl==self.pl then
-    return
-  end
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=BEAMR then
-    return
-  end
-  if targ.cpl~=self.pl then
-    targ.cpl=self.pl
-    targ.ccnt=0
-  end
-  targ.ccnt=targ.ccnt+1
-  if targ.ccnt<CAPTC then
-    mput("SC:%d:%d:%d",self.idx,targ.idx,self.pkt)
-    return
-  end
-  cput("SO:%d:%d:%d",self.idx,targ.idx,self.pkt)
-  targ:takeover(self.pl)
-  self.targ=nil
-end
-
-function Commander:shot(targ)
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=SHOTR then
-    return
-  end
-  targ.health=targ.health-10
-  if targ.health<1 then
-    targ:delete()
-    cput("Sd:%d:%d:%d",self.idx,targ.idx,self.pkt)
-    units:del(targ)
-  else
-    mput("Sh:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-  end
-end
-
-function Engineer:shot(targ)
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=BEAMR then
-    return
-  end
-  if targ.isdev then
-    if targ.health<targ.maxhealth then
-      local v=self.pkt>MAXV and MAXV or self.pkt
-      self.pkt=self.pkt-v
-      targ.health=targ.health+v*2
-      targ.pt=1.0
-      if targ.health>targ.maxhealth then
-        targ.health=targ.maxhealth
-      end
-    end
-    mput("SH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-  else
-    if targ.health<targ.maxhealth then
-      local v=self.pkt>MAXV and MAXV or self.pkt
-      self.pkt=self.pkt-v
-      targ.health=targ.health+v*2
-      if targ.health>targ.maxhealth then
-        targ.health=targ.maxhealth
-      end
-    end
-    mput("Sh:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-  end
-end
-
-function Engineer:capture(targ)
-  if targ.pl==self.pl then
-    return
-  end
-  if self.pkt<MAXV then
-    return
-  end
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=BEAMR then
-    return
-  end
-  self.pkt=self.pkt-MAXV
-  if targ.cpl~=self.pl then
-    targ.cpl=self.pl
-    targ.ccnt=0
-  end
-  targ.ccnt=targ.ccnt+1
-  targ.pt=1.0
-  if targ.ccnt<CAPTC then
-    mput("SC:%d:%d:%d",self.idx,targ.idx,self.pkt)
-    return
-  end
-  cput("SO:%d:%d:%d",self.idx,targ.idx,self.pkt)
-  targ:takeover(self.pl)
-  self.targ=nil
-end
-
-
-function Tank:shot(targ)
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=SHOTR then
-    return
-  end
-  if targ.isdev then
-    self.pkt=self.pkt-1
-    targ.health=targ.health-5
-    targ.pt=1.0
-    if targ.health<1 then
-      targ:delete()
-      cput("SD:%d:%d:%d",self.idx,targ.idx,self.pkt)
-      devices:del(targ)
-      self.targ=nil
-    else
-      mput("SH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-    end
-  else
-    self.pkt=self.pkt-1
-    targ.health=targ.health-5
-    if targ.health<1 then
-      targ:delete()
-      cput("Sd:%d:%d:%d",self.idx,targ.idx,self.pkt)
-      units:del(targ)
-    else
-      mput("Sh:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
-    end
-  end
-end
-
-function Supply:transfer(targ)
-  local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=BEAMR then
-    return
-  end
-  if targ.pkt<targ.maxpkt then
-    local v=self.pkt>MAXV and MAXV or self.pkt
-    self.pkt=self.pkt-v
-    targ.pkt=targ.pkt+v
-    if targ.pkt>targ.maxpkt then
-      targ.pkt=targ.maxpkt
-    end
-  end
-  mput("Sp:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.pkt)
 end

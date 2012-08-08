@@ -4,12 +4,13 @@ local pi2=math.pi*2
 
 class "Packet"
 
-function Packet:initialize(d1,d2)
+function Packet:initialize(d1,d2,sig)
   local vx,vy=d2.x-d1.x,d2.y-d1.y
   local l=sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
   self.pl=d2.pl
+  self.sig=sig or false
   vx,vy=vx/l,vy/l
   self.x1=d1.x+vx*d1.r
   self.y1=d1.y+vy*d1.r
@@ -59,6 +60,9 @@ end
 function Packet:draw()
   local col={0,0,0}
   local i=2
+  if self.sig then
+    i=self.pl==ME and 3 or 1
+  end
   graph.setLine(2,"smooth")
   if self.cnt>=3 then
     col[i]=self.ttl-40
@@ -240,19 +244,14 @@ function Device:draw_rng(_x,_y)
     end
     return
   end
-  if self.cl=="G" or self.cl=="R" then
+  if self.ec then
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
-    graph.circle("line",self.x,self.y,LINK,24)
-  elseif self.cl=="S" or self.cl=="F" then
-    graph.setLine(1,"rough")
-    graph.setColor(0,0,255)
-    graph.circle("line",self.x,self.y,SUPPR,24)
-    return
+    graph.circle("line",x,y,LINK,24)
   elseif self.cl=="T" then
     graph.setLine(1,"rough")
     graph.setColor(255,0,0)
-    graph.circle("line",self.x,self.y,SHOTR,24)
+    graph.circle("line",x,y,SHOTR,24)
   end
 end
 
@@ -264,7 +263,7 @@ function Device:draw()
 end
 
 function Device:chk_border2(x,y)
-  local t=dhash:get(self:bound_box(x,y))
+  local t=hash:get(self:bound_box(x,y))
   local ok=true
   local len,vx,vy
   local br,tp,pl
@@ -335,10 +334,13 @@ function Device:net_connect(dev)
   if self==dev then
     return
   end
+  if self.cl=="B" and dev.cl~="R" then
+    return
+  end
   if self.cl=="G" and dev.cl~="R" then
     return
   end
-  if self.cl=="R" and dev.cl=="G" then
+  if self.cl=="S" and dev.cl~="G" then
     return
   end
   if #self.links>=self.maxlinks then
@@ -393,129 +395,6 @@ function Link:draw()
   graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
 end
 
-function Unit:draw_bar()
-  local w=self.r*2
-  local p=self.health/self.maxhealth
-  local n=floor(w*p)
-  local c=floor(48*p)
-  local x,y=self.x-self.r,self.y-self.r-6
-  local re=c>=32 and 250-((c-32)*15) or 250
-  local gr=c<=24 and c*10 or 250
-  if n>0 then
-    graph.setColor(re,gr,0)
-    graph.rectangle("fill",x,y,n,3)
-  end
-  if self.maxpkt then
-    p=self.pkt/self.maxpkt
-    n=floor(w*p)
-    x,y=self.x-self.r,self.y+self.r+3
-    if n>0 then
-      graph.setColor(255,255,255)
-      graph.rectangle("fill",x,y,n,3)
-    end
-  end
-end
-
-function Unit:draw_sym(_x,_y)
-  local x=_x or self.x
-  local y=_y or self.y
-  if self.hud then
-    if self.buyonce then
-      graph.setColor(0,0,160)
-    else
-      graph.setColor(0,0,255)
-    end
-  elseif not self.pl then
-    graph.setColor(128,128,128)
-  elseif self.pl==ME then
-    graph.setColor(0,0,255)
-  else
-    graph.setColor(255,0,0)
-  end
-  graph.circle("fill",x,y,self.r,12)
-  graph.setColor(255,255,255)
-  graph.setLine(1,"rough")
-  graph.circle("line",x,y,self.r,12)
-  if self.hud or eye.s>0.9 then
-    graph.setColorMode("replace")
-    graph.draw(self.img,x-4,y-4)
-  end
-end
-
-function Unit:draw_rng(_x,_y)
-  local x=_x or self.x
-  local y=_y or self.y
-  graph.setLine(1,"rough")
-  if self.cl=="s" or self.cl=="e" or self.cl=="c" then
-    graph.setColor(0,0,255)
-    graph.circle("line",x,y,BEAMR,24)
-  end
-  if self.cl=="t" or self.cl=="c" then
-    graph.setColor(255,0,0)
-    graph.circle("line",x,y,SHOTR,24)
-  end
-end
-
-function Unit:draw()
-  self:draw_sym()
-  if eye.s>0.4 then
-    self:draw_bar()
-  end
-  if self.pl==ME and self.targ then
-    graph.setColor(0,0,192)
-    graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.targ.x,self.targ.y)
-  end
-  if self.pl==ME and self.vx and self.vy then
-    graph.setColor(192,192,192)
-    graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.mx,self.my)
-  end
-end
-
-function Unit:_step(dt)
-  if not (self.vx and self.vy) then
-    return false
-  end
-  local x=self.tx+self.vx*dt
-  local y=self.ty+self.vy*dt
-  local tx,ty=x-self.ix,y-self.iy
-  local len=sqrt(tx*tx+ty*ty)
-  if len>=self.dist then
-    self.x=self.mx
-    self.y=self.my
-    self.vx=nil
-    self.vy=nil
-    return true
-  end
-  self.tx=x
-  self.ty=y
-  self.x=floor(x)
-  self.y=floor(y)
-  return false
-end
-
-function Unit:drag(x,y)
-  self:draw_sym(x,y)
-end
-
-function Unit:is_pointed(x,y)
-  local tx,ty=self.x-x,self.y-y
-  local r=sqrt(tx*tx+ty*ty)
-  return r<=self.r
-end
-
-function Unit:net_buy(x,y)
-  if ME.cash>=self.price then
-    net_send("B:%s:%d:%d",self.cl,x,y)
-  end
-end
-
-function Unit:net_move(x,y)
-  x,y=self:calc_xy(x,y)
-  net_send("Um:%d:%d:%d",self.idx,x,y)
-end
-
 function Generator:draw_st()
   local w=self.r*2
   local p=self.pwr/MAXV
@@ -533,6 +412,9 @@ function Generator:draw()
     self:draw_st()
   end
 end
+
+Base.draw_st=Generator.draw_st
+Base.draw=Generator.draw
 
 function Router:draw_st()
   local w=self.r*2
@@ -582,12 +464,6 @@ function Tower:draw()
   end
 end
 
-Factory.draw_st=Tower.draw_st
-Factory.draw=Tower.draw
-
-SupplyBay.draw_st=Tower.draw_st
-SupplyBay.draw=Tower.draw
-
 function Tower:logic()
   if self.pkt<1 then
     return
@@ -600,21 +476,21 @@ function Tower:logic()
       local tx,ty=targ.x-self.x,targ.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<SHOTR then
-        net_send("TS:%d:%d",self.idx,targ.idx)
+        net_send("Ts:%d:%d",self.idx,targ.idx)
         return
       end
     end
   end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
   local targ
   local tlen=SHOTR
   local tx,ty,len
-  for _,u in pairs(t) do
-    if u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
+  for _,o in pairs(t) do
+    if o.pl~=self.pl and o.initok then
+      tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
-        targ=u
+        targ=o
         tlen=len
       end
     end
@@ -632,183 +508,10 @@ function Tower:set_targ(targ)
   end
 end
 
-function SupplyBay:logic()
-  if self.pkt<1 then
-    return
-  end
-  local t=uhash:get(self.x-SUPPR,self.y-SUPPR,self.x+SUPPR,self.y+SUPPR)
-  local targ
-  local tlen=SUPPR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen and u.maxpkt and u.pkt<u.maxpkt then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    net_send("SP:%d:%d",self.idx,targ.idx)
-  end
-end
-
-Factory.logic=SupplyBay.logic
-
-function Commander:logic()
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<BEAMR and targ.pl~=self.pl then
-        net_send("SC:%d:%d",self.idx,targ.idx)
-        return
-      end
-    end
-  end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ
-  local tlen=SHOTR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    net_send("Sh:%d:%d",self.idx,targ.idx)
-  end
-end
-
-function Commander:set_targ(targ)
-  if targ then
-    self.targ=targ.pl~=self.pl and targ or nil
-  else
-    self.targ=nil
-  end
-end
-
-function Engineer:logic()
-  if self.pkt<1 then
-    return
-  end
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<BEAMR then
-        if targ.pl~=self.pl then
-          net_send("SC:%d:%d",self.idx,targ.idx)
-          return
-        elseif targ.health<targ.maxhealth then
-          net_send("SH:%d:%d",self.idx,targ.idx)
-          return
-        end
-      end
-    end
-  end
-  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
-  local targ=nil
-  local tlen=BEAMR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen and u.health<u.maxhealth then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    net_send("Sh:%d:%d",self.idx,targ.idx)
-  end
-end
-
-function Engineer:set_targ(targ)
-  self.targ=targ
-end
-
-function Tank:logic()
-  if self.pkt<1 then
-    return
-  end
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<SHOTR then
-        net_send("SH:%d:%d",self.idx,targ.idx)
-        return
-      end
-    end
-  end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ=nil
-  local tlen=SHOTR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen then
-        targ=u
-        tlen=len
-        break
-      end
-    end
-  end
-  if targ then
-    net_send("Sh:%d:%d",self.idx,targ.idx)
-  end
-end
-
-function Tank:set_targ(targ)
-  if targ then
-    self.targ=targ.pl~=self.pl and targ or nil
-  else
-    self.targ=nil
-  end
-end
-
-function Supply:logic()
-  if self.pkt<1 then
-    return
-  end
-  local t=uhash:get(self.x-BEAMR,self.y-BEAMR,self.x+BEAMR,self.y+BEAMR)
-  local targ=nil
-  local tlen=BEAMR
-  local tx,ty,len
-  for _,u in pairs(t) do
-    if u~=self and u.pl==self.pl then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen and u.cl~="s" and u.maxpkt and u.pkt<u.maxpkt then
-        targ=u
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    net_send("Sp:%d:%d",self.idx,targ.idx)
-  end
+function Base:init_gui()
+  self.menu=Menu:new(self)
+  self.menu:add("Online",Device.net_switch)
+  return
 end
 
 function Generator:init_gui()
@@ -830,19 +533,7 @@ function Vault:init_gui()
   self.menu:add("Delete",Device.net_delete)
 end
 
-function Factory:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
-end
-
 function Tower:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
-end
-
-function SupplyBay:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Delete",Device.net_delete)

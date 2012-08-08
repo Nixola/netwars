@@ -16,10 +16,8 @@ dirty=false
 player_cnt=0
 players=ctable()
 devices=ctable()
-units=ctable()
 links=storage()
-dhash=sphash(200)
-uhash=sphash(100)
+hash=sphash(200)
 
 local sock=socket.udp()
 local iptab={}
@@ -106,10 +104,6 @@ local function new_client(str,ts,ip,port)
   for _,o in pairs(links) do
     m:put(string.format("Lc:%d:%d",o.dev1.idx,o.dev2.idx))
   end
-  for _,o in pairs(units) do
-    i=o.pl and o.pl.idx or 0
-    m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,o.pkt,o.x,o.y))
-  end
   m:put("DONE")
   enqueue(pl.syncq,m)
   pl.sendq.seq=pl.syncq.seq
@@ -189,7 +183,7 @@ function add_G(x,y,pwr)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    dhash:add(o)
+    hash:add(o)
     return o
   end
   return nil
@@ -202,7 +196,7 @@ function add_R(x,y,ec)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    dhash:add(o)
+    hash:add(o)
     return o
   end
   return nil
@@ -214,7 +208,7 @@ function add_T(x,y,ec)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    dhash:add(o)
+    hash:add(o)
     return o
   end
   return nil
@@ -243,7 +237,7 @@ while true do
     for _,o in pairs(devices) do
       o:del_links()
       devices:del(o)
-      dhash:del(o)
+      hash:del(o)
     end
     if mapchunk then
       mapchunk()
@@ -272,7 +266,6 @@ while true do
   if ts>tm+0.25 then
     dt=ts-tm
     tm=ts
-    units_proc(dt)
     devs_proc(dt)
   end
   enqueue(q,ctlq)

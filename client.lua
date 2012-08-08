@@ -73,11 +73,23 @@ local function parse_server(msg,ts)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    local pkt1=tonumber(a[4])
-    local pkt2=tonumber(a[5])
     if d1 and d2 then
-      d1.pkt=pkt1 or 0
-      d2.pkt=pkt2
+      d1.pkt=tonumber(a[4]) or 0
+      d2.pkt=tonumber(a[5])
+      local p=Packet:new(d1,d2)
+      packets:add(p)
+    end
+    return
+  end
+  if a[1]=="Ph" then -- Routed:d1:d2:pkt:health
+    if a.n<5 then
+      return
+    end
+    local d1=devices[tonumber(a[2])]
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
+      d1.pkt=tonumber(a[4]) or 0
+      d2.health=tonumber(a[5])
       local p=Packet:new(d1,d2)
       packets:add(p)
     end
@@ -98,175 +110,34 @@ local function parse_server(msg,ts)
     end
     return
   end
-  if a[1]=="Um" then -- Move:idx:ts:x:y:x:y
-    if a.n<7 then
-      return
-    end
-    local o=units[tonumber(a[2])]
-    local ts=tonumber(a[3])
-    local x,y=tonumber(a[6]),tonumber(a[7])
-    uhash:del(o)
-    o.x=tonumber(a[4])
-    o.y=tonumber(a[5])
-    o:move(x,y)
-    o:_step(srvts-ts)
-    uhash:add(o)
-    return
-  end
-  if a[1]=="Up" then -- Move:idx:x,y
+  if a[1]=="Ps" then -- Signal:d1:d2:pkt
     if a.n<4 then
       return
     end
-    local o=units[tonumber(a[2])]
-    local x,y=tonumber(a[3]),tonumber(a[4])
-    uhash:del(o)
-    o.x=tonumber(a[3])
-    o.y=tonumber(a[4])
-    uhash:add(o)
-    o.vx=nil
-    o.vy=nil
-    return
-  end
-  if a[1]=="Sp" then -- Hit:u1:u2:pkt:pkt
-    if a.n<5 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if u1 and u2 then
-      u1.pkt=tonumber(a[4])
-      u2.pkt=tonumber(a[5])
-      local s=Shot:new(u1,u2)
-      shots:add(s)
-    end
-    return
-  end
-  if a[1]=="SP" then -- Hit:d1:u2:pkt:pkt
-    if a.n<5 then
-      return
-    end
     local d1=devices[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if d1 and u2 then
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
       d1.pkt=tonumber(a[4])
-      u2.pkt=tonumber(a[5])
-      local s=Shot:new(d1,u2)
-      shots:add(s)
+      local p=Packet:new(d1,d2,true)
+      packets:add(p)
     end
     return
   end
-  if a[1]=="Sh" then -- Hit:u1:u2:pkt:health
-    if a.n<5 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if u1 and u2 then
-      u1.pkt=tonumber(a[4])
-      u2.health=tonumber(a[5])
-      local s=Shot:new(u1,u2)
-      shots:add(s)
-    end
-    return
-  end
-  if a[1]=="SH" then -- Hit:u1:d2:pkt:health
-    if a.n<5 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if u1 and d2 then
-      u1.pkt=tonumber(a[4])
-      d2.health=tonumber(a[5])
-      local s=Shot:new(u1,d2)
-      shots:add(s)
-    end
-    return
-  end
-  if a[1]=="SC" then -- Capture:u1:d2:pkt
+  if a[1]=="Po" then -- Owner:d1:d2:pkt
     if a.n<4 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if u1 and d2 then
-      u1.pkt=tonumber(a[4])
-      local s=Shot:new(u1,d2)
-      shots:add(s)
-    end
-    return
-  end
-  if a[1]=="SO" then -- Takeover:u1:d2:pkt
-    if a.n<4 then
-      return
-    end
-    local u1=units[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    local pl=u1.pl
-    u1.pkt=tonumber(a[4])
-    d2:takeover(pl)
-    u1.targ=nil
-    local s=Shot:new(u1,d2)
-    shots:add(s)
-    return
-  end
-  if a[1]=="Sd" then -- Destroy:u1:u2:pkt
-    if a.n<4 then
-      return
-    end
-    local idx=tonumber(a[3])
-    local u1=units[tonumber(a[2])]
-    local u2=units[idx]
-    u1.pkt=tonumber(a[4])
-    u2:delete()
-    units[idx]=nil
-    local s=Shot:new(u1,u2)
-    shots:add(s)
-    return
-  end
-  if a[1]=="SD" then -- Destroy:u1:d2:pkt
-    if a.n<4 then
-      return
-    end
-    local idx=tonumber(a[3])
-    local u1=units[tonumber(a[2])]
-    local d2=devices[idx]
-    u1.pkt=tonumber(a[4])
-    d2:delete()
-    devices[idx]=nil
-    local s=Shot:new(u1,d2)
-    shots:add(s)
-    return
-  end
-  if a[1]=="Th" then -- Hit:d1:u2:pkt:health
-    if a.n<5 then
       return
     end
     local d1=devices[tonumber(a[2])]
-    local u2=units[tonumber(a[3])]
-    if d1 and u2 then
+    local d2=devices[tonumber(a[3])]
+    if d1 and d2 then
       d1.pkt=tonumber(a[4])
-      u2.health=tonumber(a[5])
-      local s=Shot:new(d1,u2)
-      shots:add(s)
+      d2:takeover(d1.pl)
+      local p=Packet:new(d1,d2,true)
+      packets:add(p)
     end
     return
   end
-  if a[1]=="Td" then -- Destroy:d1:u2:pkt
-    if a.n<4 then
-      return
-    end
-    local idx=tonumber(a[3])
-    local d1=devices[tonumber(a[2])]
-    local u2=units[idx]
-    d1.pkt=tonumber(a[4])
-    u2:delete()
-    units[idx]=nil
-    local s=Shot:new(d1,u2)
-    shots:add(s)
-    return
-  end
-  if a[1]=="TH" then -- Hit:d1:d2:pkt:health
+  if a[1]=="Th" then -- Hit:d1:d2:pkt:health
     if a.n<5 then
       return
     end
@@ -280,7 +151,7 @@ local function parse_server(msg,ts)
     end
     return
   end
-  if a[1]=="TD" then -- Destroy:d1:d2:pkt
+  if a[1]=="Td" then -- Destroy:d1:d2:pkt
     if a.n<4 then
       return
     end
@@ -306,7 +177,7 @@ local function parse_server(msg,ts)
       return
     end
     local o=cl:new(pl,x,y)
-    if a[3]=="G" or a[3]=="B" then
+    if a[3]=="G" then
       if a.n<7 then
         return
       end
@@ -315,26 +186,9 @@ local function parse_server(msg,ts)
     o.idx=idx
     o:init_gui()
     devices[idx]=o
-    dhash:add(o)
-    return
-  end
-  if a[1]=="Un" then -- New:pl:cl:idx:x:y:...
-    if a.n<6 then
-      return
-    end
-    local pl=players[tonumber(a[2])]
-    local cl=u_cl[a[3]]
-    local idx=tonumber(a[4])
-    local x,y=tonumber(a[5]),tonumber(a[6])
-    if not cl then
-      return
-    end
-    local o=cl:new(pl,x,y)
-    o.idx=idx
-    units[idx]=o
-    uhash:add(o)
-    if o.cl=="c" then
-      pl.havecmd=true
+    hash:add(o)
+    if o.cl=="B" then
+      pl.started=true
     end
     return
   end
@@ -372,6 +226,16 @@ local function parse_server(msg,ts)
     end
     local o=devices[tonumber(a[2])]
     o.ec=tonumber(a[3])
+    return
+  end
+  if a[1]=="Do" then -- Owner:idx:pl
+    if a.n<3 then
+      return
+    end
+    local o=devices[tonumber(a[2])]
+    local idx=tonumber(a[3])
+    local pl=idx>0 and players[idx] or nil
+    o:takeover(pl)
     return
   end
   if a[1]=="Lc" then -- Link:dev1:dev2
@@ -444,26 +308,7 @@ local function parse_server(msg,ts)
     o:init_gui()
     o.online=b
     devices[idx]=o
-    dhash:add(o)
-    return
-  end
-  if a[1]=="Ua" then -- Add:pl:cl:idx:health:pkt:x:y
-    if a.n<8 then
-      return
-    end
-    local pl=players[tonumber(a[2])]
-    local cl=u_cl[a[3]]
-    local idx=tonumber(a[4])
-    local x,y=tonumber(a[7]),tonumber(a[8])
-    if not cl then
-      return
-    end
-    local o=cl:new(pl,x,y)
-    o.idx=idx
-    o.health=tonumber(a[5])
-    o.pkt=tonumber(a[6])
-    units[idx]=o
-    uhash:add(o)
+    hash:add(o)
     return
   end
   if a[1]=="PLa" then -- PLa:idx:nick:cash
