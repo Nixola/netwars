@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 1" -- network protocol version
+NVER="master 2" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -68,7 +68,6 @@ function Device:initialize(pl,x,y)
     self.pwr=0
   end
   if self.cl=="B" then
-    self.nomove=true
     self.gotpwr=true
     self.pwr=10
   end
@@ -313,9 +312,9 @@ class "Signal" : extends(Router) {
 cl="S";
 ec=1; -- emit count
 em=3; -- max emit count
-maxhealth=50;
+maxhealth=30;
 maxpkt=100; -- max queue
-maxlinks=3;
+maxlinks=6;
 maxblinks=2;
 price=200;
 }
@@ -324,13 +323,13 @@ class "Vault" : extends(Device) {
 cl="V";
 maxhealth=100;
 maxlinks=0;
-maxblinks=5;
+maxblinks=3;
 price=300;
 }
 
 class "Tower" : extends(Device) {
 cl="T";
-maxhealth=200;
+maxhealth=100;
 maxpkt=100; -- max queue
 maxlinks=0;
 maxblinks=2;

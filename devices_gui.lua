@@ -486,7 +486,7 @@ function Tower:logic()
   local tlen=SHOTR
   local tx,ty,len
   for _,o in pairs(t) do
-    if o.pl~=self.pl and o.initok then
+    if o.pl~=self.pl and o.initok and o.cl~="G" then
       tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
@@ -501,8 +501,8 @@ function Tower:logic()
 end
 
 function Tower:set_targ(targ)
-  if targ then
-    self.targ=targ.pl~=self.pl and targ or nil
+  if targ and targ.pl~=self.pl then
+    self.targ=targ
   else
     self.targ=nil
   end

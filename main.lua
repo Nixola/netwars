@@ -112,6 +112,7 @@ local hover_dt=0
 local conn=nil
 local menu=nil
 local kshift=false
+local kctrl=false
 local scoreboard=false
 
 local function get_device(x,y)
@@ -205,6 +206,10 @@ function main_mousepressed(mx,my,b)
         obj:net_switch()
         return
       end
+      if kctrl then
+        obj:net_upgrade()
+        return
+      end
       if not obj.nomove and not obj.online and obj.pc<1 then
         drag=obj
       end
@@ -290,6 +295,10 @@ function main_keypressed(k,ch)
     kshift=true
     return
   end
+  if k=="lctrl" or k=="rctrl" then
+    kctrl=true
+    return
+  end
   if k=="escape" then
     bdev=nil
     return
@@ -369,6 +378,10 @@ end
 function main_keyreleased(k)
   if k=="lshift" or k=="rshift" then
     kshift=false
+    return
+  end
+  if k=="lctrl" or k=="rctrl" then
+    kctrl=false
     return
   end
   if k=="tab" then

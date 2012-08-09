@@ -188,8 +188,8 @@ function Generator:check(dt)
   end
   self.dt2=self.dt2+dt
   if self.dt2>=DEGT then
-    self:takeover(nil)
-    cput("Do:%d:%d",self.idx,0)
+    self.online=false
+    cput("Ds:%d:%d",self.idx,0)
     return
   end
 end
@@ -247,8 +247,10 @@ function Router:logic()
       v=nil
       if d.health<d.maxhealth then
         v=d.maxhealth-d.health
-      elseif not d.maxpkt or d.pkt<d.maxpkt then
+      elseif d.maxpkt and d.pkt<d.maxpkt then
         v=d.maxpkt and d.maxpkt-d.pkt or MAXV
+      elseif d.cl=="V" then
+        v=MAXV
       end
       if v then
         v=min(MAXV,self.pkt,v)
@@ -293,9 +295,10 @@ function Tower:shot(targ)
   if sqrt(tx*tx+ty*ty)>=SHOTR then
     return
   end
+  self.pt=1.0
   self.pkt=self.pkt-1
-  targ.health=targ.health-10
   targ.pt=1.0
+  targ.health=targ.health-10
   if targ.health<1 then
     targ:delete()
     cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
@@ -318,7 +321,7 @@ function Tower:logic()
   local tx,ty,len
   local e=self.ec
   for _,o in pairs(t) do
-    if o.pl~=self.pl and o.initok then
+    if o.pl~=self.pl and o.initok and o.cl~="G" then
       tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
