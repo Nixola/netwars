@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 2" -- network protocol version
+NVER="master 3" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -312,7 +312,7 @@ class "Signal" : extends(Router) {
 cl="S";
 ec=1; -- emit count
 em=3; -- max emit count
-maxhealth=30;
+maxhealth=50;
 maxpkt=100; -- max queue
 maxlinks=6;
 maxblinks=2;

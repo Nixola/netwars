@@ -296,10 +296,4 @@ while true do
       end
     end
   end
-  for _,o in pairs(players) do
-    if o.insync and ts>=o.pts then
-      sock:sendto(string.format("PING:%s:%s",ts,o.ping),o.ip,o.port)
-      o.pts=ts+1.0
-    end
-  end
 end

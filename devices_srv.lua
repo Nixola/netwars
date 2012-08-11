@@ -219,10 +219,17 @@ function Generator:logic()
   while c>0 and e>0 do
     d=self.links[i].dev2
     i=i<l and i+1 or 1
-    if d.online and (not d.maxpkt or d.pkt<d.maxpkt) then
-      v=self.pwr
-      d:packet(self,v)
-      e=e-1
+    if d.online then
+      v=nil
+      if d.health<d.maxhealth then
+        v=self.pwr
+      elseif d.maxpkt and d.pkt<d.maxpkt then
+        v=self.pwr
+      end
+      if v then
+        d:packet(self,v)
+        e=e-1
+      end
     end
     c=c-1
   end
