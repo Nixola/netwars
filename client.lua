@@ -187,8 +187,8 @@ local function parse_server(msg,ts)
     o:init_gui()
     devices[idx]=o
     hash:add(o)
-    if o.cl=="B" then
-      pl.started=true
+    if o.cl=="B" and pl==ME then
+      main_started()
     end
     return
   end

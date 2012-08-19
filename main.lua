@@ -402,6 +402,11 @@ function main_keyreleased(k)
   end
 end
 
+function main_started()
+  ME.started=true
+  buyidx=1
+end
+
 local function draw_hud()
   graph.setColor(0,0,96)
   graph.setLine(1,"rough")
@@ -660,22 +665,22 @@ local function set_cl_fonts(imgfont)
   local img
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,0,8,16,16)
-  d_cl.G.__members.img=graph.newImage(img)
+  d_cl.G.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,16,8,16,16)
-  d_cl.R.__members.img=graph.newImage(img)
+  d_cl.R.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,32,8,16,16)
-  d_cl.B.__members.img=graph.newImage(img)
+  d_cl.B.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,48,8,16,16)
-  d_cl.V.__members.img=graph.newImage(img)
+  d_cl.V.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,64,8,16,16)
-  d_cl.T.__members.img=graph.newImage(img)
+  d_cl.T.img=graph.newImage(img)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,80,8,16,16)
-  d_cl.S.__members.img=graph.newImage(img)
+  d_cl.S.img=graph.newImage(img)
 end
 
 local function reconf()

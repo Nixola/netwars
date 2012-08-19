@@ -9,7 +9,7 @@ local function buy_device(pl,a)
   if not cl then
     return
   end
-  local price=cl.__members.price
+  local price=cl.price
   if not price then
     return
   end

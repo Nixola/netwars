@@ -18,13 +18,15 @@ function class(name)
   newclass.__members={}
   function newclass.define(class,members)
     for k,v in pairs(members) do
-      class.__members[k]=v
+      class.__members[k]=true
+      class[k]=v
     end
   end
   function newclass.extends(class,base)
     class.__super=base
-    for k,v in pairs(base.__members) do
-      class.__members[k]=v
+    for k in pairs(base.__members) do
+      class.__members[k]=true
+      class[k]=base[k]
     end
     return setmetatable(class,{__index=base,__call=class.define})
   end
@@ -34,8 +36,8 @@ function class(name)
     end
     local object={}
     object.__class=class
-    for k,v in pairs(class.__members) do
-      object[k]=v
+    for k in pairs(class.__members) do
+      object[k]=class[k]
     end
     setmetatable(object,{__index=class})
     if object.initialize then
