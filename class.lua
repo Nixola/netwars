@@ -11,69 +11,106 @@ sin=math.sin
 cos=math.cos
 tan=math.tan
 
+local reserved={
+class=true;
+define=true;
+extends=true;
+new=true;
+super=true;
+__class=true;
+__super=true;
+__suptab=true;
+}
+
+local classes={}
+
 function class(name)
   local newclass={}
   _G[name]=newclass
+  classes[newclass]=true
   newclass.class=name
-  newclass.__members={}
   function newclass.define(class,members)
     for k,v in pairs(members) do
-      class.__members[k]=true
       class[k]=v
     end
   end
   function newclass.extends(class,base)
     class.__super=base
-    for k in pairs(base.__members) do
-      class.__members[k]=true
-      class[k]=base[k]
+    for k,v in pairs(base) do
+      if not reserved[k] and not class[k] and type(v)~="function" then
+        class[k]=v
+      end
     end
-    return setmetatable(class,{__index=base,__call=class.define})
+    return class
+  end
+  local function init_class(class)
+    local cl=class
+    while cl do
+      if classes[cl] then
+        local ftab={}
+        for k,v in pairs(cl) do
+          if type(v)=="function" then
+            ftab[k]=true
+          end
+        end
+        local suptab={}
+        local supcl=cl.__super
+        while supcl do
+          for k,v in pairs(supcl) do
+            if type(v)=="function" and not reserved[k] and not suptab[k] then
+              if ftab[k] then
+                suptab[k]={func=v,super=supcl.__super}
+              else
+                ftab[k]=true
+              end
+            end
+          end
+          supcl=supcl.__super
+        end
+        cl.__suptab=suptab
+        classes[cl]=false
+      end
+      cl=cl.__super
+    end
   end
   function newclass.new(class,...)
     if class.__class then
       return class.__class:new(...)
     end
+    if classes[class] then
+      init_class(class)
+    end
     local object={}
     object.__class=class
-    for k in pairs(class.__members) do
-      object[k]=class[k]
+    object.class=class.class
+    object.super=class.super
+    object.__super=class
+    for k,v in pairs(class) do
+      if not reserved[k] then
+        object[k]=v
+      end
     end
-    setmetatable(object,{__index=class})
+    local supcl=class.__super
+    while supcl do
+      for k,v in pairs(supcl) do
+        if not object[k] and not reserved[k] and type(v)=="function" then
+          object[k]=v
+        end
+      end
+      supcl=supcl.__super
+    end
     if object.initialize then
       object:initialize(...)
     end
     return object
   end
   function newclass.super(class,func,...)
-    local oldcl=class.__supcl
-    if oldcl then
-      local supcl=oldcl.__super
-      local chunk=rawget(supcl,func)
-      while not chunk do
-        supcl=supcl.__super
-        chunk=rawget(supcl,func)
-      end
-      class.__supcl=supcl
-      local ret=chunk(class,...)
-      class.__supcl=oldcl
-      return ret
-    end
-    local supcl=class.__class
-    local chunk=rawget(supcl,func)
-    while not chunk do
-      supcl=supcl.__super
-      chunk=rawget(supcl,func)
-    end
-    supcl=supcl.__super
-    chunk=rawget(supcl,func)
-    while not chunk do
-      supcl=supcl.__super
-      chunk=rawget(supcl,func)
-    end
-    class.__supcl=supcl
+    local super=class.__super or class.__class
+    local suptab=super.__suptab
+    local chunk=suptab[func].func
+    class.__super=suptab[func].super
     local ret=chunk(class,...)
-    class.__supcl=nil
+    class.__super=super
     return ret
   end
   return setmetatable(newclass,{__call=newclass.define})
