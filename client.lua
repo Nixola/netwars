@@ -244,10 +244,7 @@ local function parse_server(msg,ts)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    local l=d1:connect(d2)
-    if l then
-      links:add(l)
-    end
+    d1:link(d2)
     return
   end
   if a[1]=="Lu" then -- Unlink:dev1:dev2

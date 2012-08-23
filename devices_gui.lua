@@ -169,6 +169,14 @@ function Shot:draw()
   end
 end
 
+function Device:link(dev)
+  self.initok=true
+  local l=self:connect(dev)
+  if l then
+    links:add(l)
+  end
+end
+
 function Device:draw_bar()
   local w=self.r*2
   local p=self.health/self.maxhealth
@@ -331,6 +339,9 @@ function Device:net_move(x,y)
 end
 
 function Device:net_connect(dev)
+  if not self.initok then
+    return
+  end
   if self==dev then
     return
   end

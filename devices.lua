@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 3" -- network protocol version
+NVER="master 4" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -68,6 +68,7 @@ function Device:initialize(pl,x,y)
     self.pwr=0
   end
   if self.cl=="B" then
+    self.initok=true
     self.gotpwr=true
     self.pwr=10
   end
@@ -147,6 +148,9 @@ function Device:move(x,y)
 end
 
 function Device:connect(dev)
+  if not self.initok then
+    return nil
+  end
   if self==dev then
     return nil
   end

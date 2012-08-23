@@ -1,6 +1,7 @@
 -- vim:et
 
 function Device:link(dev) -- use only in map generators
+  self.initok=true
   local l=self:connect(dev)
   if l then
     links:add(l)
