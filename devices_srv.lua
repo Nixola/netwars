@@ -211,7 +211,7 @@ function Generator:signal(dev)
   cput("Po:%d:%d:%d",dev.idx,self.idx,dev.pkt)
 end
 
-function Generator:logic()
+function Power:logic()
   local i,d,l,c,e,v
   l=#self.links
   c=l
@@ -236,8 +236,6 @@ function Generator:logic()
   end
   self.li=i
 end
-
-Base.logic=Generator.logic
 
 function Router:logic()
   if self.pkt<1 then

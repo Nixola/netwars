@@ -406,7 +406,7 @@ function Link:draw()
   graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
 end
 
-function Generator:draw_st()
+function Power:draw_st()
   local w=self.r*2
   local p=self.pwr/MAXV
   local n=floor(w*p)
@@ -417,15 +417,12 @@ function Generator:draw_st()
   end
 end
 
-function Generator:draw()
+function Power:draw()
   self:super("draw")
   if eye.s>0.4 then
     self:draw_st()
   end
 end
-
-Base.draw_st=Generator.draw_st
-Base.draw=Generator.draw
 
 function Router:draw_st()
   local w=self.r*2
@@ -519,13 +516,7 @@ function Tower:set_targ(targ)
   end
 end
 
-function Base:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Online",Device.net_switch)
-  return
-end
-
-function Generator:init_gui()
+function Power:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   return

@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 4" -- network protocol version
+NVER="master 5" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -281,20 +281,21 @@ function Link:initialize(d1,d2)
   self.dev2=d2
 end
 
-class "Base" : extends(Device) {
-cl="B";
+class "Power" : extends(Device) {
 ec=1; -- emit count
 em=1; -- max emit count
+}
+
+class "Base" : extends(Power) {
+cl="B";
 maxhealth=200;
 maxlinks=3;
 maxblinks=2;
 price=0;
 }
 
-class "Generator" : extends(Device) {
+class "Generator" : extends(Power) {
 cl="G";
-ec=1; -- emit count
-em=1; -- max emit count
 maxhealth=100;
 maxlinks=3;
 maxblinks=2;
