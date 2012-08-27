@@ -99,7 +99,7 @@ shots=storage()
 hash=sphash(200)
 
 local buydevs={}
-local buyidx=2
+local buyidx=1
 
 local drag=nil
 local bdrag=nil
@@ -317,11 +317,7 @@ function main_keypressed(k,ch)
     return
   end
   if k==" " then
-    if ME.started then
-      buyidx=buyidx<1 and buyidx+1 or 1
-    else
-      buyidx=2
-    end
+    buyidx=buyidx<1 and buyidx+1 or 1
     return
   end
   if k=="1" or k=="kp1" then
@@ -404,7 +400,6 @@ end
 
 function main_started()
   ME.started=true
-  buyidx=1
 end
 
 local function draw_hud()
@@ -489,13 +484,6 @@ function main_draw()
       for _,o in pairs(h) do
         if o~=d then
           o:draw_cborder()
-        end
-      end
-    end
-    if buyidx==2 then
-      for _,o in pairs(h) do
-        if o.cl=="F" then
-          o:draw_rng()
         end
       end
     end
@@ -720,7 +708,7 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  local cl={"R","T","S","V"}
+  local cl={"R","T","S","V","B"}
   local x=25
   local objs={}
   for i,v in ipairs(cl) do
