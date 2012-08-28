@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 6" -- network protocol version
+NVER="master 5" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -291,7 +291,7 @@ cl="B";
 maxhealth=200;
 maxlinks=3;
 maxblinks=2;
-price=1000;
+price=0;
 }
 
 class "Generator" : extends(Power) {
