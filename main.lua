@@ -485,18 +485,9 @@ function main_draw()
   end
   if drag or bdrag or bdev then
     local d=drag or bdrag or bdev
-    if buyidx==1 then
-      for _,o in pairs(h) do
-        if o~=d then
-          o:draw_cborder()
-        end
-      end
-    end
-    if buyidx==2 then
-      for _,o in pairs(h) do
-        if o.cl=="F" then
-          o:draw_rng()
-        end
+    for _,o in pairs(h) do
+      if o~=d then
+        o:draw_cborder()
       end
     end
   end
