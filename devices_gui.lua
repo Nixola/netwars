@@ -387,6 +387,9 @@ function Device:net_unlink(dev)
 end
 
 function Device:net_switch()
+  if not self.initok then
+    return
+  end
   if self.online then
     net_send("S:%d:0",self.idx)
   else

@@ -107,7 +107,7 @@ function parse_client(msg,pl,ts)
     local idx=tonumber(a[2])
     local b=tonumber(a[3])==1
     local o=devices[idx]
-    if o and o.pl==pl then
+    if o and o.initok and o.pl==pl then
       o.online=b
       b=b and 1 or 0
       cput("Ds:%d:%d",idx,b)
