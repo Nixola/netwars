@@ -188,7 +188,7 @@ function Generator:check(dt)
     return
   end
   self.dt2=self.dt2+dt
-  if self.dt2>=DEGT then
+  if self.online and self.dt2>=DEGT then
     self.online=false
     cput("Ds:%d:%d",self.idx,0)
     return
