@@ -14,11 +14,12 @@ CVER=1 -- config version
 graph=love.graphics
 srvts=0
 msx,msy=0,0 -- mouse real (screen) position
+omsx,omsy=0,0 -- mouse old real (screen) position
 mox,moy=0,0 -- mouse virtual position
 
-eye={vx=0,vy=0,si=4,s=1.0} -- eyeposition, scale index, scale
+eye={vx=0,vy=0,si=4,s=1.0,run=false} -- eyeposition, scale index, scale
 scroll={
-dt=0,run=false;
+dt=0,run=false;drag=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
 }
 
@@ -27,20 +28,20 @@ function eye.in_view(x,y,...)
   local sx=eye.cx/eye.s
   local sy=eye.cy/eye.s
   if #arg==0 then
-    local tx=math.abs(eye.vx+x)
-    local ty=math.abs(eye.vy+y)
+    local tx=abs(eye.vx+x)
+    local ty=abs(eye.vy+y)
     return tx<sx and ty<sy
   end
   if #arg==1 then
-    local tx=math.abs(eye.vx+x)-arg[1]
-    local ty=math.abs(eye.vy+y)-arg[1]
+    local tx=abs(eye.vx+x)-arg[1]
+    local ty=abs(eye.vy+y)-arg[1]
     return tx<sx and ty<sy
   end
   if #arg==2 then
-    local tx1=math.abs(eye.vx+x)
-    local ty1=math.abs(eye.vy+y)
-    local tx2=math.abs(eye.vx+arg[1])
-    local ty2=math.abs(eye.vy+arg[2])
+    local tx1=abs(eye.vx+x)
+    local ty1=abs(eye.vy+y)
+    local tx2=abs(eye.vx+arg[1])
+    local ty2=abs(eye.vy+arg[2])
     return tx1<sx and ty1<sy or tx2<sx and ty2<sy
   end
 end
@@ -51,21 +52,21 @@ function eye.scroll()
   end
   if scroll.kx==0 then
     scroll.x=scroll.x-(scroll.x*0.2)
-    if math.abs(scroll.x)<1 then
+    if abs(scroll.x)<1 then
       scroll.x=0
     end
   else
-    if math.abs(scroll.x)<10/eye.s then
+    if abs(scroll.x)<10/eye.s then
       scroll.x=scroll.x+(scroll.kx/eye.s)
     end
   end
   if scroll.ky==0 then
     scroll.y=scroll.y-(scroll.y*0.2)
-    if math.abs(scroll.y)<1 then
+    if abs(scroll.y)<1 then
       scroll.y=0
     end
   else
-    if math.abs(scroll.y)<10/eye.s then
+    if abs(scroll.y)<10/eye.s then
       scroll.y=scroll.y+(scroll.ky/eye.s)
     end
   end
@@ -83,11 +84,30 @@ function eye.scroll()
       scroll.ks=0
     end
   end
-  eye.vx=math.floor(eye.vx+scroll.x)
-  eye.vy=math.floor(eye.vy+scroll.y)
-  eye.x=math.floor(eye.vx+eye.cx/eye.s)
-  eye.y=math.floor(eye.vy+eye.cy/eye.s)
+  eye.vx=floor(eye.vx+scroll.x)
+  eye.vy=floor(eye.vy+scroll.y)
+  eye.x=floor(eye.vx+eye.cx/eye.s)
+  eye.y=floor(eye.vy+eye.cy/eye.s)
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
+end
+
+function eye.drag()
+  if not eye.run then
+    omsx,omsy=msx,msy
+    eye.run=true
+    return
+  end
+  local x=(omsx-msx)/eye.s
+  local y=(omsy-msy)/eye.s
+  x=x<0 and ceil(x) or floor(x)
+  y=y<0 and ceil(y) or floor(y)
+  if abs(x)>0 or abs(y)>0 then
+    eye.vx=floor(eye.vx-x)
+    eye.vy=floor(eye.vy-y)
+    eye.x=floor(eye.vx+eye.cx/eye.s)
+    eye.y=floor(eye.vy+eye.cy/eye.s)
+    omsx,omsy=msx,msy
+  end
 end
 
 ME=nil
@@ -159,7 +179,7 @@ function main_mousepressed(mx,my,b)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if b=="wu" then
     if eye.si<#s then
-      scroll.ks=math.abs(eye.s-s[eye.si+1])
+      scroll.ks=abs(eye.s-s[eye.si+1])
       eye.si=eye.si+1
     end
     scroll.s=s[eye.si]
@@ -168,7 +188,7 @@ function main_mousepressed(mx,my,b)
   end
   if b=="wd" then
     if eye.si>1 then
-      scroll.ks=-math.abs(eye.s-s[eye.si-1])
+      scroll.ks=-abs(eye.s-s[eye.si-1])
       eye.si=eye.si-1
     end
     scroll.s=s[eye.si]
@@ -213,7 +233,9 @@ function main_mousepressed(mx,my,b)
       if not obj.nomove and not obj.online and obj.pc<1 then
         drag=obj
       end
+      return
     end
+    scroll.drag=true
     return
   end
   if b=="r" then
@@ -231,6 +253,13 @@ end
 
 function main_mousereleased(mx,my,b)
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
+  if scroll.drag then
+    if b=="l" then
+      scroll.drag=false
+      eye.run=false
+    end
+    return
+  end
   if drag then
     if b=="l" then
       drag:net_move(mox,moy)
@@ -279,7 +308,20 @@ function main_mousereleased(mx,my,b)
   end
   if targ then
     if b=="r" then
-      targ:set_targ(get_device(x,y))
+      local dev=get_device(x,y)
+      if not dev then
+        targ:set_targ(nil)
+        targ=nil
+        return
+      end
+      if targ==dev then
+        if targ.pl==ME then
+          menu=targ.menu
+        end
+        targ=nil
+        return
+      end
+      targ:set_targ(dev)
       targ=nil
     end
     return
@@ -512,7 +554,7 @@ function main_draw()
         graph.line(conn.x,conn.y,mox,moy)
       else
         local tx,ty=mox-conn.x,moy-conn.y
-        local len=math.floor(math.sqrt(tx*tx+ty*ty))
+        local len=floor(sqrt(tx*tx+ty*ty))
         conn:draw_rng(x,y)
         if len>LINK then
           graph.setColor(128,128,128)
@@ -605,6 +647,9 @@ function main_update(dt)
     if scroll.dt>0.02 then
       scroll.dt=0.02
     end
+  end
+  if scroll.drag then
+    eye.drag()
   end
   hover_dt=hover_dt+dt
   if hover_dt>=0.1 then
