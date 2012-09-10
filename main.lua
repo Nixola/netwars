@@ -91,23 +91,18 @@ function eye.scroll()
   scroll.run=scroll.x~=0 or scroll.y~=0 or scroll.ks~=0
 end
 
+function eye.set_drag()
+  eye.ovx=eye.vx
+  eye.ovy=eye.vy
+  omsx,omsy=msx,msy
+  scroll.drag=true
+end
+
 function eye.drag()
-  if not eye.run then
-    omsx,omsy=msx,msy
-    eye.run=true
-    return
-  end
-  local x=(omsx-msx)/eye.s
-  local y=(omsy-msy)/eye.s
-  x=x<0 and ceil(x) or floor(x)
-  y=y<0 and ceil(y) or floor(y)
-  if abs(x)>0 or abs(y)>0 then
-    eye.vx=floor(eye.vx-x)
-    eye.vy=floor(eye.vy-y)
-    eye.x=floor(eye.vx+eye.cx/eye.s)
-    eye.y=floor(eye.vy+eye.cy/eye.s)
-    omsx,omsy=msx,msy
-  end
+  eye.vx=floor(eye.ovx-((omsx-msx)/eye.s))
+  eye.vy=floor(eye.ovy-((omsy-msy)/eye.s))
+  eye.x=floor(eye.vx+eye.cx/eye.s)
+  eye.y=floor(eye.vy+eye.cy/eye.s)
 end
 
 ME=nil
@@ -235,7 +230,7 @@ function main_mousepressed(mx,my,b)
       end
       return
     end
-    scroll.drag=true
+    eye.set_drag()
     return
   end
   if b=="r" then
@@ -256,7 +251,6 @@ function main_mousereleased(mx,my,b)
   if scroll.drag then
     if b=="l" then
       scroll.drag=false
-      eye.run=false
     end
     return
   end
