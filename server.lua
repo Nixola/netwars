@@ -76,11 +76,13 @@ function parse_client(msg,pl,ts)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    if d1 and d2 and d1.pl==pl then
-      local l=d1:connect(d2)
-      if l then
-        links:add(l)
-        cput("Lc:%d:%d",d1.idx,d2.idx)
+    if d1 and d2 then
+      if d1.pl==pl or (d1.cl=="G" and d2.pl==pl) then
+        local l=d1:connect(d2)
+        if l then
+          links:add(l)
+          cput("Lc:%d:%d",d1.idx,d2.idx)
+        end
       end
     end
     return
@@ -91,11 +93,13 @@ function parse_client(msg,pl,ts)
     end
     local d1=devices[tonumber(a[2])]
     local d2=devices[tonumber(a[3])]
-    if d1 and d2 and d1.pl==pl then
-      local l=d1:unlink(d2)
-      if l then
-        links:del(l)
-        cput("Lu:%d:%d",d1.idx,d2.idx)
+    if d1 and d2 then
+      if d1.pl==pl or (d1.cl=="G" and d2.pl==pl) then
+        local l=d1:unlink(d2)
+        if l then
+          links:del(l)
+          cput("Lu:%d:%d",d1.idx,d2.idx)
+        end
       end
     end
     return

@@ -234,8 +234,8 @@ function main_mousepressed(mx,my,b)
     return
   end
   if b=="r" then
-    local obj=get_my_dev(x,y)
-    if obj then
+    local obj=get_device(x,y)
+    if obj and (obj.pl==ME or obj.cl=="G") then
       if obj.set_targ then
         targ=obj
       else
@@ -708,9 +708,6 @@ local function set_cl_fonts(imgfont)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,64,8,16,16)
   d_cl.T.img=graph.newImage(img)
-  img=love.image.newImageData(16,16)
-  img:paste(imgfont,0,0,80,8,16,16)
-  d_cl.S.img=graph.newImage(img)
 end
 
 local function reconf()
@@ -750,7 +747,7 @@ function love.load()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
   local o
-  local cl={"R","T","S","V"}
+  local cl={"R","T","V"}
   local x=25
   local objs={}
   for i,v in ipairs(cl) do

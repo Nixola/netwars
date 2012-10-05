@@ -201,12 +201,16 @@ function Device:draw_sym(_x,_y)
       graph.setColor(0,0,255)
     end
   elseif not self.pl then
-    graph.setColor(128,128,128)
+    if self.cl=="G" then
+      graph.setColor(0,160,0)
+    else
+      graph.setColor(128,128,128)
+    end
   elseif self.pl==ME then
     if self.online then
       graph.setColor(0,0,255)
     else
-      graph.setColor(0,0,160)
+      graph.setColor(0,0,128)
     end
   else
     if self.online then
@@ -348,10 +352,7 @@ function Device:net_connect(dev)
   if self.cl=="B" and dev.cl~="R" then
     return
   end
-  if self.cl=="G" and dev.cl~="R" then
-    return
-  end
-  if self.cl=="S" and dev.cl~="G" then
+  if self.cl=="G" and dev.cl~="R" and dev.pl~=ME then
     return
   end
   if #self.links>=self.maxlinks then
@@ -378,6 +379,9 @@ function Device:net_connect(dev)
 end
 
 function Device:net_unlink(dev)
+  if self.cl=="G" and dev.pl~=ME then
+    return
+  end
   for _,l in ipairs(self.links) do
     if l.dev2==dev then
       net_send("Lu:%d:%d",self.idx,dev.idx)

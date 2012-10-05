@@ -180,37 +180,6 @@ function Vault:update(e,pl)
   end
 end
 
-function Generator:check(dt)
-  if self.deleted then
-    return
-  end
-  if not self.pl then
-    return
-  end
-  self.dt2=self.dt2+dt
-  if self.online and self.dt2>=DEGT then
-    self.online=false
-    cput("Ds:%d:%d",self.idx,0)
-    return
-  end
-end
-
-function Generator:signal(dev)
-  if self.deleted then
-    return
-  end
-  if self.pl==dev.pl then
-    dev.pt=1.0
-    self.pt=1.0
-    self.dt2=0
-    dev.pkt=dev.pkt-1
-    mput("Ps:%d:%d:%d",dev.idx,self.idx,dev.pkt)
-    return
-  end
-  self:takeover(dev.pl)
-  cput("Po:%d:%d:%d",dev.idx,self.idx,dev.pkt)
-end
-
 function Power:logic()
   local i,d,l,c,e,v
   l=#self.links
@@ -265,30 +234,6 @@ function Router:logic()
         if self.pkt<1 then
           break
         end
-      end
-    end
-    c=c-1
-  end
-  self.li=i
-end
-
-function Signal:logic()
-  if self.pkt<1 then
-    return
-  end
-  local i,d,l,c,e
-  l=#self.links
-  c=l
-  e=self.ec
-  i=self.li>l and 1 or self.li
-  while c>0 and e>0 do
-    d=self.links[i].dev2
-    i=i<l and i+1 or 1
-    if d.signal then
-      d:signal(self)
-      e=e-1
-      if self.pkt<1 then
-        break
       end
     end
     c=c-1

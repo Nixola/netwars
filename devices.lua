@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 7" -- network protocol version
+NVER="master 8" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -63,9 +63,11 @@ function Device:initialize(pl,x,y)
   self.nomove=false
   self.bdevs={} -- devices connected to us (back links)
   if self.cl=="G" then
+    self.initok=true
     self.nomove=true
     self.gotpwr=true
     self.pwr=0
+    self.online=true
   end
   if self.cl=="B" then
     self.initok=true
@@ -158,9 +160,6 @@ function Device:connect(dev)
     return nil
   end
   if self.cl=="G" and dev.cl~="R" then
-    return nil
-  end
-  if self.cl=="S" and dev.cl~="G" then
     return nil
   end
   if #self.links>=self.maxlinks then
@@ -308,20 +307,9 @@ ec=1; -- emit count
 em=3; -- max emit count
 maxhealth=50;
 maxpkt=1000; -- max queue
-maxlinks=5;
-maxblinks=5;
-price=100;
-}
-
-class "Signal" : extends(Router) {
-cl="S";
-ec=1; -- emit count
-em=3; -- max emit count
-maxhealth=50;
-maxpkt=100; -- max queue
 maxlinks=6;
-maxblinks=2;
-price=200;
+maxblinks=6;
+price=100;
 }
 
 class "Vault" : extends(Device) {
@@ -341,4 +329,4 @@ maxblinks=2;
 price=300;
 }
 
-d_cl={B=Base,G=Generator,R=Router,S=Signal,V=Vault,T=Tower}
+d_cl={B=Base,G=Generator,R=Router,V=Vault,T=Tower}
