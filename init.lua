@@ -7,6 +7,80 @@ local nick=""
 local addr=""
 local init_st=1
 net_err=nil
+conf={}
+
+function save_conf()
+  local f=love.filesystem.newFile("netwars.cfg")
+  f:open("w")
+  f:write("return {\n")
+  for k,v in pairs(conf) do
+    if type(v)=="number" then
+      f:write(string.format("%s=%s;\n",k,v))
+    end
+    if type(v)=="string" then
+      f:write(string.format("%s=\"%s\";\n",k,v))
+    end
+  end
+  f:write("}\n")
+  f:close()
+end
+
+function load_conf()
+  if love.filesystem.exists("netwars.cfg") then
+    local chunk=love.filesystem.load("netwars.cfg")
+    local t=chunk()
+    if t.ver==CVER then
+      conf=t
+      return true
+    end
+  end
+  conf.ver=CVER
+  conf.graph_width=graph.getWidth()
+  conf.graph_height=graph.getHeight()
+  conf.chat_timeout=5.0
+  save_conf()
+  chat.timeout=conf.chat_timeout
+  return false
+end
+
+function set_graph()
+  graph.setMode(conf.graph_width,conf.graph_height)
+end
+
+function init_graph()
+  graph.setFont(12)
+  eye.sx=graph.getWidth()
+  eye.sy=graph.getHeight()
+  eye.cx=eye.sx/2
+  eye.cy=eye.sy/2
+  eye.x=eye.vx+eye.cx/eye.s
+  eye.y=eye.vy+eye.cy/eye.s
+  graph.setBackgroundColor(0,0,0)
+end
+
+function init_gui()
+  local o
+  local cl={"R","T","V"}
+  local x=25
+  local objs={}
+  for i,v in ipairs(cl) do
+    o=d_cl[v]:new(nil,x,eye.sy-25)
+    o.hud=true
+    objs[i]=o
+    x=x+40
+  end
+  buydevs[1]=objs
+  cl={"B"}
+  x=25
+  objs={}
+  for i,v in ipairs(cl) do
+    o=d_cl[v]:new(nil,x,eye.sy-25)
+    o.hud=true
+    objs[i]=o
+    x=x+40
+  end
+  buydevs[2]=objs
+end
 
 local function init_enter()
   buf={}
@@ -42,12 +116,20 @@ local function init_enter()
 end
 
 function init_keypressed(key,ch)
+  if console.input then
+    console.input=console.keypressed(key,ch)
+    return
+  end
   if key=="escape" then
     love.event.push("q")
     return
   end
   if key=="return" then
     return init_enter()
+  end
+  if key=="`" then
+    console.input=true
+    return
   end
   readline:key(key,ch)
 end
@@ -71,6 +153,7 @@ function init_draw()
   if net_err then
     graph.print(net_err,50,eye.cy/2+50)
   end
+  console.draw()
 end
 
 local cr_dt=0
@@ -100,4 +183,5 @@ function init_update(dt)
       end
     end
   end
+  console.update(dt)
 end

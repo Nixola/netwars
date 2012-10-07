@@ -6,8 +6,9 @@ require "menu"
 require "devices"
 require "devices_gui"
 require "client"
-require "init"
 require "chat"
+require "console"
+require "init"
 
 CVER=1 -- config version
 
@@ -113,7 +114,7 @@ packets=storage()
 shots=storage()
 hash=sphash(200)
 
-local buydevs={}
+buydevs={}
 local buyidx=2
 
 local drag=nil
@@ -322,37 +323,40 @@ function main_mousereleased(mx,my,b)
   end
 end
 
-function main_keypressed(k,ch)
+function main_keypressed(key,ch)
   if chat.input then
-    chat.input=chat.keypressed(k,ch)
+    chat.input=chat.keypressed(key,ch)
     return
   end
-  if k=="lshift" or k=="rshift" then
+  if console.input then
+    console.input=console.keypressed(key,ch)
+    return
+  end
+  if key=="lshift" or key=="rshift" then
     kshift=true
     return
   end
-  if k=="lctrl" or k=="rctrl" then
+  if key=="lctrl" or key=="rctrl" then
     kctrl=true
     return
   end
-  if k=="escape" then
+  if key=="escape" then
     bdev=nil
     return
   end
-  if k=="tab" then
+  if key=="tab" then
     scoreboard=true
     return
   end
-  if k=="return" then
+  if key=="return" then
     chat.input=true
     return
   end
-  if k=="`" then
-    chat.console=true
-    chat.input=true
+  if key=="`" then
+    console.input=true
     return
   end
-  if k==" " then
+  if key==" " then
     if ME.started then
       buyidx=buyidx<1 and buyidx+1 or 1
     else
@@ -360,49 +364,49 @@ function main_keypressed(k,ch)
     end
     return
   end
-  if k=="1" or k=="kp1" then
+  if key=="1" or key=="kp1" then
     bdev=buydevs[buyidx][1]
     return
   end
-  if k=="2" or k=="kp2" then
+  if key=="2" or key=="kp2" then
     bdev=buydevs[buyidx][2]
     return
   end
-  if k=="3" or k=="kp3" then
+  if key=="3" or key=="kp3" then
     bdev=buydevs[buyidx][3]
     return
   end
-  if k=="4" or k=="kp4" then
+  if key=="4" or key=="kp4" then
     bdev=buydevs[buyidx][4]
     return
   end
-  if k=="5" or k=="kp5" then
+  if key=="5" or key=="kp5" then
     bdev=buydevs[buyidx][5]
     return
   end
-  if k=="6" or k=="kp6" then
+  if key=="6" or key=="kp6" then
     bdev=buydevs[buyidx][6]
     return
   end
-  if k=="w" or k=="up" then
+  if key=="w" or key=="up" then
     if scroll.y<0 then
       scroll.y=0
     end
     scroll.ky=1
   end
-  if k=="s" or k=="down" then
+  if key=="s" or key=="down" then
     if scroll.y>0 then
       scroll.y=0
     end
     scroll.ky=-1
   end
-  if k=="a" or k=="left" then
+  if key=="a" or key=="left" then
     if scroll.x<0 then
       scroll.x=0
     end
     scroll.kx=1
   end
-  if k=="d" or k=="right" then
+  if key=="d" or key=="right" then
     if scroll.x>0 then
       scroll.x=0
     end
@@ -411,29 +415,29 @@ function main_keypressed(k,ch)
   scroll.run=scroll.kx~=0 or scroll.ky~=0 or scroll.ks~=0
 end
 
-function main_keyreleased(k)
-  if k=="lshift" or k=="rshift" then
+function main_keyreleased(key)
+  if key=="lshift" or key=="rshift" then
     kshift=false
     return
   end
-  if k=="lctrl" or k=="rctrl" then
+  if key=="lctrl" or key=="rctrl" then
     kctrl=false
     return
   end
-  if k=="tab" then
+  if key=="tab" then
     scoreboard=false
     return
   end
-  if k=="w" or k=="up" then
+  if key=="w" or key=="up" then
     scroll.ky=0
   end
-  if k=="s" or k=="down" then
+  if key=="s" or key=="down" then
     scroll.ky=0
   end
-  if k=="a" or k=="left" then
+  if key=="a" or key=="left" then
     scroll.kx=0
   end
-  if k=="d" or k=="right" then
+  if key=="d" or key=="right" then
     scroll.kx=0
   end
 end
@@ -604,7 +608,7 @@ function main_draw()
   if scoreboard then
     draw_scoreboard()
   end
-  chat.draw()
+  console.draw()
 end
 
 local flow_dt=0
@@ -677,7 +681,7 @@ function main_update(dt)
     lsi=lsi>7 and 1 or lsi+1
     flow_dt=flow_dt-0.05
   end
-  chat.update(dt)
+  console.update(dt)
 end
 
 function main_quit()
@@ -710,63 +714,15 @@ local function set_cl_fonts(imgfont)
   d_cl.T.img=graph.newImage(img)
 end
 
-local function reconf()
-  if love.filesystem.exists("netwars.cfg") then
-    local chunk=love.filesystem.load("netwars.cfg")
-    local t=chunk()
-    if t.ver==CVER then
-      return t
-    end
-  end
-  local f=love.filesystem.newFile("netwars.cfg")
-  f:open("w")
-  f:write("return {\n")
-  f:write(string.format("ver=%d;\n",CVER))
-  f:write(string.format("graph_width=%d;\n",graph.getWidth()))
-  f:write(string.format("graph_height=%d;\n",graph.getHeight()))
-  f:write("chat_timeout=5.0;\n")
-  f:write("}\n")
-  f:close()
-  return nil
-end
 
 function love.load()
-  local t=reconf()
-  if t then
-    graph.setMode(t.graph_width,t.graph_height)
-    chat.timeout=t.chat_timeout
+  if load_conf() then
+    set_graph()
   end
-  graph.setFont(12)
-  eye.sx=graph.getWidth()
-  eye.sy=graph.getHeight()
-  eye.cx=eye.sx/2
-  eye.cy=eye.sy/2
-  eye.x=eye.vx+eye.cx/eye.s
-  eye.y=eye.vy+eye.cy/eye.s
-  graph.setBackgroundColor(0,0,0)
+  init_graph()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
-  local o
-  local cl={"R","T","V"}
-  local x=25
-  local objs={}
-  for i,v in ipairs(cl) do
-    o=d_cl[v]:new(nil,x,eye.sy-25)
-    o.hud=true
-    objs[i]=o
-    x=x+40
-  end
-  buydevs[1]=objs
-  cl={"B"}
-  x=25
-  objs={}
-  for i,v in ipairs(cl) do
-    o=d_cl[v]:new(nil,x,eye.sy-25)
-    o.hud=true
-    objs[i]=o
-    x=x+40
-  end
-  buydevs[2]=objs
+  init_gui()
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed
