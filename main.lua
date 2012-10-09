@@ -505,13 +505,17 @@ function main_draw()
   local x1,y1=-eye.vx-sx,-eye.vy-sy
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local h=hash:get(x1,y1,x2,y2)
-  graph.setLineStipple(ls[lsi])
+  if love._ver<=72 then
+    graph.setLineStipple(ls[lsi])
+  end
   for _,o in pairs(links) do
     if h[o.dev1] or h[o.dev2] then
       o:draw()
     end
   end
-  graph.setLineStipple()
+  if love._ver<=72 then
+    graph.setLineStipple()
+  end
   if eye.s>0.4 then
     for _,o in pairs(packets) do
       if h[o.dev1] or h[o.dev2] then
@@ -716,6 +720,13 @@ end
 
 
 function love.load()
+  -- determine love version hacks
+  if type(love._version)=="string" then
+    local tmp=str_split(love._version,".")
+    love._ver=tonumber(tmp[2])*10+tonumber(tmp[3])
+  else
+    love._ver=love._version
+  end
   if load_conf() then
     set_graph()
   end

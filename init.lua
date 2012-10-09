@@ -48,7 +48,12 @@ function set_graph()
 end
 
 function init_graph()
-  graph.setFont(12)
+  if love._ver<=72 then
+    graph.setFont(12)
+  else
+    local font=graph.newFont(12)
+    graph.setFont(font)
+  end
   eye.sx=graph.getWidth()
   eye.sy=graph.getHeight()
   eye.cx=eye.sx/2
