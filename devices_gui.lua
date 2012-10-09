@@ -229,14 +229,14 @@ function Device:draw_sym(_x,_y)
   end
 end
 
-function Device:draw_cborder(_x,_y,c)
+function Device:draw_cborder(_x,_y,ok)
   local x=_x or self.x
   local y=_y or self.y
   if self.hud or self.pl==ME then
-    if c==1 then
-      graph.setColor(255,0,0)
-    else
+    if ok==nil or ok==true then
       graph.setColor(255,255,255)
+    else
+      graph.setColor(255,0,0)
     end
     graph.setLine(1,"rough")
     graph.circle("line",x,y,self.cr,24)
@@ -274,32 +274,11 @@ function Device:draw()
   end
 end
 
-function Device:chk_border2(x,y)
-  local t=hash:get(self:bound_box(x,y))
-  local ok=true
-  local len,vx,vy
-  local br,tp,pl
-  for _,d in pairs(t) do
-    if self~=d then
-      vx,vy=x-d.x,y-d.y
-      len=floor(sqrt(vx*vx+vy*vy))
-      pl=self.hud and ME or self.pl
-      br=d.cr
-      if len<=br*2 then
-        ok=false
-        tp=pl==d.pl and 1 or 2
-        break
-      end
-    end
-  end
-  return ok,tp
-end
-
 function Device:drag(x,y)
   x,y=self:calc_xy(x,y)
-  local ok,tp=self:chk_border2(x,y)
+  local ok=self:chk_border(x,y)
   self:draw_sym(x,y)
-  self:draw_cborder(x,y,tp)
+  self:draw_cborder(x,y,ok)
   self:draw_rng(x,y)
 end
 
