@@ -61,6 +61,9 @@ function Device:check(dt)
   if not self.initok then
     return
   end
+  if not self.pl then
+    return
+  end
   if not self.gotpwr then
     self.dt2=self.dt2+dt
     if self.dt2>=DEGT then

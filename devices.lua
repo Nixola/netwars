@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 8" -- network protocol version
+NVER="master 9" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -58,14 +58,13 @@ function Device:initialize(pl,x,y)
   self.pkt=0 -- packets in queue
   self.targ=nil -- manual target (device)
   self.lupd=false -- link update
-  self.gotpwr=false -- connected to power source (G or B)
-  self.attch=false -- D attached to power source
+  self.gotpwr=false -- connected to base
+  self.attch=false -- D attached to base
   self.nomove=false
   self.bdevs={} -- devices connected to us (back links)
   if self.cl=="G" then
     self.initok=true
     self.nomove=true
-    self.gotpwr=true
     self.pwr=0
     self.online=true
   end
