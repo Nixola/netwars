@@ -11,6 +11,14 @@ sin=math.sin
 cos=math.cos
 tan=math.tan
 
+function count(t)
+  local c=0
+  for _ in pairs(t) do
+    c=c+1
+  end
+  return c
+end
+
 local reserved={
 class=true;
 define=true;
