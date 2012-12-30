@@ -204,7 +204,11 @@ function Device:draw_sym(_x,_y)
     if self.cl=="G" then
       graph.setColor(0,160,0)
     else
-      graph.setColor(128,128,128)
+      if self.online then
+        graph.setColor(128,128,128)
+      else
+        graph.setColor(64,64,64)
+      end
     end
   elseif self.pl==ME then
     if self.online then
