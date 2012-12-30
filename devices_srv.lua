@@ -86,20 +86,20 @@ function Device:check(dt)
     return
   end
   if self.lupd and self:chk_devs() then
-    local ok=self.gotpwr
     self:f_path()
-    if self.cl=="V" then
-      if not ok and self.attch then
-        self:update("detach")
-      end
-      if ok and not self.attch then
-        self:update("attach")
-      end
-    end
   end
-  if not self.gotpwr and self.online then
+  local ok=self.gotpwr
+  if not ok and self.online then
     self.online=false
     cput("Ds:%d:0",self.idx)
+  end
+  if self.cl=="V" then
+    if not ok and self.attch then
+      self:update("detach")
+    end
+    if ok and not self.attch then
+      self:update("attach")
+    end
   end
 end
 
