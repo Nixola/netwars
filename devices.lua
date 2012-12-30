@@ -64,13 +64,16 @@ function Device:initialize(pl,x,y)
   if self.cl=="G" then
     self.initok=true
     self.nomove=true
-    self.pwr=0
+    self.gotpwr=true
+    self.nochk=true
     self.online=true
+    self.pwr=0
   end
   if self.cl=="B" then
     self.initok=true
     self.base=true
     self.gotpwr=true
+    self.nochk=true
     self.pwr=10
   end
   self.health=self.maxhealth

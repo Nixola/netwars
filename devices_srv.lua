@@ -17,12 +17,15 @@ function Device:f_path()
     chk[self]=self
     while next(tmp) do
       for _,d in pairs(tmp) do
-        if not chk[d] and d.gotpwr~=ok then
+        if not chk[d] and not d.nochk and d.gotpwr~=ok then
           chk[d]=d
-          if count(d.bdevs)>1 then
+          if not ok and count(d.bdevs)>1 then
             d.lupd=true
           else
             d.gotpwr=ok
+            if ok then
+              d.lupd=false
+            end
             if d.cl=="R" then
               for _,o in pairs(d.ldevs) do
                 tmp2[o]=o
@@ -46,14 +49,16 @@ function Device:chk_devs()
   chk[self]=self
   while next(tmp) do
     for _,d in pairs(tmp) do
-      if not chk[d] then
+      if not chk[d] and d.gotpwr then
         if d[k] then
           ok=true
           break
         end
         chk[d]=d
-        for _,o in pairs(d.bdevs) do
-          tmp2[o]=o
+        if not d.nochk then
+          for _,o in pairs(d.bdevs) do
+            tmp2[o]=o
+          end
         end
       end
     end
@@ -77,7 +82,7 @@ function Device:check(dt)
   if not self.initok then
     return
   end
-  if self.base or self.pwr then
+  if self.nochk then
     return
   end
   if self.lupd and self:chk_devs() then
