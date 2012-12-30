@@ -1,12 +1,11 @@
 -- vim:et
 
-NVER="master 8" -- network protocol version
+NVER="master 10" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
 LINK=300 -- max link dinstance
 LINK2=LINK+2
-DEGT=10 -- degrate timer
 SHOTR=250 -- shot length
 
 class "Player"
@@ -52,26 +51,29 @@ function Device:initialize(pl,x,y)
   self.isdev=true
   self.li=1 -- link index, used to forward packets (cyclic)
   self.dt=0 -- dt for logic
-  self.dt2=0 -- dt for degradation
   self.pt=0 -- dt for packet on wire (server side)
   self.pc=0 -- packet cnt on wire (client side)
   self.pkt=0 -- packets in queue
   self.targ=nil -- manual target (device)
   self.lupd=false -- link update
-  self.gotpwr=false -- connected to power source (G or B)
-  self.attch=false -- D attached to power source
+  self.gotpwr=false -- connected to base
+  self.attch=false -- D attached to base
   self.nomove=false
+  self.ldevs={} -- devices we link to (forward links)
   self.bdevs={} -- devices connected to us (back links)
   if self.cl=="G" then
     self.initok=true
     self.nomove=true
     self.gotpwr=true
-    self.pwr=0
+    self.nochk=true
     self.online=true
+    self.pwr=0
   end
   if self.cl=="B" then
     self.initok=true
+    self.base=true
     self.gotpwr=true
+    self.nochk=true
     self.pwr=10
   end
   self.health=self.maxhealth
@@ -184,8 +186,9 @@ function Device:connect(dev)
     local l=Link:new(self,dev)
     table.insert(self.links,l)
     table.insert(dev.blinks,l)
+    self.ldevs[dev]=dev
+    dev.bdevs[self]=self
     dev.lupd=true
-    self.initok=true
     dev.initok=true
     return l
   end
@@ -207,6 +210,7 @@ function Device:del_link(dev)
   for i,l in ipairs(self.links) do
     if l.dev2==dev then
       table.remove(self.links,i)
+      self.ldevs[dev]=nil
       return
     end
   end
@@ -216,6 +220,7 @@ function Device:del_blink(dev)
   for i,l in ipairs(self.blinks) do
     if l.dev1==dev then
       table.remove(self.blinks,i)
+      self.bdevs[dev]=nil
       self.lupd=true
       return
     end

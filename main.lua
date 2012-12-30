@@ -18,7 +18,7 @@ msx,msy=0,0 -- mouse real (screen) position
 omsx,omsy=0,0 -- mouse old real (screen) position
 mox,moy=0,0 -- mouse virtual position
 
-eye={vx=0,vy=0,si=4,s=1.0,run=false} -- eyeposition, scale index, scale
+eye={vx=0,vy=0,si=5,s=1.0,run=false} -- eyeposition, scale index, scale
 scroll={
 dt=0,run=false;drag=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
@@ -171,7 +171,7 @@ local function get_enemy_dev(x,y)
 end
 
 function main_mousepressed(mx,my,b)
-  local s={0.3,0.5,0.7,1.0,1.5,2.5}
+  local s={0.2,0.3,0.45,0.67,1.0,1.5}
   local x,y=mx/eye.s-eye.x,my/eye.s-eye.y
   if b=="wu" then
     if eye.si<#s then

@@ -33,25 +33,23 @@ function mput(fmt,...)
 end
 
 local function enqueue(q,mq)
-  local len,p,l
+  local len=0
+  local p={}
+  local l
   for m in mq:iter() do
     l=m:len()
-    if not p then
-      p=m
-      len=l
-    elseif len+l>=500 then
-      q:put(p)
-      p=m
-      len=l
+    if len+l>510 then
+      q:put(table.concat(p,"|"))
+      p={m}
+      len=l+1
     else
-      p=p.."|"..m
+      p[#p+1]=m
       len=len+l+1
     end
   end
-  if p then
-    q:put(p)
+  if #p>0 then
+    q:put(table.concat(p,"|"))
   end
-  return q
 end
 
 local function new_client(str,ts,ip,port)
@@ -219,11 +217,20 @@ if not sock:setsockname("*",6352) then
   return
 end
 
+local function mapinit()
+  for _,o in pairs(devices) do
+    if o.lupd and o:chk_devs() then
+      o:f_path()
+    end
+  end
+end
+
 mapchunk=nil
 if arg[1] then
   local chunk=loadfile(arg[1])
   mapchunk=chunk(arg[2])
   mapchunk()
+  mapinit()
 end
 
 local ret
@@ -241,6 +248,7 @@ while true do
     end
     if mapchunk then
       mapchunk()
+      mapinit()
     end
     dirty=false
   end

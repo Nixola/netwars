@@ -6,52 +6,73 @@ function Device:link(dev) -- use only in map generators
   if l then
     links:add(l)
   end
-  dev:upd_bdevs()
 end
 
-function Device:upd_bdevs()
-  local tmp={}
-  for _,l in ipairs(self.blinks) do
-    if l.dev2==self then
-      tmp[#tmp+1]=l.dev1
-    end
-  end
-  self.bdevs=tmp
-  self.lupd=false
-end
-
-function Device:chk_bdevs()
-  if self.cl=="R" and #self.bdevs>0 then
-    local path={}
-    local ok=false
-    local tmp=self.bdevs
+function Device:f_path()
+  if self.cl=="R" and next(self.ldevs) then
+    local ok=self.gotpwr
+    local chk={}
+    local tmp=self.ldevs
     local tmp2={}
-    path[self]=self
-    while #tmp>0 do
+    chk[self]=self
+    while next(tmp) do
       for _,d in pairs(tmp) do
-        if not path[d] then
-          if d.pwr then
-            ok=true
-            break
-          end
-          path[d]=d
-          for _,o in pairs(d.bdevs) do
-            tmp2[#tmp2+1]=o
+        if not chk[d] and not d.nochk and d.gotpwr~=ok then
+          chk[d]=d
+          if not ok and count(d.bdevs)>1 then
+            d.lupd=true
+          else
+            d.gotpwr=ok
+            if ok then
+              d.lupd=false
+            end
+            if d.cl=="R" then
+              for _,o in pairs(d.ldevs) do
+                tmp2[o]=o
+              end
+            end
           end
         end
-      end
-      if ok then
-        break
       end
       tmp=tmp2
       tmp2={}
     end
-    if self.gotpwr~=ok then
-      for _,d in pairs(path) do
-        d.gotpwr=ok
+  end
+end
+
+function Device:chk_devs()
+  local k=self.pl and "base" or "pwr"
+  local chk={}
+  local ok=false
+  local tmp=self.bdevs
+  local tmp2={}
+  chk[self]=self
+  while next(tmp) do
+    for _,d in pairs(tmp) do
+      if not chk[d] and d.gotpwr then
+        if d[k] then
+          ok=true
+          break
+        end
+        chk[d]=d
+        if not d.nochk then
+          for _,o in pairs(d.bdevs) do
+            tmp2[o]=o
+          end
+        end
       end
     end
+    if ok then
+      break
+    end
+    tmp=tmp2
+    tmp2={}
   end
+  if self.gotpwr==ok then
+    return false
+  end
+  self.gotpwr=ok
+  return true
 end
 
 function Device:check(dt)
@@ -61,38 +82,23 @@ function Device:check(dt)
   if not self.initok then
     return
   end
-  if not self.gotpwr then
-    self.dt2=self.dt2+dt
-    if self.dt2>=DEGT then
-      self:delete()
-      cput("Dd:%d",self.idx)
-      devices:del(self)
-      return
-    end
-  else
-    self.dt2=0
+  if self.nochk then
+    return
   end
-  if not self.pwr then
-    if self.lupd then
-      self:upd_bdevs()
-      self:chk_bdevs()
-      return
+  if self.lupd and self:chk_devs() then
+    self:f_path()
+  end
+  local ok=self.gotpwr
+  if not ok and self.online then
+    self.online=false
+    cput("Ds:%d:0",self.idx)
+  end
+  if self.cl=="V" then
+    if not ok and self.attch then
+      self:update("detach")
     end
-    local ok=false
-    for _,d in pairs(self.bdevs) do
-      if d.gotpwr then
-        ok=true
-        break
-      end
-    end
-    self.gotpwr=ok
-    if self.cl=="V" then
-      if not ok and self.attch then
-        self:update("detach")
-      end
-      if ok and not self.attch then
-        self:update("attach")
-      end
+    if ok and not self.attch then
+      self:update("attach")
     end
   end
 end
@@ -126,6 +132,15 @@ end
 
 function Vault:packet(dev,v)
   if self.deleted then
+    return
+  end
+  if self.health<self.maxhealth then
+    self.health=min(self.health+v,self.maxhealth)
+    if dev.maxpkt then
+      mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
+    else
+      mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
+    end
     return
   end
   local pl=self.pl
