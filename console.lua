@@ -176,7 +176,7 @@ function console.cmd(str)
       return
     end
     if players[idx]==ME then
-      histq:push("cannot use myself")
+      histq:push("cannot set relation to myself")
       return
     end
     if ok then
