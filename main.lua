@@ -113,6 +113,7 @@ links=storage()
 packets=storage()
 shots=storage()
 hash=sphash(200)
+allies={}
 
 buydevs={}
 local buyidx=2
@@ -470,25 +471,27 @@ local function draw_hud()
 end
 
 local function draw_scoreboard()
-  local padding = 16
-  local player_count = 0
-  for _,v in pairs(players) do
-    player_count = player_count + 1
+  local padding=16
+  local player_count=0
+  for _ in pairs(players) do
+    player_count=player_count+1
   end
-  local x,y=eye.cx-200,eye.cy-(padding*(4+player_count))/2
+  local x,y=eye.cx-250,eye.cy-(padding*(4+player_count))/2
   graph.setColor(0,0,120,192)
-  graph.rectangle("fill",x,y,400,padding*(4+player_count))
+  graph.rectangle("fill",x,y,500,padding*(4+player_count))
 
-  graph.print("Name",x+padding,y+padding)
-  graph.print("Cash",x+200+padding,y+padding)
-  graph.print("Devices",x+300+padding,y+padding)
+  graph.print("Idx",x+30,y+padding)
+  graph.print("Name",x+80+padding,y+padding)
+  graph.print("Cash",x+280+padding,y+padding)
+  graph.print("Devices",x+380+padding,y+padding)
   
   local abs_index = 0
   for i,v in pairs(players) do
-    abs_index = abs_index + 1
-    graph.print(v.name,x+padding,y+(abs_index+2)*padding)
-    graph.print(v.cash,x+200+padding,y+(abs_index+2)*padding)
-    graph.print(v.devcnt,x+300+padding,y+(abs_index+2)*padding)
+    abs_index=abs_index+1
+    graph.print(string.format("#%d",i),x+30,y+(abs_index+2)*padding)
+    graph.print(v.name,x+80+padding,y+(abs_index+2)*padding)
+    graph.print(v.cash,x+280+padding,y+(abs_index+2)*padding)
+    graph.print(v.devcnt,x+380+padding,y+(abs_index+2)*padding)
   end
 end
 
