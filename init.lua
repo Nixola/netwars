@@ -127,7 +127,7 @@ function init_keypressed(key,ch)
   if key=="return" then
     return init_enter()
   end
-  if key=="`" then
+  if key=="`" or key=="f1" then
     console.input=true
     return
   end

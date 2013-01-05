@@ -353,7 +353,7 @@ function main_keypressed(key,ch)
     chat.input=true
     return
   end
-  if key=="`" then
+  if key=="`" or key=="f1" then
     console.input=true
     return
   end

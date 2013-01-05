@@ -154,34 +154,17 @@ end
 function Vault:update(e,pl)
   if e=="delete" then
     if self.attch then
-      local cash=floor(self.pl.cash/self.pl.vcnt)
       self.pl.vcnt=self.pl.vcnt-1
       self.pl.maxcash=self.pl.vcnt*VCASH
-    else
-      local cash=floor(self.pl.cash/(self.pl.vcnt+1))
-      self.pl.cash=self.pl.cash-cash
+      self.pl.cash=min(self.pl.cash,self.pl.maxcash)
+      cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
     end
-    cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
-    return
-  end
-  if e=="takeover" then
-    if self.attch then
-      local cash=floor(self.pl.cash/self.pl.vcnt)
-      self.pl.cash=self.pl.cash-cash
-      self.pl.vcnt=self.pl.vcnt-1
-      self.pl.maxcash=self.pl.vcnt*VCASH
-      pl.cash=pl.cash+cash
-    else
-      local cash=floor(self.pl.cash/(self.pl.vcnt+1))
-      self.pl.cash=self.pl.cash-cash
-      pl.cash=pl.cash+cash
-    end
-    cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
     return
   end
   if e=="detach" then
     self.pl.vcnt=self.pl.vcnt-1
     self.pl.maxcash=self.pl.vcnt*VCASH
+    self.pl.cash=min(self.pl.cash,self.pl.maxcash)
     self.attch=false
     cput("PC:%d:%d:%d",self.pl.idx,self.pl.cash,self.pl.maxcash)
     return

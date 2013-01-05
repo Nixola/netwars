@@ -161,7 +161,7 @@ function console.cmd(str)
     end
     local ok=arg[1]=="/ally" and true or false
     local idx
-    if arg[2]:find("#",1,true)==1 then
+    if arg[2]:sub(1,1)=="#" then
       idx=tonumber(arg[2]:sub(2))
     else
       for i,p in pairs(players) do
@@ -220,7 +220,7 @@ function console.keypressed(key,ch)
     console.enter()
     return true
   end
-  if key=="`" then
+  if key=="`" or key=="f1" then
     readline:clr()
     return false
   end
