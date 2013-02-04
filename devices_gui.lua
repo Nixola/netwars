@@ -244,7 +244,7 @@ end
 function Device:draw_cborder(_x,_y,ok)
   local x=_x or self.x
   local y=_y or self.y
-  if self.hud or self.pl==ME then
+  if self.hud or self.pl==ME or self.cl=="G" then
     if ok==nil or ok==true then
       graph.setColor(255,255,255)
     else
