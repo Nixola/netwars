@@ -119,18 +119,18 @@ local function S3_node(n)
   local x,y=n.x*60,n.y*60
   -- 3x Generators
   t={tp="G",l={}}
-  t.x=x+math.random(-20,20)
-  t.y=y-4*20+math.random(-20,20)
+  t.x=x
+  t.y=y-4*20
   t.pwr=3
   res[t]=t
   t={tp="G",l={}}
-  t.x=x+3*20+math.random(-20,20)
-  t.y=y+2*20+math.random(-20,20)
+  t.x=x+3*20
+  t.y=y+2*20
   t.pwr=3
   res[t]=t
   t={tp="G",l={}}
-  t.x=x-3*20+math.random(-20,20)
-  t.y=y+2*20+math.random(-20,20)
+  t.x=x-3*20
+  t.y=y+2*20
   t.pwr=3
   res[t]=t
   return res
