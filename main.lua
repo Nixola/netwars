@@ -325,6 +325,7 @@ function main_mousereleased(mx,my,b)
 end
 
 function main_keypressed(key,ch)
+  local s={0.2,0.3,0.45,0.67,1.0,1.5}
   if chat.input then
     chat.input=chat.keypressed(key,ch)
     return
@@ -412,6 +413,22 @@ function main_keypressed(key,ch)
       scroll.x=0
     end
     scroll.kx=-1
+  end
+  if key=="e" or key=="pagedown" then
+    if eye.si<#s then
+      scroll.ks=abs(eye.s-s[eye.si+1])
+      eye.si=eye.si+1
+    end
+    scroll.s=s[eye.si]
+    scroll.run=scroll.ks~=0
+  end
+  if key=="q" or key=="pageup" then
+    if eye.si>1 then
+      scroll.ks=-abs(eye.s-s[eye.si-1])
+      eye.si=eye.si-1
+    end
+    scroll.s=s[eye.si]
+    scroll.run=scroll.ks~=0
   end
   scroll.run=scroll.kx~=0 or scroll.ky~=0 or scroll.ks~=0
 end
