@@ -335,6 +335,7 @@ local function parse_server(msg,ts)
     local pl=players[idx]
     pl:disconnect()
     players[idx]=nil
+    allies[pl]=nil
     console.msg(string.format("%s disconnected.",pl.name))
     return
   end
@@ -343,6 +344,13 @@ local function parse_server(msg,ts)
       return
     end
     console.msg(string.format("<%s> %s",a[2],a[3]))
+    return
+  end
+  if a[1]=="INFO" then -- INFO:~msg
+    if a.n<2 then
+      return
+    end
+    console.msg(string.format("%s",a[2]))
     return
   end
   if a[1]=="ERR" then

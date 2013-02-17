@@ -202,9 +202,13 @@ function Device:draw_sym(_x,_y)
     end
   elseif not self.pl then
     if self.cl=="G" then
-      graph.setColor(0,160,0)
+      graph.setColor(74,170,196)
     else
-      graph.setColor(128,128,128)
+      if self.online then
+        graph.setColor(128,128,128)
+      else
+        graph.setColor(64,64,64)
+      end
     end
   elseif self.pl==ME then
     if self.online then
@@ -213,10 +217,18 @@ function Device:draw_sym(_x,_y)
       graph.setColor(0,0,128)
     end
   else
-    if self.online then
-      graph.setColor(255,0,0)
+    if allies[self.pl] then
+      if self.online then
+        graph.setColor(0,192,0)
+      else
+        graph.setColor(0,128,0)
+      end
     else
-      graph.setColor(160,0,0)
+      if self.online then
+        graph.setColor(255,0,0)
+      else
+        graph.setColor(160,0,0)
+      end
     end
   end
   graph.circle("fill",x,y,self.r,24)
@@ -232,7 +244,7 @@ end
 function Device:draw_cborder(_x,_y,ok)
   local x=_x or self.x
   local y=_y or self.y
-  if self.hud or self.pl==ME then
+  if self.hud or self.pl==ME or self.cl=="G" then
     if ok==nil or ok==true then
       graph.setColor(255,255,255)
     else
@@ -483,7 +495,7 @@ function Tower:logic()
     if o.pl~=self.pl and o.initok and o.cl~="G" then
       tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
-      if len<tlen then
+      if len<tlen and not allies[o.pl] then
         targ=o
         tlen=len
       end

@@ -154,6 +154,40 @@ function console.cmd(str)
       return
     end
   end
+  if arg[1]=="/ally" or arg[1]=="/enemy" then
+    if #arg<2 then
+      histq:push("not enough arguments")
+      return
+    end
+    local ok=arg[1]=="/ally" and true or false
+    local idx
+    if arg[2]:sub(1,1)=="#" then
+      idx=tonumber(arg[2]:sub(2))
+    else
+      for i,p in pairs(players) do
+        if arg[2]==p.name then
+          idx=i
+          break
+        end
+      end
+    end
+    if not idx or not players[idx] then
+      histq:push("unknown player")
+      return
+    end
+    if players[idx]==ME then
+      histq:push("cannot set relation to myself")
+      return
+    end
+    if ok then
+      allies[players[idx]]=true
+      net_send("INFO:~%s sets relation to %s: friend",ME.name,players[idx].name)
+    else
+      allies[players[idx]]=false
+      net_send("INFO:~%s sets relation to %s: enemy",ME.name,players[idx].name)
+    end
+    return
+  end
   histq:push("unknown command")
 end
 
@@ -186,7 +220,7 @@ function console.keypressed(key,ch)
     console.enter()
     return true
   end
-  if key=="`" then
+  if key=="`" or key=="f1" then
     readline:clr()
     return false
   end

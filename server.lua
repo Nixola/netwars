@@ -158,6 +158,13 @@ function parse_client(msg,pl,ts)
     cput("MSG:%s:~%s",pl.name,a[2])
     return
   end
+  if a[1]=="INFO" then -- INFO:~msg
+    if a.n<2 then
+      return
+    end
+    cput("INFO:~%s",a[2])
+    return
+  end
 end
 
 function devs_proc(dt)
