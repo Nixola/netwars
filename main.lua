@@ -121,7 +121,6 @@ local buyidx=2
 local drag=nil
 local bdrag=nil
 local bdev=nil
-local move=nil
 local targ=nil
 local hover=nil
 local hint=nil
@@ -292,13 +291,6 @@ function main_mousereleased(mx,my,b)
         conn:net_connect(dev)
       end
       conn=nil
-    end
-    return
-  end
-  if move then
-    if b=="l" then
-      move:net_move(x,y)
-      move=nil
     end
     return
   end
@@ -599,14 +591,6 @@ function main_draw()
   if bdev then
     cmd=true
     bdev:drag(mox,moy)
-  end
-  if move then
-    local x,y=move:calc_xy(mox,moy)
-    cmd=true
-    move:draw_rng(x,y)
-    graph.setColor(255,255,255)
-    graph.setLine(1,"rough")
-    graph.line(move.x,move.y,x,y)
   end
   if targ then
     cmd=true

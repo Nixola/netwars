@@ -255,10 +255,10 @@ function Device:draw_cborder(_x,_y,ok)
   end
 end
 
-function Device:draw_rng(_x,_y)
+function Device:draw_rng(_x,_y,_drag)
   local x=_x or self.x
   local y=_y or self.y
-  if self.hud then
+  if _drag or self.hud then
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
     graph.circle("line",x,y,LINK,24)
@@ -291,7 +291,7 @@ function Device:drag(x,y)
   local ok=self:chk_border(x,y)
   self:draw_sym(x,y)
   self:draw_cborder(x,y,ok)
-  self:draw_rng(x,y)
+  self:draw_rng(x,y,true)
 end
 
 function Device:is_pointed(x,y)
