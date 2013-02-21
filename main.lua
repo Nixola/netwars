@@ -212,35 +212,41 @@ function main_mousepressed(mx,my,b)
     return
   end
   if msy>=eye.sy-50 and b=="l" then
-    bdrag=get_buydev(mx,my)
+    if not replay then
+      bdrag=get_buydev(mx,my)
+    end
     return
   end
   if b=="l" then
-    local obj=get_my_dev(x,y)
-    if obj then
-      if kshift then
-        obj:net_switch()
+    if not replay then
+      local obj=get_my_dev(x,y)
+      if obj then
+        if kshift then
+          obj:net_switch()
+          return
+        end
+        if kctrl then
+          obj:net_upgrade()
+          return
+        end
+        if not obj.nomove and not obj.online and obj.pc<1 then
+          drag=obj
+        end
         return
       end
-      if kctrl then
-        obj:net_upgrade()
-        return
-      end
-      if not obj.nomove and not obj.online and obj.pc<1 then
-        drag=obj
-      end
-      return
     end
     eye.set_drag()
     return
   end
   if b=="r" then
-    local obj=get_device(x,y)
-    if obj and (obj.pl==ME or obj.cl=="G") then
-      if obj.set_targ then
-        targ=obj
-      else
-        conn=obj
+    if not replay then
+      local obj=get_device(x,y)
+      if obj and (obj.pl==ME or obj.cl=="G") then
+        if obj.set_targ then
+          targ=obj
+        else
+          conn=obj
+        end
       end
     end
     return
@@ -358,29 +364,31 @@ function main_keypressed(key,ch)
     end
     return
   end
-  if key=="1" or key=="kp1" then
-    bdev=buydevs[buyidx][1]
-    return
-  end
-  if key=="2" or key=="kp2" then
-    bdev=buydevs[buyidx][2]
-    return
-  end
-  if key=="3" or key=="kp3" then
-    bdev=buydevs[buyidx][3]
-    return
-  end
-  if key=="4" or key=="kp4" then
-    bdev=buydevs[buyidx][4]
-    return
-  end
-  if key=="5" or key=="kp5" then
-    bdev=buydevs[buyidx][5]
-    return
-  end
-  if key=="6" or key=="kp6" then
-    bdev=buydevs[buyidx][6]
-    return
+  if not replay then
+    if key=="1" or key=="kp1" then
+      bdev=buydevs[buyidx][1]
+      return
+    end
+    if key=="2" or key=="kp2" then
+      bdev=buydevs[buyidx][2]
+      return
+    end
+    if key=="3" or key=="kp3" then
+      bdev=buydevs[buyidx][3]
+      return
+    end
+    if key=="4" or key=="kp4" then
+      bdev=buydevs[buyidx][4]
+      return
+    end
+    if key=="5" or key=="kp5" then
+      bdev=buydevs[buyidx][5]
+      return
+    end
+    if key=="6" or key=="kp6" then
+      bdev=buydevs[buyidx][6]
+      return
+    end
   end
   if key=="w" or key=="up" then
     if scroll.y<0 then
@@ -463,6 +471,9 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
+  if replay then
+    return
+  end
   for _,v in ipairs(buydevs[buyidx]) do
     v:draw_sym()
   end
@@ -637,7 +648,11 @@ function devs_proc(dt)
 end
 
 function main_update(dt)
-  net_proc()
+  if replay then
+    rep_proc(dt)
+  else
+    net_proc()
+  end
   srvts=srvts+dt
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x

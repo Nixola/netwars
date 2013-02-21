@@ -7,6 +7,8 @@ local nick=""
 local addr=""
 local init_st=1
 net_err=nil
+repiter=nil
+replay=false
 conf={}
 
 function save_conf()
@@ -135,6 +137,7 @@ function init_keypressed(key,ch)
 end
 
 function init_draw()
+  graph.push()
   graph.scale(2)
   graph.setColor(255,255,255)
   if init_st==1 then
@@ -153,6 +156,7 @@ function init_draw()
   if net_err then
     graph.print(net_err,50,eye.cy/2+50)
   end
+  graph.pop()
   console.draw()
 end
 

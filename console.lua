@@ -154,6 +154,22 @@ function console.cmd(str)
       return
     end
   end
+  if arg[1]=="/replay" then
+    if #arg<2 then
+      histq:push("set: not enough arguments")
+      return
+    end
+    replay=love.filesystem.lines(string.format("replays/%s",arg[2]))
+    rep_init()
+    return
+  end
+  if arg[1]=="/list" then
+    files=love.filesystem.enumerate("replays")
+    for _,fn in pairs(files) do
+      histq:push(fn)
+    end
+    return
+  end
   if arg[1]=="/ally" or arg[1]=="/enemy" then
     if #arg<2 then
       histq:push("not enough arguments")
