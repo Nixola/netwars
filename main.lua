@@ -117,6 +117,7 @@ allies={}
 
 buydevs={}
 local buyidx=2
+local reptime=0
 
 local drag=nil
 local bdrag=nil
@@ -471,19 +472,21 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
-  if replay then
-    return
-  end
-  for _,v in ipairs(buydevs[buyidx]) do
-    v:draw_sym()
-  end
-  graph.setColor(255,255,255)
-  graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
-  graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
-  if hover or bdrag or bdev then
-    local d=hover or bdrag or bdev
-    graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
-    graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
+  if not replay then
+    for _,v in ipairs(buydevs[buyidx]) do
+      v:draw_sym()
+    end
+    graph.setColor(255,255,255)
+    graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
+    graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
+    if hover or bdrag or bdev then
+      local d=hover or bdrag or bdev
+      graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
+      graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
+    end
+  else
+    graph.setColor(255,255,255)
+    graph.print(string.format("Timer: %d:%02d:%02d",reptime/3600,(reptime/60)%60,reptime%60),eye.sx-150,eye.sy-40)
   end
   if hint and hint.pl and hint.pl~=ME and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
@@ -650,6 +653,7 @@ end
 function main_update(dt)
   if replay then
     rep_proc(dt)
+    reptime=reptime+dt
   else
     net_proc()
   end
