@@ -337,7 +337,7 @@ local function do_msg(a)
       ME=pl
       srvts=tonumber(a[6])
     end
-    if insync then
+    if insync or replay then
       console.msg(string.format("%s has connected.",a[3]))
     end
     return
@@ -505,6 +505,7 @@ function rep_proc(dt)
   local s=replay()
   if not s then
     repend=true
+    console.msg("replay has ended.")
     return
   end
   local t=str_split(s,"@")
