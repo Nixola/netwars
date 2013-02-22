@@ -109,7 +109,10 @@ function Device:packet(dev,v)
   end
   if self.health<self.maxhealth then
     self.health=min(self.health+v,self.maxhealth)
+    dev.pt=1.0
+    self.pt=1.0
     if dev.maxpkt then
+      dev.pkt=dev.pkt-v
       mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
     else
       mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
@@ -119,11 +122,11 @@ function Device:packet(dev,v)
   if not self.maxpkt then
     return
   end
+  self.pkt=min(self.pkt+v,self.maxpkt)
   dev.pt=1.0
   self.pt=1.0
-  dev.pkt=dev.pkt-v
-  self.pkt=min(self.pkt+v,self.maxpkt)
   if dev.maxpkt then
+    dev.pkt=dev.pkt-v
     mput("Pr:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
   else
     mput("Pr:%d:%d::%d",dev.idx,self.idx,self.pkt)
