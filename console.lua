@@ -155,8 +155,12 @@ function console.cmd(str)
     end
   end
   if arg[1]=="/replay" then
+    if ME then
+      histq:push("replay: game in progress")
+      return
+    end
     if #arg<2 then
-      histq:push("set: not enough arguments")
+      histq:push("replay: not enough arguments")
       return
     end
     replay=love.filesystem.lines(string.format("replays/%s",arg[2]))
