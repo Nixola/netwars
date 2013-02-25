@@ -19,6 +19,14 @@ function count(t)
   return c
 end
 
+function icopy(t)
+  local tmp={}
+  for i,v in ipairs(t) do
+    tmp[i]=v
+  end
+  return tmp
+end
+
 local reserved={
 class=true;
 define=true;

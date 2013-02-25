@@ -222,11 +222,11 @@ function console.enter()
   end
   if readline.str:sub(1,1)=="/" then
     console.cmd(readline.str)
-    readline:clr()
+    readline:done()
     return
   end
   chat.send(readline.str)
-  readline:clr()
+  readline:done()
   return
 end
 
