@@ -471,7 +471,7 @@ function Tower:draw()
 end
 
 function Tower:logic()
-  if self.pkt<1 then
+  if self.pkt<3 then
     return
   end
   if self.targ then

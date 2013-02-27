@@ -248,7 +248,7 @@ function Tower:shot(targ)
     return
   end
   self.pt=1.0
-  self.pkt=self.pkt-1
+  self.pkt=self.pkt-3
   targ.pt=1.0
   targ.health=targ.health-10
   if targ.health<1 then
@@ -264,7 +264,7 @@ function Tower:logic()
   if self.pl then
     return
   end
-  if self.pkt<1 then
+  if self.pkt<3 then
     return
   end
   local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)

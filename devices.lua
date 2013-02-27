@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 11" -- network protocol version
+NVER="master 12" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
