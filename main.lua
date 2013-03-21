@@ -131,6 +131,7 @@ local menu=nil
 local kshift=false
 local kctrl=false
 local scoreboard=false
+local repx=1
 
 local function get_device(x,y)
   local t=hash:get(x,y)
@@ -390,6 +391,27 @@ function main_keypressed(key,ch)
       bdev=buydevs[buyidx][6]
       return
     end
+  else
+    if kshift and key=="." then
+      local tabx={2,4,8}
+      for _,v in ipairs(tabx) do
+        if repx<v then
+          repx=v
+          break
+        end
+      end
+      return
+    end
+    if kshift and key=="," then
+      local tabx={4,2,1}
+      for _,v in ipairs(tabx) do
+        if repx>v then
+          repx=v
+          break
+        end
+      end
+      return
+    end
   end
   if key=="w" or key=="up" then
     if scroll.y<0 then
@@ -486,7 +508,7 @@ local function draw_hud()
     end
   else
     graph.setColor(255,255,255)
-    graph.print(string.format("Timer: %d:%02d:%02d",reptime/3600,(reptime/60)%60,reptime%60),eye.sx-150,eye.sy-40)
+    graph.print(string.format("Timer (x%d): %d:%02d:%02d",repx,reptime/3600,(reptime/60)%60,reptime%60),eye.sx-170,eye.sy-40)
   end
   if hint and hint.pl and hint.pl~=ME and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
@@ -651,13 +673,15 @@ function devs_proc(dt)
 end
 
 function main_update(dt)
+  local ldt=dt
   if replay then
-    rep_proc(dt)
-    reptime=reptime+dt
+    ldt=dt*repx
+    rep_proc(ldt)
+    reptime=reptime+ldt
   else
     net_proc()
+    srvts=srvts+dt
   end
-  srvts=srvts+dt
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x
   moy=msy/eye.s-eye.y
@@ -688,7 +712,7 @@ function main_update(dt)
     end
   end
   for _,p in pairs(packets) do
-    if p:flow(dt) then
+    if p:flow(ldt) then
       p:delete()
       packets:del(p)
     end
@@ -698,7 +722,7 @@ function main_update(dt)
       shots:del(s)
     end
   end
-  devs_proc(dt)
+  devs_proc(ldt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
