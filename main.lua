@@ -525,18 +525,21 @@ local function draw_scoreboard()
   graph.setColor(0,0,120,192)
   graph.rectangle("fill",x,y,500,padding*(4+player_count))
 
-  graph.print("Idx",x+30,y+padding)
-  graph.print("Name",x+80+padding,y+padding)
-  graph.print("Cash",x+280+padding,y+padding)
-  graph.print("Devices",x+380+padding,y+padding)
+  graph.print("Idx",x+40,y+padding)
+  graph.print("Name",x+100,y+padding)
+  graph.print("Cash",x+300,y+padding)
+  graph.print("Devices",x+400,y+padding)
   
   local abs_index = 0
   for i,v in pairs(players) do
     abs_index=abs_index+1
-    graph.print(string.format("#%d",i),x+30,y+(abs_index+2)*padding)
-    graph.print(v.name,x+80+padding,y+(abs_index+2)*padding)
-    graph.print(v.cash,x+280+padding,y+(abs_index+2)*padding)
-    graph.print(v.devcnt,x+380+padding,y+(abs_index+2)*padding)
+    graph.print(string.format("#%d",i),x+40,y+(abs_index+2)*padding)
+    if v==ME then
+      graph.print("*",x+85,y+(abs_index+2)*padding)
+    end
+    graph.print(v.name,x+100,y+(abs_index+2)*padding)
+    graph.print(v.cash,x+300,y+(abs_index+2)*padding)
+    graph.print(v.devcnt,x+400,y+(abs_index+2)*padding)
   end
 end
 
