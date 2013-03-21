@@ -392,7 +392,7 @@ function main_keypressed(key,ch)
       return
     end
   else
-    if kshift and key=="." then
+    if kshift and (key=="." or key=="=") then
       local tabx={2,4,8}
       for _,v in ipairs(tabx) do
         if repx<v then
@@ -402,7 +402,7 @@ function main_keypressed(key,ch)
       end
       return
     end
-    if kshift and key=="," then
+    if kshift and (key=="," or key=="-") then
       local tabx={4,2,1}
       for _,v in ipairs(tabx) do
         if repx>v then
