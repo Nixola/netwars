@@ -163,7 +163,12 @@ function console.cmd(str)
       histq:push("replay: not enough arguments")
       return
     end
-    replay=love.filesystem.lines(string.format("replays/%s",arg[2]))
+    local fn=string.format("replays/%s",arg[2])
+    if not love.filesystem.exists(fn) then
+      histq:push("replay: file not found")
+      return
+    end
+    replay=love.filesystem.lines(fn)
     rep_init()
     return
   end
