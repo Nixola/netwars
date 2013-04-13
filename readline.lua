@@ -9,6 +9,9 @@ function Readline:initialize(size)
   self.str=""
   self.i=1
   self.cr=true
+  self.hist={}
+  self.old=nil
+  self.hi=0
 end
 
 function Readline:clr()
@@ -16,6 +19,13 @@ function Readline:clr()
   self.len=0
   self.str=""
   self.i=1
+  self.old=nil
+  self.hi=0
+end
+
+function Readline:done()
+  self.hist[#self.hist+1]=self.buf
+  self:clr()
 end
 
 function Readline:key(key,ch)
@@ -52,6 +62,47 @@ function Readline:key(key,ch)
     if self.i<=self.len then
       table.remove(self.buf,self.i)
       self.len=self.len-1
+      self.str=table.concat(self.buf)
+    end
+    return
+  end
+  if key=="up" then
+    if #self.hist<1 then
+      return
+    end
+    if self.hi>1 then
+      self.hi=self.hi-1
+    end
+    if self.hi==0 then
+      self.old=self.buf
+      self.hi=#self.hist
+    end
+    self.buf=icopy(self.hist[self.hi])
+    self.len=#self.buf
+    self.i=self.len+1
+    self.str=table.concat(self.buf)
+    return
+  end
+  if key=="down" then
+    if #self.hist<1 then
+      return
+    end
+    if self.hi==0 then
+      return
+    end
+    if self.hi<#self.hist then
+      self.hi=self.hi+1
+      self.buf=icopy(self.hist[self.hi])
+      self.len=#self.buf
+      self.i=self.len+1
+      self.str=table.concat(self.buf)
+      return
+    end
+    if self.old then
+      self.hi=0
+      self.buf=self.old
+      self.len=#self.buf
+      self.i=self.len+1
       self.str=table.concat(self.buf)
     end
     return

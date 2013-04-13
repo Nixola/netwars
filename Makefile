@@ -13,7 +13,7 @@ build:
 	zip -r $(APPN).love $(LIBS) $(COMMON) $(SRCS) $(IMGS) -x $(EXCL)
 
 srvpkg:
-	tar -czf $(APPN).tgz $(LIBS) $(COMMON) $(SRVS)
+	tar -czf $(APPN).tgz $(LIBS) $(COMMON) $(SRVS) maps
 
 clean:
 	rm -f $(APPN).love $(APPN).tgz

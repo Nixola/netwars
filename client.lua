@@ -9,6 +9,8 @@ local seq=0
 local allsocks
 local insync=false
 local timeout=0
+love.filesystem.mkdir("replays")
+local rep=love.filesystem.newFile("replays/lastreplay")
 
 function net_conn(addr,nick)
   sock=socket.udp()
@@ -18,6 +20,32 @@ function net_conn(addr,nick)
   seq=1
   sock:setpeername(addr,6352)
   sock:send(string.format("PLr:%s:%s",nick,NVER))
+  rep:open("w")
+end
+
+local lastsend=0
+local lastrecv=0
+function net_read(ts)
+  local str=sock:receive()
+  if not str then
+    return nil
+  end
+  lastrecv=ts+4
+  timeout=ts+30
+  if str:find("!",1,true) then
+    local s=recvq:put(str)
+    if not s then
+      love.event.push("q")
+      insync=true
+      return nil
+    end
+    sock:send(string.format("ACK:%d",s))
+    str=str_split(str,"!")[2]
+    rep:write(string.format("%s@%s\n",ts,str))
+    return nil
+  end
+  rep:write(string.format("%s@%s\n",ts,str))
+  return str
 end
 
 function net_sync()
@@ -46,27 +74,14 @@ function net_send(fmt,...)
 end
 
 function net_close()
-  sock:send("DISCONNECT")
-  sock:close()
+  if not replay then
+    sock:send("DISCONNECT")
+    sock:close()
+    rep:close()
+  end
 end
 
-local function parse_server(msg,ts)
-  local a=str_split(msg,":")
-  if a[1]=="ACK" then
-    if a.n==2 then
-      sendq:del(tonumber(a[2]))
-    end
-    return
-  end
-  if a[1]=="PING" then
-    if a.n<3 then
-      return
-    end
-    sock:send(string.format("PONG:%s",a[2]))
-    srvts=tonumber(a[2])+tonumber(a[3])
-    lastsend=ts+5
-    return
-  end
+local function do_msg(a)
   if a[1]=="Pr" then -- Routed:d1:d2:pkt:pkt
     if a.n<5 then
       return
@@ -322,7 +337,7 @@ local function parse_server(msg,ts)
       ME=pl
       srvts=tonumber(a[6])
     end
-    if insync then
+    if insync or replay then
       console.msg(string.format("%s has connected.",a[3]))
     end
     return
@@ -353,6 +368,25 @@ local function parse_server(msg,ts)
     console.msg(string.format("%s",a[2]))
     return
   end
+end
+
+local function parse_server(msg,ts)
+  local a=str_split(msg,":")
+  if a[1]=="ACK" then
+    if a.n==2 then
+      sendq:del(tonumber(a[2]))
+    end
+    return
+  end
+  if a[1]=="PING" then
+    if a.n<3 then
+      return
+    end
+    sock:send(string.format("PONG:%s",a[2]))
+    srvts=tonumber(a[2])+tonumber(a[3])
+    lastsend=ts+5
+    return
+  end
   if a[1]=="ERR" then
     net_err=a[2]
     return
@@ -360,7 +394,26 @@ local function parse_server(msg,ts)
   if a[1]=="DONE" then
     insync=true
     net_send("OK")
+    return
   end
+  do_msg(a)
+end
+
+local function parse_replay(msg,ts)
+  local a=str_split(msg,":")
+  if a[1]=="ACK" then
+    return
+  end
+  if a[1]=="PING" then
+    return
+  end
+  if a[1]=="ERR" then
+    return
+  end
+  if a[1]=="DONE" then
+    return
+  end
+  do_msg(a)
 end
 
 function net_parse(msg,ts)
@@ -381,26 +434,11 @@ function net_parse(msg,ts)
   end
 end
 
-local lastsend=0
-local lastrecv=0
-function net_read(ts)
-  local str=sock:receive()
-  if not str then
-    return
+function rep_parse(msg)
+  mt=str_split(msg,"|")
+  for _,m in ipairs(mt) do
+    parse_replay(m)
   end
-  lastrecv=ts+4
-  timeout=ts+30
-  if str:find("!",1,true) then
-    local s=recvq:put(str)
-    if not s then
-      love.event.push("q")
-      insync=true
-      return nil
-    end
-    sock:send(string.format("ACK:%d",s))
-    return nil
-  end
-  return str
 end
 
 function net_proc()
@@ -429,4 +467,50 @@ function net_proc()
     end
     lastsend=ts+5
   end
+end
+
+local msg_ts
+local rep_dt
+local rep_m
+local repend=false
+function rep_init()
+  local s=replay()
+  local t=str_split(s,"@")
+  msg_ts=tonumber(t[1])
+  rep_parse(t[2])
+  s=replay()
+  t=str_split(s,"@")
+  local ts=tonumber(t[1])
+  rep_dt=ts-msg_ts
+  msg_ts=ts
+  rep_m=t[2]
+  love.draw=main_draw
+  love.update=main_update
+  love.quit=main_quit
+  love.keypressed=main_keypressed
+  love.keyreleased=main_keyreleased
+  love.mousepressed=main_mousepressed
+  love.mousereleased=main_mousereleased
+end
+
+function rep_proc(dt)
+  if repend then
+    return
+  end
+  rep_dt=rep_dt-dt
+  if rep_dt>0 then
+    return
+  end
+  rep_parse(rep_m)
+  local s=replay()
+  if not s then
+    repend=true
+    console.msg("replay has ended.")
+    return
+  end
+  local t=str_split(s,"@")
+  local ts=tonumber(t[1])
+  rep_dt=ts-msg_ts
+  msg_ts=ts
+  rep_m=t[2]
 end

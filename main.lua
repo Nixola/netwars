@@ -117,11 +117,11 @@ allies={}
 
 buydevs={}
 local buyidx=2
+local reptime=0
 
 local drag=nil
 local bdrag=nil
 local bdev=nil
-local move=nil
 local targ=nil
 local hover=nil
 local hint=nil
@@ -131,6 +131,7 @@ local menu=nil
 local kshift=false
 local kctrl=false
 local scoreboard=false
+local repx=1
 
 local function get_device(x,y)
   local t=hash:get(x,y)
@@ -213,35 +214,41 @@ function main_mousepressed(mx,my,b)
     return
   end
   if msy>=eye.sy-50 and b=="l" then
-    bdrag=get_buydev(mx,my)
+    if not replay then
+      bdrag=get_buydev(mx,my)
+    end
     return
   end
   if b=="l" then
-    local obj=get_my_dev(x,y)
-    if obj then
-      if kshift then
-        obj:net_switch()
+    if not replay then
+      local obj=get_my_dev(x,y)
+      if obj then
+        if kshift then
+          obj:net_switch()
+          return
+        end
+        if kctrl then
+          obj:net_upgrade()
+          return
+        end
+        if not obj.nomove and not obj.online and obj.pc<1 then
+          drag=obj
+        end
         return
       end
-      if kctrl then
-        obj:net_upgrade()
-        return
-      end
-      if not obj.nomove and not obj.online and obj.pc<1 then
-        drag=obj
-      end
-      return
     end
     eye.set_drag()
     return
   end
   if b=="r" then
-    local obj=get_device(x,y)
-    if obj and (obj.pl==ME or obj.cl=="G") then
-      if obj.set_targ then
-        targ=obj
-      else
-        conn=obj
+    if not replay then
+      local obj=get_device(x,y)
+      if obj and (obj.pl==ME or obj.cl=="G") then
+        if obj.set_targ then
+          targ=obj
+        else
+          conn=obj
+        end
       end
     end
     return
@@ -292,13 +299,6 @@ function main_mousereleased(mx,my,b)
         conn:net_connect(dev)
       end
       conn=nil
-    end
-    return
-  end
-  if move then
-    if b=="l" then
-      move:net_move(x,y)
-      move=nil
     end
     return
   end
@@ -366,29 +366,52 @@ function main_keypressed(key,ch)
     end
     return
   end
-  if key=="1" or key=="kp1" then
-    bdev=buydevs[buyidx][1]
-    return
-  end
-  if key=="2" or key=="kp2" then
-    bdev=buydevs[buyidx][2]
-    return
-  end
-  if key=="3" or key=="kp3" then
-    bdev=buydevs[buyidx][3]
-    return
-  end
-  if key=="4" or key=="kp4" then
-    bdev=buydevs[buyidx][4]
-    return
-  end
-  if key=="5" or key=="kp5" then
-    bdev=buydevs[buyidx][5]
-    return
-  end
-  if key=="6" or key=="kp6" then
-    bdev=buydevs[buyidx][6]
-    return
+  if not replay then
+    if key=="1" or key=="kp1" then
+      bdev=buydevs[buyidx][1]
+      return
+    end
+    if key=="2" or key=="kp2" then
+      bdev=buydevs[buyidx][2]
+      return
+    end
+    if key=="3" or key=="kp3" then
+      bdev=buydevs[buyidx][3]
+      return
+    end
+    if key=="4" or key=="kp4" then
+      bdev=buydevs[buyidx][4]
+      return
+    end
+    if key=="5" or key=="kp5" then
+      bdev=buydevs[buyidx][5]
+      return
+    end
+    if key=="6" or key=="kp6" then
+      bdev=buydevs[buyidx][6]
+      return
+    end
+  else
+    if kshift and (key=="." or key=="=") then
+      local tabx={2,4,8}
+      for _,v in ipairs(tabx) do
+        if repx<v then
+          repx=v
+          break
+        end
+      end
+      return
+    end
+    if kshift and (key=="," or key=="-") then
+      local tabx={4,2,1}
+      for _,v in ipairs(tabx) do
+        if repx>v then
+          repx=v
+          break
+        end
+      end
+      return
+    end
   end
   if key=="w" or key=="up" then
     if scroll.y<0 then
@@ -471,16 +494,21 @@ local function draw_hud()
   graph.rectangle("fill",0,eye.sy-50,eye.sx-1,eye.sy-1)
   graph.setColor(64,64,192)
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
-  for _,v in ipairs(buydevs[buyidx]) do
-    v:draw_sym()
-  end
-  graph.setColor(255,255,255)
-  graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
-  graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
-  if hover or bdrag or bdev then
-    local d=hover or bdrag or bdev
-    graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
-    graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
+  if not replay then
+    for _,v in ipairs(buydevs[buyidx]) do
+      v:draw_sym()
+    end
+    graph.setColor(255,255,255)
+    graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
+    graph.print(string.format("Pkts: %d",ME.pkts),eye.sx-150,eye.sy-20)
+    if hover or bdrag or bdev then
+      local d=hover or bdrag or bdev
+      graph.print(string.format("Price: %d",d.price),eye.sx-250,eye.sy-40)
+      graph.print(string.format("Health: %d",d.maxhealth),eye.sx-250,eye.sy-20)
+    end
+  else
+    graph.setColor(255,255,255)
+    graph.print(string.format("Timer (x%d): %d:%02d:%02d",repx,reptime/3600,(reptime/60)%60,reptime%60),eye.sx-170,eye.sy-40)
   end
   if hint and hint.pl and hint.pl~=ME and hint.pl.name then
     graph.print(hint.pl.name,msx,msy+17)
@@ -497,18 +525,21 @@ local function draw_scoreboard()
   graph.setColor(0,0,120,192)
   graph.rectangle("fill",x,y,500,padding*(4+player_count))
 
-  graph.print("Idx",x+30,y+padding)
-  graph.print("Name",x+80+padding,y+padding)
-  graph.print("Cash",x+280+padding,y+padding)
-  graph.print("Devices",x+380+padding,y+padding)
+  graph.print("Idx",x+40,y+padding)
+  graph.print("Name",x+100,y+padding)
+  graph.print("Cash",x+300,y+padding)
+  graph.print("Devices",x+400,y+padding)
   
   local abs_index = 0
   for i,v in pairs(players) do
     abs_index=abs_index+1
-    graph.print(string.format("#%d",i),x+30,y+(abs_index+2)*padding)
-    graph.print(v.name,x+80+padding,y+(abs_index+2)*padding)
-    graph.print(v.cash,x+280+padding,y+(abs_index+2)*padding)
-    graph.print(v.devcnt,x+380+padding,y+(abs_index+2)*padding)
+    graph.print(string.format("#%d",i),x+40,y+(abs_index+2)*padding)
+    if v==ME then
+      graph.print("*",x+85,y+(abs_index+2)*padding)
+    end
+    graph.print(v.name,x+100,y+(abs_index+2)*padding)
+    graph.print(v.cash,x+300,y+(abs_index+2)*padding)
+    graph.print(v.devcnt,x+400,y+(abs_index+2)*padding)
   end
 end
 
@@ -604,14 +635,6 @@ function main_draw()
     cmd=true
     bdev:drag(mox,moy)
   end
-  if move then
-    local x,y=move:calc_xy(mox,moy)
-    cmd=true
-    move:draw_rng(x,y)
-    graph.setColor(255,255,255)
-    graph.setLine(1,"rough")
-    graph.line(move.x,move.y,x,y)
-  end
   if targ then
     cmd=true
     targ:draw_rng()
@@ -657,8 +680,15 @@ function devs_proc(dt)
 end
 
 function main_update(dt)
-  net_proc()
-  srvts=srvts+dt
+  local ldt=dt
+  if replay then
+    ldt=dt*repx
+    rep_proc(ldt)
+    reptime=reptime+ldt
+  else
+    net_proc()
+    srvts=srvts+dt
+  end
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x
   moy=msy/eye.s-eye.y
@@ -689,7 +719,7 @@ function main_update(dt)
     end
   end
   for _,p in pairs(packets) do
-    if p:flow(dt) then
+    if p:flow(ldt) then
       p:delete()
       packets:del(p)
     end
@@ -699,7 +729,7 @@ function main_update(dt)
       shots:del(s)
     end
   end
-  devs_proc(dt)
+  devs_proc(ldt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1

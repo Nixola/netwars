@@ -154,6 +154,31 @@ function console.cmd(str)
       return
     end
   end
+  if arg[1]=="/replay" then
+    if ME then
+      histq:push("replay: game in progress")
+      return
+    end
+    if #arg<2 then
+      histq:push("replay: not enough arguments")
+      return
+    end
+    local fn=string.format("replays/%s",arg[2])
+    if not love.filesystem.exists(fn) then
+      histq:push("replay: file not found")
+      return
+    end
+    replay=love.filesystem.lines(fn)
+    rep_init()
+    return
+  end
+  if arg[1]=="/list" then
+    files=love.filesystem.enumerate("replays")
+    for _,fn in pairs(files) do
+      histq:push(fn)
+    end
+    return
+  end
   if arg[1]=="/ally" or arg[1]=="/enemy" then
     if #arg<2 then
       histq:push("not enough arguments")
@@ -202,11 +227,11 @@ function console.enter()
   end
   if readline.str:sub(1,1)=="/" then
     console.cmd(readline.str)
-    readline:clr()
+    readline:done()
     return
   end
   chat.send(readline.str)
-  readline:clr()
+  readline:done()
   return
 end
 

@@ -109,7 +109,10 @@ function Device:packet(dev,v)
   end
   if self.health<self.maxhealth then
     self.health=min(self.health+v,self.maxhealth)
+    dev.pt=1.0
+    self.pt=1.0
     if dev.maxpkt then
+      dev.pkt=dev.pkt-v
       mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
     else
       mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
@@ -119,11 +122,11 @@ function Device:packet(dev,v)
   if not self.maxpkt then
     return
   end
+  self.pkt=min(self.pkt+v,self.maxpkt)
   dev.pt=1.0
   self.pt=1.0
-  dev.pkt=dev.pkt-v
-  self.pkt=min(self.pkt+v,self.maxpkt)
   if dev.maxpkt then
+    dev.pkt=dev.pkt-v
     mput("Pr:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
   else
     mput("Pr:%d:%d::%d",dev.idx,self.idx,self.pkt)
@@ -245,7 +248,7 @@ function Tower:shot(targ)
     return
   end
   self.pt=1.0
-  self.pkt=self.pkt-1
+  self.pkt=self.pkt-3
   targ.pt=1.0
   targ.health=targ.health-10
   if targ.health<1 then
@@ -261,7 +264,7 @@ function Tower:logic()
   if self.pl then
     return
   end
-  if self.pkt<1 then
+  if self.pkt<3 then
     return
   end
   local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
