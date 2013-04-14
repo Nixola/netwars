@@ -23,6 +23,13 @@ function net_conn(addr,nick)
   rep:open("w")
 end
 
+function net_abort()
+  if sock then
+    sock:close()
+    sock=nil
+  end
+end
+
 local lastsend=0
 local lastrecv=0
 function net_read(ts)
@@ -35,8 +42,8 @@ function net_read(ts)
   if str:find("!",1,true) then
     local s=recvq:put(str)
     if not s then
-      love.event.push("q")
-      insync=true
+      console.msg("! malformed packet received")
+      net_err="malformed packet received"
       return nil
     end
     sock:send(string.format("ACK:%d",s))
@@ -63,7 +70,7 @@ function net_sync()
   end
   if ts>=timeout then
     net_err="timeout..."
-    return true
+    return false
   end
   net_parse(msg,ts)
   return insync
@@ -74,10 +81,11 @@ function net_send(fmt,...)
 end
 
 function net_close()
-  if not replay then
+  if not replay and sock then
     sock:send("DISCONNECT")
     sock:close()
     rep:close()
+    sock=nil
   end
 end
 
@@ -121,33 +129,6 @@ local function do_msg(a)
       pl.cash=tonumber(a[4])
       d1.pkt=tonumber(a[5])
       local p=Packet:new(d1,d2)
-      packets:add(p)
-    end
-    return
-  end
-  if a[1]=="Ps" then -- Signal:d1:d2:pkt
-    if a.n<4 then
-      return
-    end
-    local d1=devices[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if d1 and d2 then
-      d1.pkt=tonumber(a[4])
-      local p=Packet:new(d1,d2,true)
-      packets:add(p)
-    end
-    return
-  end
-  if a[1]=="Po" then -- Owner:d1:d2:pkt
-    if a.n<4 then
-      return
-    end
-    local d1=devices[tonumber(a[2])]
-    local d2=devices[tonumber(a[3])]
-    if d1 and d2 then
-      d1.pkt=tonumber(a[4])
-      d2:takeover(d1.pl)
-      local p=Packet:new(d1,d2,true)
       packets:add(p)
     end
     return
@@ -243,16 +224,6 @@ local function do_msg(a)
     o.ec=tonumber(a[3])
     return
   end
-  if a[1]=="Do" then -- Owner:idx:pl
-    if a.n<3 then
-      return
-    end
-    local o=devices[tonumber(a[2])]
-    local idx=tonumber(a[3])
-    local pl=idx>0 and players[idx] or nil
-    o:takeover(pl)
-    return
-  end
   if a[1]=="Lc" then -- Link:dev1:dev2
     if a.n<3 then
       return
@@ -272,6 +243,14 @@ local function do_msg(a)
     if l then
       links:del(l)
     end
+    return
+  end
+  if a[1]=="LU" then -- UNLINK:dev1
+    if a.n<2 then
+      return
+    end
+    local o=devices[tonumber(a[2])]
+    o:unlink_all()
     return
   end
   if a[1]=="PC" then -- Cash:idx:cash:maxcash
@@ -442,6 +421,10 @@ function rep_parse(msg)
 end
 
 function net_proc()
+  if net_err then
+    net_abort()
+    return
+  end
   local ts=socket.gettime()
   local ret=socket.select(allsocks,nil,0)
   local msg
@@ -449,7 +432,8 @@ function net_proc()
     msg=net_read(ts)
   end
   if ts>=timeout then
-    love.event.push("q")
+    console.msg("! connection timed out")
+    net_err="timeout"
     return
   end
   net_parse(msg,ts)

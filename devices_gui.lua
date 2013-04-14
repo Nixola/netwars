@@ -317,10 +317,6 @@ function Device:net_buy(x,y)
   end
 end
 
-function Device:net_delete()
-  net_send("D:%d",self.idx)
-end
-
 function Device:net_move(x,y)
   if self.nomove then
     return
@@ -379,6 +375,10 @@ function Device:net_unlink(dev)
       return
     end
   end
+end
+
+function Device:net_unlink_all()
+  net_send("LU:%d",self.idx)
 end
 
 function Device:net_switch()
@@ -524,17 +524,17 @@ function Router:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Upgrade",Device.net_upgrade)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
+  self.menu:add("Unlink",Device.net_unlink_all)
 end
 
 function Vault:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
+  self.menu:add("Unlink",Device.net_unlink_all)
 end
 
 function Tower:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
-  self.menu:add("Delete",Device.net_delete)
+  self.menu:add("Unlink",Device.net_unlink_all)
 end

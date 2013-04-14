@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 12" -- network protocol version
+NVER="master 13" -- network protocol version
 
 VCASH=3000 -- vault cash storage
 MAXV=10 -- max pkt value
@@ -252,17 +252,28 @@ function Device:del_links()
   end
 end
 
-function Device:takeover(pl)
-  if self.pl then
-    self.pl.devcnt=self.pl.devcnt-1
-  end
-  self.pl=pl
-  self.online=false
-  if pl then
-    pl.devcnt=pl.devcnt+1
-    if SRV and self.cl=="V" then
-      self:update("takeover",pl)
+function Device:unlink_all()
+  local tmp={}
+  for _,l in ipairs(self.links) do
+    if l.dev1==self then
+      tmp[#tmp+1]=l
     end
+  end
+  for _,l in pairs(tmp) do
+    self:del_link(l.dev2)
+    l.dev2:del_blink(self)
+    links:del(l)
+  end
+  tmp={}
+  for _,l in ipairs(self.blinks) do
+    if l.dev2==self and (not l.dev1.pl or l.dev1.pl==self.pl) then
+      tmp[#tmp+1]=l
+    end
+  end
+  for _,l in pairs(tmp) do
+    self:del_blink(l.dev1)
+    l.dev1:del_link(self)
+    links:del(l)
   end
 end
 

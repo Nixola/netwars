@@ -60,8 +60,8 @@ end
 
 function Menu:cleanup()
   for k,v in pairs(self.items) do
-    if v.str=="DELETE" then
-      v.str="Delete"
+    if v.str=="UNLINK" then
+      v.str="Unlink"
       break
     end
   end
@@ -81,8 +81,8 @@ function Menu:click(mx,my)
   ml=ml*10
   for _,v in pairs(self.items) do
     if mx>x and mx<x+ml-2 and my>y and my<y+17 then
-      if v.str=="Delete" then
-        v.str="DELETE"
+      if v.str=="Unlink" then
+        v.str="UNLINK"
         return self
       end
       v.func(self.obj)

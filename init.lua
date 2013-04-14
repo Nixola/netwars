@@ -182,9 +182,11 @@ function init_update(dt)
         love.keyreleased=main_keyreleased
         love.mousepressed=main_mousepressed
         love.mousereleased=main_mousereleased
-      else
-        init_st=1
       end
+    end
+    if net_err then
+      net_abort()
+      init_st=1
     end
   end
   console.update(dt)
