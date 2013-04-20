@@ -391,6 +391,9 @@ function rqueue(sz)
       return nil
     end
     local seq=tonumber(str:sub(1,p-1))
+    if not seq then
+      return nil
+    end
     if seq<=self.seq then
       return seq
     end

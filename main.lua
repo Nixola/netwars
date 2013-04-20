@@ -367,28 +367,16 @@ function main_keypressed(key,ch)
     return
   end
   if not replay then
-    if key=="1" or key=="kp1" then
+    if key=="1" or key=="kp1" or key=="r" then
       bdev=buydevs[buyidx][1]
       return
     end
-    if key=="2" or key=="kp2" then
+    if key=="2" or key=="kp2" or key=="t" then
       bdev=buydevs[buyidx][2]
       return
     end
-    if key=="3" or key=="kp3" then
+    if key=="3" or key=="kp3" or key=="v" then
       bdev=buydevs[buyidx][3]
-      return
-    end
-    if key=="4" or key=="kp4" then
-      bdev=buydevs[buyidx][4]
-      return
-    end
-    if key=="5" or key=="kp5" then
-      bdev=buydevs[buyidx][5]
-      return
-    end
-    if key=="6" or key=="kp6" then
-      bdev=buydevs[buyidx][6]
       return
     end
   else

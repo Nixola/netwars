@@ -104,6 +104,17 @@ function parse_client(msg,pl,ts)
     end
     return
   end
+  if a[1]=="LU" then -- Unlink:dev
+    if a.n<2 then
+      return
+    end
+    local o=devices[tonumber(a[2])]
+    if o and o.pl==pl then
+      o:unlink_all()
+      cput("LU:%d",o.idx)
+    end
+    return
+  end
   if a[1]=="S" then -- Switch:idx:online
     if a.n<3 then
       return
