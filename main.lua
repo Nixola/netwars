@@ -652,8 +652,8 @@ function devs_proc(dt)
       end
       if not o.deleted and o.online and o.logic then
         o.dt=o.dt+dt
-        if o.dt>=2.0 then
-          o.dt=o.dt-2.0
+        if o.dt>=TCK then
+          o.dt=o.dt-TCK
           o:logic()
         end
       else

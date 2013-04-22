@@ -223,13 +223,18 @@ function Router:logic()
       v=nil
       if d.health<d.maxhealth then
         v=d.maxhealth-d.health
+        v=min(MAXH,self.pkt,v)
       elseif d.maxpkt and d.pkt<d.maxpkt then
-        v=d.maxpkt and d.maxpkt-d.pkt or MAXV
+        v=d.maxpkt-d.pkt
+        if d.cl=="T" then
+          v=min(MAXH,self.pkt,v)
+        else
+          v=min(MAXV,self.pkt,v)
+        end
       elseif d.cl=="V" then
-        v=MAXV
+        v=min(MAXV,self.pkt)
       end
       if v then
-        v=min(MAXV,self.pkt,v)
         d:packet(self,v)
         e=e-1
         if self.pkt<1 then

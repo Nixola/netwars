@@ -406,7 +406,7 @@ end
 
 function Power:draw_st()
   local w=self.r*2
-  local p=self.pwr/MAXV
+  local p=self.pwr/10
   local n=floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then

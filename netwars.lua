@@ -176,7 +176,7 @@ end
 
 function add_G(x,y,pwr)
   local o=Generator:new(nil,x,y)
-  o.pwr=pwr>MAXV and MAXV or pwr
+  o.pwr=min(10,pwr)
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
     o.dt=math.random()*2
