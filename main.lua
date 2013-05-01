@@ -667,8 +667,9 @@ function main_update(dt)
   local ldt=dt
   if replay then
     ldt=dt*repx
-    rep_proc(ldt)
-    reptime=reptime+ldt
+    if rep_proc(ldt) then
+      reptime=reptime+ldt
+    end
   else
     net_proc()
     srvts=srvts+dt

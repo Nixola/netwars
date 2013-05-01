@@ -479,22 +479,23 @@ end
 
 function rep_proc(dt)
   if repend then
-    return
+    return false
   end
   rep_dt=rep_dt-dt
   if rep_dt>0 then
-    return
+    return true
   end
   rep_parse(rep_m)
   local s=replay()
   if not s then
     repend=true
     console.msg("replay has ended.")
-    return
+    return false
   end
   local t=str_split(s,"@")
   local ts=tonumber(t[1])
   rep_dt=ts-msg_ts
   msg_ts=ts
   rep_m=t[2]
+  return true
 end
