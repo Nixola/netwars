@@ -168,7 +168,6 @@ function init_update(dt)
     readline.cr=not readline.cr
   end
   if init_st==3 then
-    net_err=nil
     net_conn(addr,nick)
     init_st=9
   end

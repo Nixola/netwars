@@ -3,8 +3,8 @@
 require "socket"
 
 local sock
-local sendq=squeue()
-local recvq=rqueue()
+local sendq
+local recvq
 local seq=0
 local allsocks
 local insync=false
@@ -12,12 +12,27 @@ local timeout=0
 love.filesystem.mkdir("replays")
 local rep=love.filesystem.newFile("replays/lastreplay")
 
+local function init_vars()
+  ME=nil
+  players=ctable()
+  devices=ctable()
+  links=storage()
+  packets=storage()
+  shots=storage()
+  hash=sphash(200)
+end
+
 function net_conn(addr,nick)
+  net_err=nil
+  sendq=squeue()
+  recvq=rqueue()
+  init_vars()
   sock=socket.udp()
   allsocks={sock}
   local ts=socket.gettime()
   timeout=ts+5
   seq=1
+  insync=false
   if not sock:setpeername(addr,6352) then
     net_err="host not found"
     return
@@ -463,6 +478,7 @@ local repend=false
 function rep_init()
   local s=replay()
   local t=str_split(s,"@")
+  init_vars()
   msg_ts=tonumber(t[1])
   rep_parse(t[2])
   s=replay()

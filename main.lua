@@ -107,12 +107,6 @@ function eye.drag()
 end
 
 ME=nil
-players=ctable()
-devices=ctable()
-links=storage()
-packets=storage()
-shots=storage()
-hash=sphash(200)
 allies={}
 
 buydevs={}
