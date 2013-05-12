@@ -18,7 +18,10 @@ function net_conn(addr,nick)
   local ts=socket.gettime()
   timeout=ts+5
   seq=1
-  sock:setpeername(addr,6352)
+  if not sock:setpeername(addr,6352) then
+    net_err="host not found"
+    return
+  end
   sock:send(string.format("PLr:%s:%s",nick,NVER))
   rep:open("w")
 end
