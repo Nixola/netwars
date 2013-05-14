@@ -708,7 +708,9 @@ function main_update(dt)
       shots:del(s)
     end
   end
-  devs_proc(ldt)
+  if not replay then
+    devs_proc(ldt)
+  end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
