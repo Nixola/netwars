@@ -107,12 +107,6 @@ function eye.drag()
 end
 
 ME=nil
-players=ctable()
-devices=ctable()
-links=storage()
-packets=storage()
-shots=storage()
-hash=sphash(200)
 allies={}
 
 buydevs={}
@@ -656,8 +650,8 @@ function devs_proc(dt)
       end
       if not o.deleted and o.online and o.logic then
         o.dt=o.dt+dt
-        if o.dt>=2.0 then
-          o.dt=o.dt-2.0
+        if o.dt>=TCK then
+          o.dt=o.dt-TCK
           o:logic()
         end
       else
@@ -671,8 +665,9 @@ function main_update(dt)
   local ldt=dt
   if replay then
     ldt=dt*repx
-    rep_proc(ldt)
-    reptime=reptime+ldt
+    if rep_proc(ldt) then
+      reptime=reptime+ldt
+    end
   else
     net_proc()
     srvts=srvts+dt
@@ -717,7 +712,9 @@ function main_update(dt)
       shots:del(s)
     end
   end
-  devs_proc(ldt)
+  if not replay then
+    devs_proc(ldt)
+  end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1

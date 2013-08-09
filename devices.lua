@@ -1,9 +1,11 @@
 -- vim:et
 
-NVER="master 13" -- network protocol version
+NVER="master 14" -- network protocol version
 
+TCK=3.0
 VCASH=3000 -- vault cash storage
-MAXV=10 -- max pkt value
+MAXV=30 -- max pkt value - routers
+MAXH=10 -- max pkt value - health and towers
 LINK=300 -- max link dinstance
 LINK2=LINK+2
 SHOTR=250 -- shot length

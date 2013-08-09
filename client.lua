@@ -3,8 +3,8 @@
 require "socket"
 
 local sock
-local sendq=squeue()
-local recvq=rqueue()
+local sendq
+local recvq
 local seq=0
 local allsocks
 local insync=false
@@ -12,13 +12,31 @@ local timeout=0
 love.filesystem.mkdir("replays")
 local rep=love.filesystem.newFile("replays/lastreplay")
 
+local function init_vars()
+  ME=nil
+  players=ctable()
+  devices=ctable()
+  links=storage()
+  packets=storage()
+  shots=storage()
+  hash=sphash(200)
+end
+
 function net_conn(addr,nick)
+  net_err=nil
+  sendq=squeue()
+  recvq=rqueue()
+  init_vars()
   sock=socket.udp()
   allsocks={sock}
   local ts=socket.gettime()
   timeout=ts+5
   seq=1
-  sock:setpeername(addr,6352)
+  insync=false
+  if not sock:setpeername(addr,6352) then
+    net_err="host not found"
+    return
+  end
   sock:send(string.format("PLr:%s:%s",nick,NVER))
   rep:open("w")
 end
@@ -460,6 +478,7 @@ local repend=false
 function rep_init()
   local s=replay()
   local t=str_split(s,"@")
+  init_vars()
   msg_ts=tonumber(t[1])
   rep_parse(t[2])
   s=replay()
@@ -479,22 +498,23 @@ end
 
 function rep_proc(dt)
   if repend then
-    return
+    return false
   end
   rep_dt=rep_dt-dt
   if rep_dt>0 then
-    return
+    return true
   end
   rep_parse(rep_m)
   local s=replay()
   if not s then
     repend=true
     console.msg("replay has ended.")
-    return
+    return false
   end
   local t=str_split(s,"@")
   local ts=tonumber(t[1])
   rep_dt=ts-msg_ts
   msg_ts=ts
   rep_m=t[2]
+  return true
 end

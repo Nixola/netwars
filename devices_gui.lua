@@ -186,7 +186,11 @@ function Device:draw_bar()
   local re=c>=32 and 250-((c-32)*15) or 250
   local gr=c<=24 and c*10 or 250
   if n>0 then
-    graph.setColor(re,gr,0)
+    if self.online then
+      graph.setColor(re,gr,0)
+    else
+      graph.setColor(160,160,160)
+    end
     graph.rectangle("fill",x,y,n,3)
   end
 end
@@ -195,40 +199,20 @@ function Device:draw_sym(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
   if self.hud then
-    if self.buyonce then
-      graph.setColor(0,0,160)
-    else
-      graph.setColor(0,0,255)
-    end
+    graph.setColor(0,0,255)
   elseif not self.pl then
     if self.cl=="G" then
       graph.setColor(74,170,196)
     else
-      if self.online then
-        graph.setColor(128,128,128)
-      else
-        graph.setColor(64,64,64)
-      end
+      graph.setColor(96,96,96)
     end
   elseif self.pl==ME then
-    if self.online then
-      graph.setColor(0,0,255)
-    else
-      graph.setColor(0,0,128)
-    end
+    graph.setColor(0,0,255)
   else
     if allies[self.pl] then
-      if self.online then
-        graph.setColor(0,192,0)
-      else
-        graph.setColor(0,128,0)
-      end
+      graph.setColor(0,160,0)
     else
-      if self.online then
-        graph.setColor(255,0,0)
-      else
-        graph.setColor(160,0,0)
-      end
+      graph.setColor(255,0,0)
     end
   end
   graph.circle("fill",x,y,self.r,24)
@@ -406,7 +390,7 @@ end
 
 function Power:draw_st()
   local w=self.r*2
-  local p=self.pwr/MAXV
+  local p=self.pwr/10
   local n=floor(w*p)
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
