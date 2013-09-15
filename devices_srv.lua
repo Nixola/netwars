@@ -103,20 +103,24 @@ function Device:check(dt)
   end
 end
 
+function Device:heal(dev,v)
+  self.health=min(self.health+v,self.maxhealth)
+  dev.pt=1.0
+  self.pt=1.0
+  if dev.maxpkt then
+    dev.pkt=dev.pkt-v
+    mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
+  else
+    mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
+  end
+end
+
 function Device:packet(dev,v)
   if self.deleted then
     return
   end
   if self.health<self.maxhealth then
-    self.health=min(self.health+v,self.maxhealth)
-    dev.pt=1.0
-    self.pt=1.0
-    if dev.maxpkt then
-      dev.pkt=dev.pkt-v
-      mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
-    else
-      mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
-    end
+    self:heal(dev,v)
     return
   end
   if not self.maxpkt then
@@ -138,12 +142,7 @@ function Vault:packet(dev,v)
     return
   end
   if self.health<self.maxhealth then
-    self.health=min(self.health+v,self.maxhealth)
-    if dev.maxpkt then
-      mput("Ph:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
-    else
-      mput("Ph:%d:%d::%d",dev.idx,self.idx,self.health)
-    end
+    self:heal(dev,v)
     return
   end
   local pl=self.pl
@@ -256,27 +255,119 @@ function Tower:shot(targ)
   self.pkt=self.pkt-3
   targ.pt=1.0
   targ.health=targ.health-10
+  if targ.isdev then
+    if targ.health<1 then
+      targ:delete()
+      cput("TD:%d:%d:%d",self.idx,targ.idx,self.pkt)
+      devices:del(targ)
+    else
+      mput("TH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+    end
+    return
+  end
   if targ.health<1 then
     targ:delete()
     cput("Td:%d:%d:%d",self.idx,targ.idx,self.pkt)
-    devices:del(targ)
+    units:del(targ)
   else
     mput("Th:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
   end
 end
 
 function Tower:logic()
-  if self.pl then
-    return
-  end
   if self.pkt<3 then
     return
   end
-  local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ=nil
   local tlen=SHOTR
   local tx,ty,len
-  local e=self.ec
+  for _,u in pairs(t) do
+    if u~=self and u.pl~=self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=sqrt(tx*tx+ty*ty)
+      if len<tlen then
+        targ=u
+        tlen=len
+        break
+      end
+    end
+  end
+  if targ then
+    self:shot(targ)
+    return
+  end
+  t=dhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  targ=nil
+  tlen=SHOTR
+  for _,o in pairs(t) do
+    if o.pl~=self.pl and o.initok and o.cl~="G" then
+      tx,ty=o.x-self.x,o.y-self.y
+      len=sqrt(tx*tx+ty*ty)
+      if len<tlen then
+        targ=o
+        tlen=len
+      end
+    end
+  end
+  if targ then
+    self:shot(targ)
+  end
+end
+
+function Tank:shot(targ)
+  local tx,ty=targ.x-self.x,targ.y-self.y
+  if sqrt(tx*tx+ty*ty)>=SHOTR then
+    return
+  end
+  self.pkt=self.pkt-3
+  targ.health=targ.health-10
+  if targ.isdev then
+    targ.pt=1.0
+    if targ.health<1 then
+      targ:delete()
+      cput("SD:%d:%d:%d",self.idx,targ.idx,self.pkt)
+      devices:del(targ)
+    else
+      mput("SH:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+    end
+    return
+  end
+  if targ.health<1 then
+    targ:delete()
+    cput("Sd:%d:%d:%d",self.idx,targ.idx,self.pkt)
+    units:del(targ)
+  else
+    mput("Sh:%d:%d:%d:%d",self.idx,targ.idx,self.pkt,targ.health)
+  end
+end
+
+function Tank:logic()
+  if self.pkt<3 then
+    return
+  end
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local targ=nil
+  local tlen=SHOTR
+  local tx,ty,len
+  for _,u in pairs(t) do
+    if u~=self and u.pl~=self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=sqrt(tx*tx+ty*ty)
+      if len<tlen then
+        targ=u
+        tlen=len
+        break
+      end
+    end
+  end
+  if targ then
+    self:shot(targ)
+    return
+  end
+  t=dhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  targ=nil
+  tlen=SHOTR
   for _,o in pairs(t) do
     if o.pl~=self.pl and o.initok and o.cl~="G" then
       tx,ty=o.x-self.x,o.y-self.y

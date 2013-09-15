@@ -62,11 +62,16 @@ end
 
 function init_gui()
   local o
-  local cl={"R","T","V"}
+  local cl={"R","t","V"}
   local x=25
   local objs={}
   for i,v in ipairs(cl) do
-    o=d_cl[v]:new(nil,x,eye.sy-25)
+    if d_cl[v] then
+      o=d_cl[v]:new(nil,x,eye.sy-25)
+    end
+    if u_cl[v] then
+      o=u_cl[v]:new(nil,x,eye.sy-25)
+    end
     o.hud=true
     objs[i]=o
     x=x+40

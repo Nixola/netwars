@@ -484,3 +484,62 @@ function rqueue(sz)
   end
   return object
 end
+
+function runqueue()
+  local object={}
+  object.len=0
+  object.seq=0
+  function object:put(o,ts,dt)
+    local t={}
+    t.val=o
+    t.ts=ts+dt
+    if not self.tail then
+      self.head=t
+      self.tail=t
+      return
+    end
+    self.tail.link=t
+    self.tail=t
+    return
+  end
+  function object:del()
+    if not self.last then
+      return
+    end
+    if self.last==self.tail then
+      self.head=nil
+      self.tail=nil
+    else
+      self.last.link=nil
+      self.tail=self.last
+    end
+    self.last=nil
+  end
+  function object:iter(_ts,_dt)
+    local p=self.head
+    local ts=_ts
+    local dt=_dt
+    return function()
+      while p do
+        self.last=nil
+        if ts<p.ts then
+          return nil
+        end
+        p.ts=ts+dt
+        local v=p.val
+        self.last=self.tail
+        self.tail.link=p
+        self.tail=p
+        p=p.link
+        self.tail.link=nil
+        self.head=p
+        return v
+      end
+      if not self.head then
+        self.head=self.tail
+      end
+      return nil
+    end
+  end
+  return object
+end

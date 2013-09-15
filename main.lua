@@ -116,7 +116,7 @@ local reptime=0
 local drag=nil
 local bdrag=nil
 local bdev=nil
-local targ=nil
+local move=nil
 local hover=nil
 local hint=nil
 local hover_dt=0
@@ -128,7 +128,7 @@ local scoreboard=false
 local repx=1
 
 local function get_device(x,y)
-  local t=hash:get(x,y)
+  local t=dhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) then
       return o
@@ -138,7 +138,17 @@ local function get_device(x,y)
 end
 
 local function get_my_dev(x,y)
-  local t=hash:get(x,y)
+  local t=dhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl==ME then
+      return o
+    end
+  end
+  return nil
+end
+
+local function get_my_unit(x,y)
+  local t=uhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl==ME then
       return o
@@ -157,7 +167,17 @@ local function get_buydev(x,y)
 end
 
 local function get_enemy_dev(x,y)
-  local t=hash:get(x,y)
+  local t=dhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) and o.pl~=ME then
+      return o
+    end
+  end
+  return nil
+end
+
+local function get_enemy_unit(x,y)
+  local t=uhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) and o.pl~=ME then
       return o
@@ -215,7 +235,12 @@ function main_mousepressed(mx,my,b)
   end
   if b=="l" then
     if not replay then
-      local obj=get_my_dev(x,y)
+      local obj=get_my_unit(x,y)
+      if obj then
+        move=obj
+        return
+      end
+      obj=get_my_dev(x,y)
       if obj then
         if kshift then
           obj:net_switch()
@@ -238,11 +263,7 @@ function main_mousepressed(mx,my,b)
     if not replay then
       local obj=get_device(x,y)
       if obj and (obj.pl==ME or obj.cl=="G") then
-        if obj.set_targ then
-          targ=obj
-        else
-          conn=obj
-        end
+        conn=obj
       end
     end
     return
@@ -296,23 +317,10 @@ function main_mousereleased(mx,my,b)
     end
     return
   end
-  if targ then
-    if b=="r" then
-      local dev=get_device(x,y)
-      if not dev then
-        targ:set_targ(nil)
-        targ=nil
-        return
-      end
-      if targ==dev then
-        if targ.pl==ME then
-          menu=targ.menu
-        end
-        targ=nil
-        return
-      end
-      targ:set_targ(dev)
-      targ=nil
+  if move then
+    if b=="l" then
+      move:net_move(x,y)
+      move=nil
     end
     return
   end
@@ -361,15 +369,15 @@ function main_keypressed(key,ch)
     return
   end
   if not replay then
-    if key=="1" or key=="kp1" or key=="r" then
+    if key=="1" or key=="kp1" then
       bdev=buydevs[buyidx][1]
       return
     end
-    if key=="2" or key=="kp2" or key=="t" then
+    if key=="2" or key=="kp2" then
       bdev=buydevs[buyidx][2]
       return
     end
-    if key=="3" or key=="kp3" or key=="v" then
+    if key=="3" or key=="kp3" then
       bdev=buydevs[buyidx][3]
       return
     end
@@ -537,37 +545,47 @@ function main_draw()
   local sy=eye.cy/eye.s
   local x1,y1=-eye.vx-sx,-eye.vy-sy
   local x2,y2=-eye.vx+sx,-eye.vy+sy
-  local h=hash:get(x1,y1,x2,y2)
+  local hd=dhash:get(x1,y1,x2,y2)
+  local hu=uhash:get(x1,y1,x2,y2)
   graph.setLineStipple(ls[lsi])
+  -- draw links
   for _,o in pairs(links) do
-    if h[o.dev1] or h[o.dev2] then
+    if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
   end
   graph.setLineStipple()
+  -- draw packets
   if eye.s>0.4 then
     for _,o in pairs(packets) do
-      if h[o.dev1] or h[o.dev2] then
+      if hd[o.dev1] or hd[o.dev2] then
         o:draw()
       end
     end
   end
   -- draw devices
-  for _,o in pairs(h) do
+  for _,o in pairs(hd) do
     o:draw()
   end
   if drag or bdrag or bdev then
     local d=drag or bdrag or bdev
-    for _,o in pairs(h) do
+    for _,o in pairs(hd) do
       if o~=d then
         o:draw_cborder()
       end
     end
   end
+  -- draw units
+  for _,o in pairs(hu) do
+    o:draw()
+  end
   -- draw shots
   if eye.s>0.4 then
+    local ok1,ok2
     for _,o in pairs(shots) do
-      if h[o.obj1] or h[o.obj2] then
+      ok1=o.obj1.isdev and hd[o.obj1] or hu[o.obj1]
+      ok2=o.obj2.isdev and hd[o.obj2] or hu[o.obj2]
+      if ok1 or ok2 then
         o:draw()
       end
     end
@@ -613,13 +631,6 @@ function main_draw()
     cmd=true
     bdev:drag(mox,moy)
   end
-  if targ then
-    cmd=true
-    targ:draw_rng()
-    graph.setColor(0,0,255)
-    graph.setLine(1,"rough")
-    graph.line(targ.x,targ.y,mox,moy)
-  end
   if not cmd and hint and hint.pl==ME then
     hint:draw_rng()
   end
@@ -641,9 +652,6 @@ local flow_dt=0
 function devs_proc(dt)
   for _,o in pairs(devices) do
     if o.pl==ME then
-      if o.targ and o.targ.deleted then
-        o.targ=nil
-      end
       if not o.deleted and o.online and o.logic then
         o.dt=o.dt+dt
         if o.dt>=TCK then
@@ -691,9 +699,11 @@ function main_update(dt)
     else
       hover=nil
       if eye.s<0.6 then
-        hint=get_enemy_dev(mox,moy)
+        local obj=get_enemy_dev(mox,moy)
+        hint=obj or get_enemy_unit(mox,moy)
       else
-        hint=get_my_dev(mox,moy)
+        local obj=get_my_dev(mox,moy)
+        hint=obj or get_my_unit(mox,moy)
       end
     end
   end
@@ -747,8 +757,10 @@ local function set_cl_fonts(imgfont)
   img=love.image.newImageData(16,16)
   img:paste(imgfont,0,0,64,8,16,16)
   d_cl.T.img=graph.newImage(img)
+  img=love.image.newImageData(8,8)
+  img:paste(imgfont,0,0,4,36,8,8)
+  u_cl.t.img=graph.newImage(img)
 end
-
 
 function love.load()
   if load_conf() then

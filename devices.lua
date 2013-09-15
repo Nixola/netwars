@@ -1,14 +1,15 @@
 -- vim:et
 
-NVER="master 14" -- network protocol version
+NVER="master 15" -- network protocol version
 
 TCK=3.0
 VCASH=3000 -- vault cash storage
 MAXV=30 -- max pkt value - routers
-MAXH=10 -- max pkt value - health and towers
+MAXH=10 -- max pkt value - health, towers and tanks
 LINK=300 -- max link dinstance
 LINK2=LINK+2
-SHOTR=250 -- shot length
+MOVER=500 -- move length
+SHOTR=200 -- shot length
 
 class "Player"
 
@@ -33,7 +34,7 @@ function Player:disconnect()
     if o.pl==self then
       o:del_links()
       devices[k]=nil
-      hash:del(o)
+      dhash:del(o)
       o.deleted=true
     end
   end
@@ -56,7 +57,6 @@ function Device:initialize(pl,x,y)
   self.pt=0 -- dt for packet on wire (server side)
   self.pc=0 -- packet cnt on wire (client side)
   self.pkt=0 -- packets in queue
-  self.targ=nil -- manual target (device)
   self.lupd=false -- link update
   self.gotpwr=false -- connected to base
   self.attch=false -- D attached to base
@@ -120,7 +120,7 @@ function Device:calc_xy(x,y)
 end
 
 function Device:chk_border(x,y)
-  local t=hash:get(self:bound_box(x,y))
+  local t=dhash:get(self:bound_box(x,y))
   local ok=true
   local len,vx,vy
   local br
@@ -144,10 +144,10 @@ function Device:move(x,y)
   end
   x,y=self:calc_xy(x,y)
   if self:chk_border(x,y) then
-    hash:del(self)
+    dhash:del(self)
     self.x=x
     self.y=y
-    hash:add(self)
+    dhash:add(self)
     return true
   end
   return false
@@ -287,7 +287,7 @@ function Device:delete()
       self:update("delete")
     end
   end
-  hash:del(self)
+  dhash:del(self)
   self.deleted=true
 end
 
@@ -296,6 +296,106 @@ class "Link"
 function Link:initialize(d1,d2)
   self.dev1=d1
   self.dev2=d2
+end
+
+class "Unit" {
+r=7;
+}
+
+function Unit:initialize(pl,x,y)
+  self.pl=pl
+  self.x=x
+  self.y=y
+  self.isdev=false
+  self.pkt=0 -- packets in queue
+  self.dt=0 -- dt for logic
+  self.health=self.maxhealth
+end
+
+function Unit:bound_box(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  return x-self.r,y-self.r,x+self.r,y+self.r
+end
+
+function Unit:calc_xy(x,y)
+  local vx,vy=x-self.x,y-self.y
+  local len=floor(sqrt(vx*vx+vy*vy))
+  if len>MOVER then
+    local s=(len-MOVER)/len
+    vx,vy=vx*s,vy*s
+    x,y=x-vx,y-vy
+  end
+  x,y=floor(x),floor(y)
+  return x,y
+end
+
+function Unit:chk_supply(x,y)
+  local t=dhash:get(self:bound_box(x,y))
+  local ok=false
+  local len,vx,vy
+  for _,d in pairs(t) do
+    if d.cl=="R" and self.pl==d.pl then
+      vx,vy=x-d.x,y-d.y
+      len=floor(sqrt(vx*vx+vy*vy))
+      if len<=SHOTR then
+        ok=true
+        break
+      end
+    end
+  end
+  return ok
+end
+
+function Unit:move(x,y)
+  x,y=self:calc_xy(x,y)
+  local vx,vy=x-self.x,y-self.y
+  local len=sqrt(vx*vx+vy*vy)
+  if len<=self.r then
+    self.vx=nil
+    self.vy=nil
+    return false
+  end
+  self.dist=floor(len)
+  self.ix=self.x
+  self.iy=self.y
+  self.tx=self.x
+  self.ty=self.y
+  self.vx=vx/len*self.speed
+  self.vy=vy/len*self.speed
+  self.mx=x
+  self.my=y
+  return true
+end
+
+function Unit:step(dt)
+  if not (self.vx and self.vy) then
+    return false
+  end
+  local x=self.tx+self.vx*dt
+  local y=self.ty+self.vy*dt
+  local tx,ty=x-self.ix,y-self.iy
+  local len=sqrt(tx*tx+ty*ty)
+  uhash:del(self)
+  if len>=self.dist then
+    self.x=self.mx
+    self.y=self.my
+    self.vx=nil
+    self.vy=nil
+    uhash:add(self)
+    return true
+  end
+  self.tx=x
+  self.ty=y
+  self.x=floor(x)
+  self.y=floor(y)
+  uhash:add(self)
+  return false
+end
+
+function Unit:delete()
+  uhash:del(self)
+  self.deleted=true
 end
 
 class "Power" : extends(Device) {
@@ -316,7 +416,7 @@ cl="G";
 maxhealth=100;
 maxlinks=3;
 maxblinks=2;
-price=0;
+price=nil;
 }
 
 class "Router" : extends(Device) {
@@ -344,7 +444,17 @@ maxhealth=100;
 maxpkt=100; -- max queue
 maxlinks=0;
 maxblinks=2;
-price=300;
+price=0;
 }
 
 d_cl={B=Base,G=Generator,R=Router,V=Vault,T=Tower}
+
+class "Tank" : extends(Unit) {
+cl="t";
+maxhealth=100;
+maxpkt=100; -- max queue
+speed=25;
+price=300;
+}
+
+u_cl={t=Tank}

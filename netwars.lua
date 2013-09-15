@@ -16,8 +16,13 @@ dirty=false
 player_cnt=0
 players=ctable()
 devices=ctable()
+units=ctable()
 links=storage()
-hash=sphash(200)
+dhash=sphash(200)
+uhash=sphash(100)
+rq_d=runqueue()
+rq_u=runqueue()
+rq_um=runqueue()
 
 local sock=socket.udp()
 local iptab={}
@@ -181,7 +186,7 @@ function add_G(x,y,pwr)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -194,7 +199,7 @@ function add_R(x,y,ec)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -206,7 +211,7 @@ function add_T(x,y,ec)
     o.idx=devices:add(o)
     o.dt=math.random()*2
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -234,8 +239,8 @@ if arg[1] then
 end
 
 local ret
-local tm=socket.gettime()
-local ts,dt
+local ts=socket.gettime()
+local pts=ts+1.0
 local allsocks={sock}
 local q=queue()
 local msg
@@ -244,7 +249,7 @@ while true do
     for _,o in pairs(devices) do
       o:del_links()
       devices:del(o)
-      hash:del(o)
+      dhash:del(o)
     end
     if mapchunk then
       mapchunk()
@@ -252,7 +257,7 @@ while true do
     end
     dirty=false
   end
-  ret=socket.select(allsocks,nil,0.3)
+  ret=socket.select(allsocks,nil,0.1)
   ts=socket.gettime()
   if ret[sock] then
     read_socket(ts)
@@ -271,10 +276,17 @@ while true do
       end
     end
   end
-  if ts>tm+0.25 then
-    dt=ts-tm
-    tm=ts
-    devs_proc(dt)
+  scheduler(ts)
+  if ts>=pts then
+    pts=ts+1.0
+    local t={}
+    for _,o in pairs(players) do
+      t[#t+1]=o.idx
+      t[#t+1]=o.ping*2
+    end
+    if #t>0 then
+      mput("PINGS:%s",table.concat(t,":"))
+    end
   end
   enqueue(q,ctlq)
   ctlq:clear()
@@ -285,11 +297,12 @@ while true do
   end
   for _,o in pairs(players) do
     if o.insync then
-      for p in o.sendq:iter(ts,1.0) do
+      local dt=o.ping>0.1 and o.ping*2.0 or 0.2
+      for p in o.sendq:iter(ts,dt) do
         sock:sendto(p,o.ip,o.port)
       end
     else
-      local p=o.syncq:get(ts,1.0)
+      local p=o.syncq:get(ts,0.5)
       if p then
         sock:sendto(p,o.ip,o.port)
       end
@@ -302,6 +315,12 @@ while true do
       if o.insync then
         sock:sendto(p,o.ip,o.port)
       end
+    end
+  end
+  for _,o in pairs(players) do
+    if o.insync and ts>=o.pts then
+      sock:sendto(string.format("PING:%s:%s",ts,o.ping),o.ip,o.port)
+      o.pts=ts+1.0
     end
   end
 end
