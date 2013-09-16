@@ -487,12 +487,16 @@ end
 
 function runqueue()
   local object={}
+  local hash={}
   object.len=0
-  object.seq=0
-  function object:put(o,ts,dt)
+  function object:add(o,ts,dt)
+    if hash[o] then
+      return
+    end
     local t={}
     t.val=o
     t.ts=ts+dt
+    hash[o]=true
     if not self.tail then
       self.head=t
       self.tail=t
@@ -503,16 +507,19 @@ function runqueue()
     return
   end
   function object:del()
-    if not self.last then
+    local p=self.last
+    if not p then
       return
     end
-    if self.last==self.tail then
+    local o=self.tail
+    if p==o then
       self.head=nil
       self.tail=nil
     else
-      self.last.link=nil
-      self.tail=self.last
+      p.link=nil
+      self.tail=p
     end
+    hash[o]=false
     self.last=nil
   end
   function object:iter(_ts,_dt)
@@ -525,9 +532,13 @@ function runqueue()
         if ts<p.ts then
           return nil
         end
-        p.ts=ts+dt
+        p.ts=ts+dt-(ts-p.ts)
         local v=p.val
         self.last=self.tail
+        if p==self.tail then
+          p=p.link
+          return v
+        end
         self.tail.link=p
         self.tail=p
         p=p.link

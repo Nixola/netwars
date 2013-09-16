@@ -22,6 +22,7 @@ local function init_vars()
   shots=storage()
   dhash=sphash(200)
   uhash=sphash(100)
+  rq_um=runqueue()
 end
 
 function net_conn(addr,nick)
@@ -118,22 +119,25 @@ cmd["ACK"]=function(a,ts)
 end
 
 cmd["PING"]=function(a,ts)
-  if a.n<3 then
+  if a.n<2 then
     return
   end
   sock:send(string.format("PONG:%s",a[2]))
-  srvts=tonumber(a[2])+tonumber(a[3])
   lastsend=ts+5
 end
 
 cmd["PINGS"]=function(a,ts)
+  if a.n<3 then
+    return
+  end
   local c=(a.n+1)/2
   local pl
   for i=2,c do
     pl=players[tonumber(a[i])]
-    pl.showping=tonumber(a[i+1])
+    if pl then
+      pl.showping=a[i+1]
+    end
   end
-  return
 end
 
 cmd["MSG"]=function(a,ts) -- MSG:nick:~msg
@@ -156,6 +160,7 @@ end
 
 cmd["DONE"]=function(a,ts)
   insync=true
+  fakets=socket.gettime()
   net_send("OK")
 end
 
@@ -168,10 +173,11 @@ cmd["PLa"]=function(a,ts) -- PLa:idx:nick:cash
   local pl=Player:new(cash)
   pl.idx=idx
   pl.name=a[3]
+  pl.ping=0
+  pl.showping=0
   players[idx]=pl
   if a[5]=="me" then
     ME=pl
-    srvts=tonumber(a[6])
   end
   if insync or replay then
     console.msg(string.format("%s has connected.",a[3]))
@@ -471,14 +477,13 @@ cmd["Um"]=function(a,ts) -- Move:idx:ts:x:y:x:y
     return
   end
   local o=units[tonumber(a[2])]
-  local ts=tonumber(a[3])
+  local dt=tonumber(a[3])
   local x,y=tonumber(a[6]),tonumber(a[7])
-  uhash:del(o)
   o.x=tonumber(a[4])
   o.y=tonumber(a[5])
   o:move(x,y)
-  o:_step(srvts-ts)
-  uhash:add(o)
+  rq_um:add(o,fakets,0.01)
+  o:step(dt)
 end
 
 cmd["Up"]=function(a,ts) -- Move:idx:x,y
@@ -493,6 +498,34 @@ cmd["Up"]=function(a,ts) -- Move:idx:x,y
   uhash:add(o)
   o.vx=nil
   o.vy=nil
+end
+
+cmd["Pu"]=function(a,ts) -- Support:d1:u2:pkt:pkt
+  if a.n<5 then
+    return
+  end
+  local d1=devices[tonumber(a[2])]
+  local u2=units[tonumber(a[3])]
+  if d1 and u2 then
+    d1.pkt=tonumber(a[4]) or 0
+    u2.pkt=tonumber(a[5])
+    local p=Packet:new(d1,u2)
+    packets:add(p)
+  end
+end
+
+cmd["Phu"]=function(a,ts) -- Health:d1:d2:pkt:health
+  if a.n<5 then
+    return
+  end
+  local d1=devices[tonumber(a[2])]
+  local u2=devices[tonumber(a[3])]
+  if d1 and u2 then
+    d1.pkt=tonumber(a[4]) or 0
+    u2.health=tonumber(a[5])
+    local p=Packet:new(d1,u2)
+    packets:add(p)
+  end
 end
 
 cmd["Sh"]=function(a,ts) -- Hit:u1:u2:pkt:health

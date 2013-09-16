@@ -75,7 +75,7 @@ function Device:chk_devs()
   return true
 end
 
-function Device:check(dt)
+function Device:check()
   if self.deleted then
     return
   end
@@ -206,8 +206,40 @@ function Power:logic()
   self.li=i
 end
 
+function Router:chk_units()
+  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local tx,ty,len,v
+  local ok=false
+  for _,u in pairs(t) do
+    if u.pl==self.pl then
+      tx,ty=u.x-self.x,u.y-self.y
+      len=sqrt(tx*tx+ty*ty)
+      if len<SHOTR then
+        v=nil
+        if u.health<u.maxhealth then
+          v=u.maxhealth-u.health
+        elseif u.maxpkt and u.pkt<u.maxpkt then
+          v=u.maxpkt-u.pkt
+        end
+        if v then
+          v=min(MAXH,self.pkt,v)
+          u:packet(self,v)
+          ok=true
+        end
+      end
+    end
+    if self.pkt<1 then
+      break
+    end
+  end
+  return ok
+end
+
 function Router:logic()
   if self.pkt<1 then
+    return
+  end
+  if self:chk_units() then
     return
   end
   local i,d,l,c,e,v
@@ -253,9 +285,9 @@ function Tower:shot(targ)
   end
   self.pt=1.0
   self.pkt=self.pkt-3
-  targ.pt=1.0
   targ.health=targ.health-10
   if targ.isdev then
+    targ.pt=1.0
     if targ.health<1 then
       targ:delete()
       cput("TD:%d:%d:%d",self.idx,targ.idx,self.pkt)
@@ -312,6 +344,39 @@ function Tower:logic()
   end
   if targ then
     self:shot(targ)
+  end
+end
+
+function Unit:heal(dev,v)
+  self.health=min(self.health+v,self.maxhealth)
+  dev.pt=1.0
+  self.pt=1.0
+  if dev.maxpkt then
+    dev.pkt=dev.pkt-v
+    mput("Phu:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
+  else
+    mput("Phu:%d:%d::%d",dev.idx,self.idx,self.health)
+  end
+end
+
+function Unit:packet(dev,v)
+  if self.deleted then
+    return
+  end
+  if self.health<self.maxhealth then
+    self:heal(dev,v)
+    return
+  end
+  if not self.maxpkt then
+    return
+  end
+  self.pkt=min(self.pkt+v,self.maxpkt)
+  dev.pt=1.0
+  if dev.maxpkt then
+    dev.pkt=dev.pkt-v
+    mput("Pu:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
+  else
+    mput("Pu:%d:%d::%d",dev.idx,self.idx,self.pkt)
   end
 end
 

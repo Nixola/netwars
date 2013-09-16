@@ -63,6 +63,7 @@ cmd["B"]=function(pl,a,ts)
     pl.cash=pl.cash-price
     o.idx=units:add(o)
     uhash:add(o)
+    rq_u:add(o,ts,TCK)
     cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
     cput("Un:%d:%s:%d:%d:%d",pl.idx,o.cl,o.idx,o.x,o.y)
   end
@@ -78,7 +79,7 @@ cmd["S"]=function(pl,a,ts) -- Switch:idx:online
   if o and o.initok and o.gotpwr and o.pl==pl then
     o.online=b
     if b then
-      rq_d:put(o,ts,TCK)
+      rq_d:add(o,ts,TCK)
     end
     b=b and 1 or 0
     cput("Ds:%d:%d",idx,b)
@@ -207,7 +208,8 @@ cmd["Um"]=function(pl,a,ts) -- Move:idx:x:y:x:y
   local x,y=tonumber(a[3]),tonumber(a[4])
   if o and o.pl==pl then
     if o:move(x,y) then
-      cput("Um:%d:%s:%d:%d:%d:%d",o.idx,ts,o.x,o.y,o.mx,o.my)
+      rq_um:add(o,ts,0.02)
+      cput("Um:%d:%s:%d:%d:%d:%d",o.idx,pl.ping,o.x,o.y,o.mx,o.my)
     else
       cput("Up:%d:%d:%d",o.idx,o.x,o.y)
     end
@@ -244,9 +246,18 @@ function parse_client(msg,pl,ts)
   end
 end
 
-function scheduler(ts)
+function scheduler(ts,dt)
   for _,o in pairs(devices) do
-    o:check(dt)
+    o.pt=o.pt-dt
+    o:check()
+  end
+  for o in rq_um:iter(ts,0.02) do
+    if o.deleted then
+      rq_um:del()
+    elseif o:step(dt) then
+      rq_um:del()
+      cput("Up:%d:%d:%d",o.idx,o.x,o.y)
+    end
   end
   for o in rq_u:iter(ts,TCK) do
     if not o.deleted then

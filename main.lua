@@ -13,7 +13,7 @@ require "init"
 CVER=1 -- config version
 
 graph=love.graphics
-srvts=0
+fakets=0
 msx,msy=0,0 -- mouse real (screen) position
 omsx,omsy=0,0 -- mouse old real (screen) position
 mox,moy=0,0 -- mouse virtual position
@@ -511,14 +511,15 @@ local function draw_scoreboard()
   for _ in pairs(players) do
     player_count=player_count+1
   end
-  local x,y=eye.cx-250,eye.cy-(padding*(4+player_count))/2
+  local x,y=eye.cx-300,eye.cy-(padding*(4+player_count))/2
   graph.setColor(0,0,120,192)
-  graph.rectangle("fill",x,y,500,padding*(4+player_count))
+  graph.rectangle("fill",x,y,600,padding*(4+player_count))
 
   graph.print("Idx",x+40,y+padding)
   graph.print("Name",x+100,y+padding)
-  graph.print("Cash",x+300,y+padding)
-  graph.print("Devices",x+400,y+padding)
+  graph.print("Ping",x+300,y+padding)
+  graph.print("Cash",x+400,y+padding)
+  graph.print("Devices",x+500,y+padding)
   
   local abs_index = 0
   for i,v in pairs(players) do
@@ -528,8 +529,9 @@ local function draw_scoreboard()
       graph.print("*",x+85,y+(abs_index+2)*padding)
     end
     graph.print(v.name,x+100,y+(abs_index+2)*padding)
-    graph.print(v.cash,x+300,y+(abs_index+2)*padding)
-    graph.print(v.devcnt,x+400,y+(abs_index+2)*padding)
+    graph.print(v.showping,x+300,y+(abs_index+2)*padding)
+    graph.print(v.cash,x+400,y+(abs_index+2)*padding)
+    graph.print(v.devcnt,x+500,y+(abs_index+2)*padding)
   end
 end
 
@@ -569,10 +571,14 @@ function main_draw()
   end
   if drag or bdrag or bdev then
     local d=drag or bdrag or bdev
-    for _,o in pairs(hd) do
-      if o~=d then
-        o:draw_cborder()
+    if d.isdev then
+      for _,o in pairs(hd) do
+        if o~=d then
+          o:draw_cborder()
+        end
       end
+    else
+      d:draw_rng()
     end
   end
   -- draw units
@@ -604,7 +610,7 @@ function main_draw()
       else
         local tx,ty=mox-conn.x,moy-conn.y
         local len=floor(sqrt(tx*tx+ty*ty))
-        conn:draw_rng(x,y)
+        conn:draw_rng()
         if len>LINK then
           graph.setColor(128,128,128)
         else
@@ -631,6 +637,17 @@ function main_draw()
     cmd=true
     bdev:drag(mox,moy)
   end
+  if move then
+    local tx,ty=mox-move.x,moy-move.y
+    local len=floor(sqrt(tx*tx+ty*ty))
+    if len>MOVER then
+      graph.setColor(96,96,96)
+    else
+      move:draw_rng(mox,moy)
+      graph.setColor(192,192,192)
+    end
+    graph.line(move.x,move.y,mox,moy)
+  end
   if not cmd and hint and hint.pl==ME then
     hint:draw_rng()
   end
@@ -649,22 +666,6 @@ end
 
 local flow_dt=0
 
-function devs_proc(dt)
-  for _,o in pairs(devices) do
-    if o.pl==ME then
-      if not o.deleted and o.online and o.logic then
-        o.dt=o.dt+dt
-        if o.dt>=TCK then
-          o.dt=o.dt-TCK
-          o:logic()
-        end
-      else
-        o.dt=0
-      end
-    end
-  end
-end
-
 function main_update(dt)
   local ldt=dt
   if replay then
@@ -674,8 +675,8 @@ function main_update(dt)
     end
   else
     net_proc()
-    srvts=srvts+dt
   end
+  fakets=fakets+ldt
   msx,msy=love.mouse.getPosition()
   mox=msx/eye.s-eye.x
   moy=msy/eye.s-eye.y
@@ -707,6 +708,13 @@ function main_update(dt)
       end
     end
   end
+  for o in rq_um:iter(fakets,0.01) do
+    if o.deleted then
+      rq_um:del()
+    elseif o:step(ldt) then
+      rq_um:del()
+    end
+  end
   for _,p in pairs(packets) do
     if p:flow(ldt) then
       p:delete()
@@ -714,12 +722,9 @@ function main_update(dt)
     end
   end
   for _,s in pairs(shots) do
-    if s:flow(dt) then
+    if s:flow(ldt) then
       shots:del(s)
     end
-  end
-  if not replay then
-    devs_proc(ldt)
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then

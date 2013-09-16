@@ -4,13 +4,13 @@ local pi2=math.pi*2
 
 class "Packet"
 
-function Packet:initialize(d1,d2,sig)
+function Packet:initialize(d1,d2)
   local vx,vy=d2.x-d1.x,d2.y-d1.y
   local l=sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
   self.pl=d2.pl
-  self.sig=sig or false
+  self.tou=not d2.isdev
   vx,vy=vx/l,vy/l
   self.x1=d1.x+vx*d1.r
   self.y1=d1.y+vy*d1.r
@@ -31,7 +31,9 @@ function Packet:initialize(d1,d2,sig)
   self.dt=0
   self.cnt=1
   d1.pc=d1.pc+1
-  d2.pc=d2.pc+1
+  if not self.tou then
+    d2.pc=d2.pc+1
+  end
   if self.pl==ME then
     ME.pkts=ME.pkts+1
   end
@@ -41,13 +43,18 @@ function Packet:delete()
   local d1=self.dev1
   local d2=self.dev2
   d1.pc=d1.pc-1
-  d2.pc=d2.pc-1
+  if not self.tou then
+    d2.pc=d2.pc-1
+  end
   if self.pl==ME then
     ME.pkts=ME.pkts-1
   end
 end
 
 function Packet:flow(dt)
+  if self.tou then
+    dt=dt*1.5
+  end
   self.ttl=self.ttl-dt*400
   self.dt=self.dt+dt
   if self.dt>=0.05 then
@@ -60,7 +67,7 @@ end
 function Packet:draw()
   local col={0,0,0}
   local i=2
-  if self.sig then
+  if self.tou then
     i=self.pl==ME and 3 or 1
   end
   graph.setLine(2,"smooth")
@@ -287,7 +294,6 @@ end
 function Device:switch(b)
   self.online=b
   self.li=1
-  self.dt=0
   if b then
     self.menu:switch("Online","Offline")
   else
@@ -441,12 +447,12 @@ function Unit:draw_rng(_x,_y)
   local x=_x or self.x
   local y=_y or self.y
   graph.setLine(1,"rough")
-  if self.cl=="s" or self.cl=="e" or self.cl=="c" then
-    graph.setColor(0,0,255)
-    graph.circle("line",x,y,BEAMR,24)
-  end
-  if self.cl=="t" or self.cl=="c" then
-    graph.setColor(255,0,0)
+  if self.cl=="t" then
+    if self.hud then
+      graph.setColor(0,0,255)
+    else
+      graph.setColor(255,0,0)
+    end
     graph.circle("line",x,y,SHOTR,24)
   end
 end
@@ -492,6 +498,7 @@ end
 
 function Unit:drag(x,y)
   self:draw_sym(x,y)
+  self:draw_rng(x,y)
 end
 
 function Unit:is_pointed(x,y)

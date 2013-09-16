@@ -30,6 +30,13 @@ function Player:disconnect()
       end
     end
   end
+  for k,o in pairs(units) do
+    if o.pl==self then
+      units[k]=nil
+      uhash:del(o)
+      o.deleted=true
+    end
+  end
   for k,o in pairs(devices) do
     if o.pl==self then
       o:del_links()
@@ -53,7 +60,6 @@ function Device:initialize(pl,x,y)
   self.initok=false
   self.isdev=true
   self.li=1 -- link index, used to forward packets (cyclic)
-  self.dt=0 -- dt for logic
   self.pt=0 -- dt for packet on wire (server side)
   self.pc=0 -- packet cnt on wire (client side)
   self.pkt=0 -- packets in queue
@@ -308,7 +314,6 @@ function Unit:initialize(pl,x,y)
   self.y=y
   self.isdev=false
   self.pkt=0 -- packets in queue
-  self.dt=0 -- dt for logic
   self.health=self.maxhealth
 end
 
