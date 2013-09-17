@@ -555,34 +555,33 @@ function runqueue()
   end
   function object:iter(_ts,_dt)
     local p=self.head
+    local e=nil
     local ts=_ts
     local dt=_dt
     return function()
-      while p do
-        self.last=nil
-        if ts<p.ts then
-          return nil
-        end
-        local v=p.val
-        local d=ts-p.tm
-        p.tm=ts
-        p.ts=ts+dt-(ts-p.ts)
-        self.last=self.tail
-        if p==self.tail then
-          p=p.link
-          return v,d
-        end
-        self.tail.link=p
-        self.tail=p
+      self.last=nil
+      if not p or p==e or ts<p.ts then
+        return nil
+      end
+      e=e or p
+      local v=p.val
+      local d=ts-p.tm
+      p.tm=ts
+      p.ts=ts+dt-(ts-p.ts)
+      self.last=self.tail
+      if p==self.tail then
         p=p.link
-        self.tail.link=nil
-        self.head=p
         return v,d
       end
+      self.tail.link=p
+      self.tail=p
+      p=p.link
+      self.tail.link=nil
+      self.head=p
       if not self.head then
         self.head=self.tail
       end
-      return nil
+      return v,d
     end
   end
   return object

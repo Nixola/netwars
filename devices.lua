@@ -9,7 +9,8 @@ MAXH=10 -- max pkt value - health, towers and tanks
 LINK=300 -- max link dinstance
 LINK2=LINK+2
 MOVER=500 -- move length
-SHOTR=200 -- shot length
+SHOTR=200 -- shot and supply length
+SHOTT=250 -- tower shot length
 
 class "Player"
 

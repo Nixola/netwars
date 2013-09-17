@@ -53,9 +53,10 @@ end
 
 function Packet:flow(dt)
   if self.tou then
-    dt=dt*1.5
+    self.ttl=self.ttl-dt*600
+  else
+    self.ttl=self.ttl-dt*400
   end
-  self.ttl=self.ttl-dt*400
   self.dt=self.dt+dt
   if self.dt>=0.05 then
     self.dt=self.dt-0.05
@@ -259,7 +260,7 @@ function Device:draw_rng(_x,_y,_drag)
     end
     if self.cl=="T" then
       graph.setColor(255,0,0)
-      graph.circle("line",x,y,SHOTR,24)
+      graph.circle("line",x,y,SHOTT,24)
     end
     return
   end
@@ -276,7 +277,7 @@ function Device:draw_rng(_x,_y,_drag)
   if self.cl=="T" then
     graph.setLine(1,"rough")
     graph.setColor(255,0,0)
-    graph.circle("line",x,y,SHOTR,24)
+    graph.circle("line",x,y,SHOTT,24)
   end
 end
 
@@ -472,11 +473,6 @@ function Unit:draw()
   if eye.s>0.4 then
     self:draw_bar()
   end
-  if self.pl==ME and self.targ then
-    graph.setColor(0,0,192)
-    graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.targ.x,self.targ.y)
-  end
   if self.pl==ME and self.vx and self.vy then
     graph.setColor(192,192,192)
     graph.setLine(1,"rough")
@@ -586,11 +582,6 @@ function Tower:draw()
   self:super("draw")
   if eye.s>0.4 then
     self:draw_st()
-  end
-  if self.pl==ME and self.targ then
-    graph.setColor(0,0,192)
-    graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.targ.x,self.targ.y)
   end
 end
 

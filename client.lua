@@ -500,7 +500,7 @@ cmd["Up"]=function(a,ts) -- Move:idx:x,y
   o.vy=nil
 end
 
-cmd["Pu"]=function(a,ts) -- Support:d1:u2:pkt:pkt
+cmd["Ps"]=function(a,ts) -- Support:d1:u2:pkt:pkt
   if a.n<5 then
     return
   end
@@ -514,12 +514,12 @@ cmd["Pu"]=function(a,ts) -- Support:d1:u2:pkt:pkt
   end
 end
 
-cmd["Phu"]=function(a,ts) -- Health:d1:d2:pkt:health
+cmd["Pu"]=function(a,ts) -- Health:d1:u2:pkt:health
   if a.n<5 then
     return
   end
   local d1=devices[tonumber(a[2])]
-  local u2=devices[tonumber(a[3])]
+  local u2=units[tonumber(a[3])]
   if d1 and u2 then
     d1.pkt=tonumber(a[4]) or 0
     u2.health=tonumber(a[5])

@@ -280,7 +280,7 @@ end
 
 function Tower:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=SHOTR then
+  if sqrt(tx*tx+ty*ty)>SHOTT then
     return
   end
   self.pt=1.0
@@ -310,9 +310,9 @@ function Tower:logic()
   if self.pkt<3 then
     return
   end
-  local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local t=uhash:get(self.x-SHOTT,self.y-SHOTT,self.x+SHOTT,self.y+SHOTT)
   local targ=nil
-  local tlen=SHOTR
+  local tlen=SHOTT
   local tx,ty,len
   for _,u in pairs(t) do
     if u~=self and u.pl~=self.pl then
@@ -321,7 +321,6 @@ function Tower:logic()
       if len<tlen then
         targ=u
         tlen=len
-        break
       end
     end
   end
@@ -329,9 +328,9 @@ function Tower:logic()
     self:shot(targ)
     return
   end
-  t=dhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  t=dhash:get(self.x-SHOTT,self.y-SHOTT,self.x+SHOTT,self.y+SHOTT)
   targ=nil
-  tlen=SHOTR
+  tlen=SHOTT
   for _,o in pairs(t) do
     if o.pl~=self.pl and o.initok and o.cl~="G" then
       tx,ty=o.x-self.x,o.y-self.y
@@ -353,9 +352,9 @@ function Unit:heal(dev,v)
   self.pt=1.0
   if dev.maxpkt then
     dev.pkt=dev.pkt-v
-    mput("Phu:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
+    mput("Pu:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.health)
   else
-    mput("Phu:%d:%d::%d",dev.idx,self.idx,self.health)
+    mput("Pu:%d:%d::%d",dev.idx,self.idx,self.health)
   end
 end
 
@@ -374,15 +373,15 @@ function Unit:packet(dev,v)
   dev.pt=1.0
   if dev.maxpkt then
     dev.pkt=dev.pkt-v
-    mput("Pu:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
+    mput("Ps:%d:%d:%d:%d",dev.idx,self.idx,dev.pkt,self.pkt)
   else
-    mput("Pu:%d:%d::%d",dev.idx,self.idx,self.pkt)
+    mput("Ps:%d:%d::%d",dev.idx,self.idx,self.pkt)
   end
 end
 
 function Tank:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>=SHOTR then
+  if sqrt(tx*tx+ty*ty)>SHOTR then
     return
   end
   self.pkt=self.pkt-3
@@ -422,7 +421,6 @@ function Tank:logic()
       if len<tlen then
         targ=u
         tlen=len
-        break
       end
     end
   end
