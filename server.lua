@@ -251,10 +251,10 @@ function scheduler(ts,dt)
     o.pt=o.pt-dt
     o:check()
   end
-  for o in rq_um:iter(ts,0.02) do
+  for o,d in rq_um:iter(ts,0.1) do
     if o.deleted then
       rq_um:del()
-    elseif o:step(dt) then
+    elseif o:step(d) then
       rq_um:del()
       cput("Up:%d:%d:%d",o.idx,o.x,o.y)
     end

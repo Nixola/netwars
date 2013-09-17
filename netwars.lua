@@ -188,6 +188,7 @@ function add_G(x,y,pwr)
   o.pwr=min(10,pwr)
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
+    o.dt=random()*TCK
     o.online=true
     dhash:add(o)
     return o
@@ -200,6 +201,7 @@ function add_R(x,y,ec)
   o.ec=ec>o.em and o.em or ec
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
+    o.dt=random()*TCK
     o.online=true
     dhash:add(o)
     return o
@@ -211,6 +213,7 @@ function add_T(x,y,ec)
   local o=Tower:new(nil,x,y)
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
+    o.dt=random()*TCK
     o.online=true
     dhash:add(o)
     return o
@@ -230,8 +233,8 @@ local function mapinit(ts)
     end
   end
   for _,o in pairs(devices) do
-    if o.online and o.logic then
-      rq_d:add(o,ts,random()*TCK)
+    if o.logic and o.online then
+      rq_d:put(o,ts,o.dt)
     end
   end
 end

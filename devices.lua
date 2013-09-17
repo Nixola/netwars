@@ -305,7 +305,7 @@ function Link:initialize(d1,d2)
 end
 
 class "Unit" {
-r=7;
+r=8;
 }
 
 function Unit:initialize(pl,x,y)
@@ -340,7 +340,7 @@ function Unit:chk_supply(x,y)
   local ok=false
   local len,vx,vy
   for _,d in pairs(t) do
-    if d.cl=="R" and self.pl==d.pl then
+    if d.cl=="R" and self.pl==d.pl and d.gotpwr then
       vx,vy=x-d.x,y-d.y
       len=floor(sqrt(vx*vx+vy*vy))
       if len<=SHOTR then

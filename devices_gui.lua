@@ -253,6 +253,10 @@ function Device:draw_rng(_x,_y,_drag)
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
     graph.circle("line",x,y,LINK,24)
+    if self.cl=="R" then
+      graph.setColor(0,0,255)
+      graph.circle("line",x,y,SHOTR,24)
+    end
     if self.cl=="T" then
       graph.setColor(255,0,0)
       graph.circle("line",x,y,SHOTR,24)
@@ -263,7 +267,13 @@ function Device:draw_rng(_x,_y,_drag)
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
     graph.circle("line",x,y,LINK,24)
-  elseif self.cl=="T" then
+  end
+  if self.cl=="R" then
+    graph.setLine(1,"rough")
+    graph.setColor(0,0,255)
+    graph.circle("line",x,y,SHOTR,24)
+  end
+  if self.cl=="T" then
     graph.setLine(1,"rough")
     graph.setColor(255,0,0)
     graph.circle("line",x,y,SHOTR,24)

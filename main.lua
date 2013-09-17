@@ -708,10 +708,8 @@ function main_update(dt)
       end
     end
   end
-  for o in rq_um:iter(fakets,0.01) do
-    if o.deleted then
-      rq_um:del()
-    elseif o:step(ldt) then
+  for o,d in rq_um:iter(fakets,0.02) do
+    if o.deleted or o:step(d) then
       rq_um:del()
     end
   end
