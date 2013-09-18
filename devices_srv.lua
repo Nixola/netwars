@@ -280,7 +280,7 @@ end
 
 function Tower:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>SHOTT then
+  if targ.deleted or sqrt(tx*tx+ty*ty)>SHOTT then
     return
   end
   self.pt=1.0
@@ -381,7 +381,7 @@ end
 
 function Tank:shot(targ)
   local tx,ty=targ.x-self.x,targ.y-self.y
-  if sqrt(tx*tx+ty*ty)>SHOTR then
+  if targ.deleted or sqrt(tx*tx+ty*ty)>SHOTR then
     return
   end
   self.pkt=self.pkt-3

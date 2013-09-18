@@ -27,7 +27,7 @@ function Packet:initialize(d1,d2)
   self.y2=d1.y+vy*l+ty
   self.x3=d2.x-vx*l-tx
   self.y3=d2.y-vy*l-ty
-  self.ttl=255
+  self.lt=255
   self.dt=0
   self.cnt=1
   d1.pc=d1.pc+1
@@ -52,17 +52,16 @@ function Packet:delete()
 end
 
 function Packet:flow(dt)
-  if self.tou then
-    self.ttl=self.ttl-dt*600
-  else
-    self.ttl=self.ttl-dt*400
-  end
+  self.lt=self.lt-dt*400
   self.dt=self.dt+dt
   if self.dt>=0.05 then
     self.dt=self.dt-0.05
     self.cnt=self.cnt+1
   end
-  return self.ttl<56
+  if self.tou then
+    return self.lt<84
+  end
+  return self.lt<56
 end
 
 function Packet:draw()
@@ -73,27 +72,27 @@ function Packet:draw()
   end
   graph.setLine(2,"smooth")
   if self.cnt>=3 then
-    col[i]=self.ttl-40
+    col[i]=self.lt-40
     graph.setColor(col)
     graph.line(self.x1,self.y1,self.x2,self.y2)
-    col[i]=self.ttl-20
+    col[i]=self.lt-20
     graph.setColor(col)
     graph.line(self.x2,self.y2,self.x3,self.y3)
-    col[i]=self.ttl
+    col[i]=self.lt
     graph.setColor(col)
     graph.line(self.x3,self.y3,self.x4,self.y4)
     return
   end
   if self.cnt==2 then
-    col[i]=self.ttl-20
+    col[i]=self.lt-20
     graph.setColor(col)
     graph.line(self.x1,self.y1,self.x2,self.y2)
-    col[i]=self.ttl
+    col[i]=self.lt
     graph.setColor(col)
     graph.line(self.x2,self.y2,self.x3,self.y3)
     return
   end
-  col[i]=self.ttl
+  col[i]=self.lt
   graph.setColor(col)
   graph.line(self.x1,self.y1,self.x2,self.y2)
 end
