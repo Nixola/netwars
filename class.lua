@@ -574,7 +574,7 @@ function runqueue()
       self.last=self.tail
       c=c+1
       if p==self.tail then
-        p=p.link
+        p=nil
         return v,d
       end
       self.tail.link=p
