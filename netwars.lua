@@ -16,8 +16,13 @@ dirty=false
 player_cnt=0
 players=ctable()
 devices=ctable()
+units=ctable()
 links=storage()
-hash=sphash(200)
+dhash=sphash(200)
+uhash=sphash(100)
+rq_d=runqueue()
+rq_u=runqueue()
+rq_um=runqueue()
 
 local sock=socket.udp()
 local iptab={}
@@ -102,6 +107,10 @@ local function new_client(str,ts,ip,port)
   for _,o in pairs(links) do
     m:put(string.format("Lc:%d:%d",o.dev1.idx,o.dev2.idx))
   end
+  for _,o in pairs(units) do
+    i=o.pl and o.pl.idx or 0
+    m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,o.pkt,o.x,o.y))
+  end
   m:put("DONE")
   enqueue(pl.syncq,m)
   pl.sendq.seq=pl.syncq.seq
@@ -179,9 +188,9 @@ function add_G(x,y,pwr)
   o.pwr=min(10,pwr)
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
-    o.dt=math.random()*2
+    o.dt=random()*TCK
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -192,9 +201,9 @@ function add_R(x,y,ec)
   o.ec=ec>o.em and o.em or ec
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
-    o.dt=math.random()*2
+    o.dt=random()*TCK
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -204,9 +213,9 @@ function add_T(x,y,ec)
   local o=Tower:new(nil,x,y)
   if o:chk_border(x,y) then
     o.idx=devices:add(o)
-    o.dt=math.random()*2
+    o.dt=random()*TCK
     o.online=true
-    hash:add(o)
+    dhash:add(o)
     return o
   end
   return nil
@@ -217,46 +226,56 @@ if not sock:setsockname("*",6352) then
   return
 end
 
-local function mapinit()
+local function mapinit(ts)
   for _,o in pairs(devices) do
     if o.lupd and o:chk_devs() then
       o:f_path()
     end
   end
+  for _,o in pairs(devices) do
+    if o.logic and o.online then
+      rq_d:put(o,ts,o.dt)
+    end
+  end
 end
+
+local ret
+local tm=socket.gettime()
+local ts=tm
+local dt
+local pts=ts+2.0
+local allsocks={sock}
+local q=queue()
+local msg
 
 mapchunk=nil
 if arg[1] then
   local chunk=loadfile(arg[1])
   mapchunk=chunk(arg[2])
   mapchunk()
-  mapinit()
+  mapinit(ts)
 end
 
-local ret
-local tm=socket.gettime()
-local ts,dt
-local allsocks={sock}
-local q=queue()
-local msg
 while true do
   if dirty and player_cnt<1 then
     for _,o in pairs(devices) do
       o:del_links()
       devices:del(o)
-      hash:del(o)
+      dhash:del(o)
     end
     if mapchunk then
       mapchunk()
-      mapinit()
+      mapinit(ts)
     end
     dirty=false
   end
-  ret=socket.select(allsocks,nil,0.3)
+  ret=socket.select(allsocks,nil,0.1)
   ts=socket.gettime()
   if ret[sock] then
     read_socket(ts)
   end
+  dt=ts-tm
+  tm=ts
   for _,o in pairs(players) do
     if ts>=o.ts then
       del_client(o)
@@ -271,10 +290,17 @@ while true do
       end
     end
   end
-  if ts>tm+0.25 then
-    dt=ts-tm
-    tm=ts
-    devs_proc(dt)
+  scheduler(ts,dt)
+  if ts>=pts then
+    pts=ts+2.0-(ts-pts)
+    local t={}
+    for _,o in pairs(players) do
+      t[#t+1]=o.idx
+      t[#t+1]=string.format("%d",o.ping*2000)
+    end
+    if #t>0 then
+      mput("PINGS:%s",table.concat(t,":"))
+    end
   end
   enqueue(q,ctlq)
   ctlq:clear()
@@ -285,7 +311,8 @@ while true do
   end
   for _,o in pairs(players) do
     if o.insync then
-      for p in o.sendq:iter(ts,1.0) do
+      local dt=o.ping>0.1 and o.ping*3.0 or 0.2
+      for p in o.sendq:iter(ts,dt) do
         sock:sendto(p,o.ip,o.port)
       end
     else
@@ -302,6 +329,12 @@ while true do
       if o.insync then
         sock:sendto(p,o.ip,o.port)
       end
+    end
+  end
+  for _,o in pairs(players) do
+    if o.insync and ts>=o.pts then
+      sock:sendto(string.format("PING:%s",ts),o.ip,o.port)
+      o.pts=ts+1.0-(ts-o.pts)
     end
   end
 end

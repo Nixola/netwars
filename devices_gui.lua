@@ -4,13 +4,13 @@ local pi2=math.pi*2
 
 class "Packet"
 
-function Packet:initialize(d1,d2,sig)
+function Packet:initialize(d1,d2)
   local vx,vy=d2.x-d1.x,d2.y-d1.y
   local l=sqrt(vx*vx+vy*vy)
   self.dev1=d1
   self.dev2=d2
   self.pl=d2.pl
-  self.sig=sig or false
+  self.tou=not d2.isdev
   vx,vy=vx/l,vy/l
   self.x1=d1.x+vx*d1.r
   self.y1=d1.y+vy*d1.r
@@ -31,7 +31,9 @@ function Packet:initialize(d1,d2,sig)
   self.dt=0
   self.cnt=1
   d1.pc=d1.pc+1
-  d2.pc=d2.pc+1
+  if not self.tou then
+    d2.pc=d2.pc+1
+  end
   if self.pl==ME then
     ME.pkts=ME.pkts+1
   end
@@ -41,14 +43,20 @@ function Packet:delete()
   local d1=self.dev1
   local d2=self.dev2
   d1.pc=d1.pc-1
-  d2.pc=d2.pc-1
+  if not self.tou then
+    d2.pc=d2.pc-1
+  end
   if self.pl==ME then
     ME.pkts=ME.pkts-1
   end
 end
 
 function Packet:flow(dt)
-  self.ttl=self.ttl-dt*400
+  if self.tou then
+    self.ttl=self.ttl-dt*600
+  else
+    self.ttl=self.ttl-dt*400
+  end
   self.dt=self.dt+dt
   if self.dt>=0.05 then
     self.dt=self.dt-0.05
@@ -60,7 +68,7 @@ end
 function Packet:draw()
   local col={0,0,0}
   local i=2
-  if self.sig then
+  if self.tou then
     i=self.pl==ME and 3 or 1
   end
   graph.setLine(2,"smooth")
@@ -246,9 +254,13 @@ function Device:draw_rng(_x,_y,_drag)
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
     graph.circle("line",x,y,LINK,24)
+    if self.cl=="R" then
+      graph.setColor(0,0,255)
+      graph.circle("line",x,y,SHOTR,24)
+    end
     if self.cl=="T" then
       graph.setColor(255,0,0)
-      graph.circle("line",x,y,SHOTR,24)
+      graph.circle("line",x,y,SHOTT,24)
     end
     return
   end
@@ -256,10 +268,16 @@ function Device:draw_rng(_x,_y,_drag)
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
     graph.circle("line",x,y,LINK,24)
-  elseif self.cl=="T" then
+  end
+  if self.cl=="R" then
+    graph.setLine(1,"rough")
+    graph.setColor(0,0,255)
+    graph.circle("line",x,y,SHOTR,24)
+  end
+  if self.cl=="T" then
     graph.setLine(1,"rough")
     graph.setColor(255,0,0)
-    graph.circle("line",x,y,SHOTR,24)
+    graph.circle("line",x,y,SHOTT,24)
   end
 end
 
@@ -287,7 +305,6 @@ end
 function Device:switch(b)
   self.online=b
   self.li=1
-  self.dt=0
   if b then
     self.menu:switch("Online","Offline")
   else
@@ -388,6 +405,125 @@ function Link:draw()
   graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
 end
 
+function Unit:draw_bar()
+  local w=self.r*2
+  local p=self.health/self.maxhealth
+  local n=floor(w*p)
+  local c=floor(48*p)
+  local x,y=self.x-self.r,self.y-self.r-6
+  local re=c>=32 and 250-((c-32)*15) or 250
+  local gr=c<=24 and c*10 or 250
+  if n>0 then
+    graph.setColor(re,gr,0)
+    graph.rectangle("fill",x,y,n,3)
+  end
+  if self.maxpkt then
+    p=self.pkt/self.maxpkt
+    n=floor(w*p)
+    x,y=self.x-self.r,self.y+self.r+3
+    if n>0 then
+      graph.setColor(255,255,255)
+      graph.rectangle("fill",x,y,n,3)
+    end
+  end
+end
+
+function Unit:draw_sym(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  if self.hud then
+    if self.buyonce then
+      graph.setColor(0,0,160)
+    else
+      graph.setColor(0,0,255)
+    end
+  elseif not self.pl then
+    graph.setColor(128,128,128)
+  elseif self.pl==ME then
+    graph.setColor(0,0,255)
+  else
+    graph.setColor(255,0,0)
+  end
+  graph.circle("fill",x,y,self.r,12)
+  graph.setColor(255,255,255)
+  graph.setLine(1,"rough")
+  graph.circle("line",x,y,self.r,12)
+  if self.hud or eye.s>0.9 then
+    graph.setColorMode("replace")
+    graph.draw(self.img,x-4,y-4)
+  end
+end
+
+function Unit:draw_rng(_x,_y)
+  local x=_x or self.x
+  local y=_y or self.y
+  graph.setLine(1,"rough")
+  if self.cl=="t" then
+    if self.hud then
+      graph.setColor(0,0,255)
+    else
+      graph.setColor(255,0,0)
+    end
+    graph.circle("line",x,y,SHOTR,24)
+  end
+end
+
+function Unit:draw()
+  self:draw_sym()
+  if eye.s>0.4 then
+    self:draw_bar()
+  end
+  if self.pl==ME and self.vx and self.vy then
+    graph.setColor(192,192,192)
+    graph.setLine(1,"rough")
+    graph.line(self.x,self.y,self.mx,self.my)
+  end
+end
+
+function Unit:_step(dt)
+  if not (self.vx and self.vy) then
+    return false
+  end
+  local x=self.tx+self.vx*dt
+  local y=self.ty+self.vy*dt
+  local tx,ty=x-self.ix,y-self.iy
+  local len=sqrt(tx*tx+ty*ty)
+  if len>=self.dist then
+    self.x=self.mx
+    self.y=self.my
+    self.vx=nil
+    self.vy=nil
+    return true
+  end
+  self.tx=x
+  self.ty=y
+  self.x=floor(x)
+  self.y=floor(y)
+  return false
+end
+
+function Unit:drag(x,y)
+  self:draw_sym(x,y)
+  self:draw_rng(x,y)
+end
+
+function Unit:is_pointed(x,y)
+  local tx,ty=self.x-x,self.y-y
+  local r=sqrt(tx*tx+ty*ty)
+  return r<=self.r
+end
+
+function Unit:net_buy(x,y)
+  if ME.cash>=self.price then
+    net_send("B:%s:%d:%d",self.cl,x,y)
+  end
+end
+
+function Unit:net_move(x,y)
+  x,y=self:calc_xy(x,y)
+  net_send("Um:%d:%d:%d",self.idx,x,y)
+end
+
 function Power:draw_st()
   local w=self.r*2
   local p=self.pwr/10
@@ -446,55 +582,6 @@ function Tower:draw()
   self:super("draw")
   if eye.s>0.4 then
     self:draw_st()
-  end
-  if self.pl==ME and self.targ then
-    graph.setColor(0,0,192)
-    graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.targ.x,self.targ.y)
-  end
-end
-
-function Tower:logic()
-  if self.pkt<3 then
-    return
-  end
-  if self.targ then
-    if self.targ.deleted then
-      self.targ=nil
-    else
-      local targ=self.targ
-      local tx,ty=targ.x-self.x,targ.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<SHOTR then
-        net_send("Ts:%d:%d",self.idx,targ.idx)
-        return
-      end
-    end
-  end
-  local t=hash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
-  local targ
-  local tlen=SHOTR
-  local tx,ty,len
-  for _,o in pairs(t) do
-    if o.pl~=self.pl and o.initok and o.cl~="G" then
-      tx,ty=o.x-self.x,o.y-self.y
-      len=sqrt(tx*tx+ty*ty)
-      if len<tlen and not allies[o.pl] then
-        targ=o
-        tlen=len
-      end
-    end
-  end
-  if targ then
-    net_send("Ts:%d:%d",self.idx,targ.idx)
-  end
-end
-
-function Tower:set_targ(targ)
-  if targ and targ.pl~=self.pl then
-    self.targ=targ
-  else
-    self.targ=nil
   end
 end
 

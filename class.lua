@@ -484,3 +484,109 @@ function rqueue(sz)
   end
   return object
 end
+
+function runqueue()
+  local object={}
+  object.len=0
+  object.hash={}
+  function object:put(o,ts,dt)
+    if self.hash[o] then
+      return
+    end
+    local t={}
+    t.val=o
+    t.tm=ts
+    t.ts=ts+dt
+    self.len=self.len+1
+    self.hash[o]=true
+    if not self.tail then
+      self.head=t
+      self.tail=t
+      return
+    end
+    local p=self.head
+    local l=nil
+    while p and p.ts<t.ts do
+      l=p
+      p=p.link
+    end
+    if not p then
+      self.tail.link=t
+      self.tail=t
+      return
+    end
+    if not l then
+      t.link=p
+      self.head=t
+      return
+    end
+    l.link=t
+    t.link=p
+  end
+  function object:add(o,ts,dt)
+    if self.hash[o] then
+      return
+    end
+    local t={}
+    t.val=o
+    t.tm=ts
+    t.ts=ts+dt
+    self.len=self.len+1
+    self.hash[o]=true
+    if not self.tail then
+      self.head=t
+      self.tail=t
+    else
+      self.tail.link=t
+      self.tail=t
+    end
+  end
+  function object:del()
+    if not self.last then
+      return
+    end
+    local o=self.tail.val
+    if self.last==self.tail then
+      self.head=nil
+      self.tail=nil
+    else
+      self.last.link=nil
+      self.tail=self.last
+    end
+    self.len=self.len-1
+    self.hash[o]=false
+    self.last=nil
+  end
+  function object:iter(_ts,_dt)
+    local p=self.head
+    local c=1
+    local ts=_ts
+    local dt=_dt
+    return function()
+      self.last=nil
+      if not p or c>self.len or ts<p.ts then
+        return nil
+      end
+      local v=p.val
+      local d=ts-p.tm
+      p.tm=ts
+      p.ts=ts+dt-(ts-p.ts)
+      self.last=self.tail
+      c=c+1
+      if p==self.tail then
+        p=p.link
+        return v,d
+      end
+      self.tail.link=p
+      self.tail=p
+      p=p.link
+      self.tail.link=nil
+      self.head=p
+      if not self.head then
+        self.head=self.tail
+      end
+      return v,d
+    end
+  end
+  return object
+end
