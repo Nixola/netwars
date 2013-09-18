@@ -130,9 +130,10 @@ cmd["PINGS"]=function(a,ts)
   if a.n<3 then
     return
   end
-  local c=(a.n+1)/2
-  local pl
-  for i=2,c do
+  local c=(a.n-1)/2
+  local i,pl
+  for x=1,c do
+    i=x*2
     pl=players[tonumber(a[i])]
     if pl then
       pl.showping=a[i+1]

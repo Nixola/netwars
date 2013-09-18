@@ -259,18 +259,18 @@ function scheduler(ts,dt)
       cput("Up:%d:%d:%d",o.idx,o.x,o.y)
     end
   end
-  for o in rq_u:iter(ts,TCK) do
-    if not o.deleted then
-      o:logic()
-    else
-      rq_u:del()
-    end
-  end
   for o in rq_d:iter(ts,TCK) do
     if not o.deleted and o.online and o.logic then
       o:logic()
     else
       rq_d:del()
+    end
+  end
+  for o in rq_u:iter(ts,TCK) do
+    if not o.deleted then
+      o:logic()
+    else
+      rq_u:del()
     end
   end
 end

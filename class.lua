@@ -487,6 +487,7 @@ end
 
 function runqueue()
   local object={}
+  object.len=0
   object.hash={}
   function object:put(o,ts,dt)
     if self.hash[o] then
@@ -496,6 +497,7 @@ function runqueue()
     t.val=o
     t.tm=ts
     t.ts=ts+dt
+    self.len=self.len+1
     self.hash[o]=true
     if not self.tail then
       self.head=t
@@ -529,6 +531,7 @@ function runqueue()
     t.val=o
     t.tm=ts
     t.ts=ts+dt
+    self.len=self.len+1
     self.hash[o]=true
     if not self.tail then
       self.head=t
@@ -550,25 +553,26 @@ function runqueue()
       self.last.link=nil
       self.tail=self.last
     end
+    self.len=self.len-1
     self.hash[o]=false
     self.last=nil
   end
   function object:iter(_ts,_dt)
     local p=self.head
-    local e=nil
+    local c=1
     local ts=_ts
     local dt=_dt
     return function()
       self.last=nil
-      if not p or p==e or ts<p.ts then
+      if not p or c>self.len or ts<p.ts then
         return nil
       end
-      e=e or p
       local v=p.val
       local d=ts-p.tm
       p.tm=ts
       p.ts=ts+dt-(ts-p.ts)
       self.last=self.tail
+      c=c+1
       if p==self.tail then
         p=p.link
         return v,d
