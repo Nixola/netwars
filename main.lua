@@ -107,7 +107,7 @@ function eye.drag()
 end
 
 ME=nil
-allies={}
+ally={}
 
 buydevs={}
 local buyidx=2

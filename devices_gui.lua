@@ -216,7 +216,7 @@ function Device:draw_sym(_x,_y)
   elseif self.pl==ME then
     graph.setColor(0,0,255)
   else
-    if allies[self.pl] then
+    if ally[self.pl] then
       graph.setColor(0,160,0)
     else
       graph.setColor(255,0,0)
@@ -441,7 +441,11 @@ function Unit:draw_sym(_x,_y)
   elseif self.pl==ME then
     graph.setColor(0,0,255)
   else
-    graph.setColor(255,0,0)
+    if ally[self.pl] then
+      graph.setColor(0,160,0)
+    else
+      graph.setColor(255,0,0)
+    end
   end
   graph.circle("fill",x,y,self.r,12)
   graph.setColor(255,255,255)

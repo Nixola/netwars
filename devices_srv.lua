@@ -315,7 +315,7 @@ function Tower:logic()
   local tlen=SHOTT
   local tx,ty,len
   for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
+    if u.pl~=self.pl then
       tx,ty=u.x-self.x,u.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
@@ -411,11 +411,12 @@ function Tank:logic()
     return
   end
   local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
+  local a=ally[self.pl]
   local targ=nil
   local tlen=SHOTR
   local tx,ty,len
   for _,u in pairs(t) do
-    if u~=self and u.pl~=self.pl then
+    if u.pl~=pl and not a[u.pl] then
       tx,ty=u.x-self.x,u.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
@@ -432,7 +433,7 @@ function Tank:logic()
   targ=nil
   tlen=SHOTR
   for _,o in pairs(t) do
-    if o.pl~=self.pl and o.initok and o.cl~="G" then
+    if o.pl~=self.pl and o.initok and o.cl~="G" and not a[o.pl] then
       tx,ty=o.x-self.x,o.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
