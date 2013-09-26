@@ -107,7 +107,7 @@ function eye.drag()
 end
 
 ME=nil
-allies={}
+ally={}
 
 buydevs={}
 local buyidx=2
@@ -129,6 +129,16 @@ local repx=1
 
 local function get_device(x,y)
   local t=dhash:get(x,y)
+  for _,o in pairs(t) do
+    if o:is_pointed(x,y) then
+      return o
+    end
+  end
+  return nil
+end
+
+local function get_unit(x,y)
+  local t=uhash:get(x,y)
   for _,o in pairs(t) do
     if o:is_pointed(x,y) then
       return o
@@ -703,13 +713,8 @@ function main_update(dt)
       hover=get_buydev(msx,msy)
     else
       hover=nil
-      if eye.s<0.6 then
-        local obj=get_enemy_dev(mox,moy)
-        hint=obj or get_enemy_unit(mox,moy)
-      else
-        local obj=get_my_dev(mox,moy)
-        hint=obj or get_my_unit(mox,moy)
-      end
+      hint=get_unit(mox,moy)
+      hint=hint or get_device(mox,moy)
     end
   end
   for o,d in rq_um:iter(fakets,0.02) do

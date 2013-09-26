@@ -20,6 +20,27 @@ cmd["OK"]=function(pl,a,ts)
   pl.gotok=true
 end
 
+cmd["ALLY"]=function(pl,a,ts)
+  if a.n<4 then
+    return
+  end
+  local p1=players[tonumber(a[2])]
+  local p2=players[tonumber(a[3])]
+  local b=tonumber(a[4])==1
+  if not p1 or not p2 then
+    return
+  end
+  if not b and not ally[p1][p2] then
+    return
+  end
+  if b and ally[p1][p2] then
+    return
+  end
+  ally[p1][p2]=b
+  b=b and 1 or 0
+  cput("ALLY:%d:%d:%d",p1.idx,p2.idx,b)
+end
+
 cmd["B"]=function(pl,a,ts)
   if a.n<4 then
     return

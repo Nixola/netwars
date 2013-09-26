@@ -165,6 +165,20 @@ cmd["DONE"]=function(a,ts)
   net_send("OK")
 end
 
+cmd["ALLY"]=function(a,ts)
+  if a.n<3 then
+    return
+  end
+  local p1=players[tonumber(a[2])]
+  local p2=players[tonumber(a[3])]
+  local b=tonumber(a[4])==1
+  if ME==p1 then
+    ally[p2]=b
+  end
+  local str=b and "friend" or "enemy"
+  console.msg(string.format("%s sets relation to %s: %s",p1.name,p2.name,str))
+end
+
 cmd["PLa"]=function(a,ts) -- PLa:idx:nick:cash
   if a.n<4 then
     return
@@ -193,7 +207,7 @@ cmd["PLd"]=function(a,ts) -- PLa:idx
   local pl=players[idx]
   pl:disconnect()
   players[idx]=nil
-  allies[pl]=nil
+  ally[pl]=nil
   console.msg(string.format("%s disconnected.",pl.name))
 end
 

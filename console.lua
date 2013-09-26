@@ -184,7 +184,7 @@ function console.cmd(str)
       histq:push("not enough arguments")
       return
     end
-    local ok=arg[1]=="/ally" and true or false
+    local b=arg[1]=="/ally" and 1 or 0
     local idx
     if arg[2]:sub(1,1)=="#" then
       idx=tonumber(arg[2]:sub(2))
@@ -204,13 +204,7 @@ function console.cmd(str)
       histq:push("cannot set relation to myself")
       return
     end
-    if ok then
-      allies[players[idx]]=true
-      net_send("INFO:~%s sets relation to %s: friend",ME.name,players[idx].name)
-    else
-      allies[players[idx]]=false
-      net_send("INFO:~%s sets relation to %s: enemy",ME.name,players[idx].name)
-    end
+    net_send("ALLY:%d:%d:%d",ME.idx,idx,b)
     return
   end
   histq:push("unknown command")

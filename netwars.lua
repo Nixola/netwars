@@ -23,6 +23,7 @@ uhash=sphash(100)
 rq_d=runqueue()
 rq_u=runqueue()
 rq_um=runqueue()
+ally={}
 
 local sock=socket.udp()
 local iptab={}
@@ -81,6 +82,7 @@ local function new_client(str,ts,ip,port)
   pl.insync=false
   pl.idx=players:add(pl)
   player_cnt=player_cnt+1
+  ally[pl]={}
   iptab[h]=pl
   local m=queue(5000)
   for _,o in pairs(players) do
@@ -130,6 +132,7 @@ function del_client(pl)
   pl:disconnect()
   players:del(pl)
   player_cnt=player_cnt-1
+  ally[pl]=nil
   iptab[h]=nil
   local msg=string.format("PLd:%d",idx)
   for _,o in pairs(players) do
@@ -248,7 +251,7 @@ local allsocks={sock}
 local q=queue()
 local msg
 
-mapchunk=nil
+local mapchunk=nil
 if arg[1] then
   local chunk=loadfile(arg[1])
   mapchunk=chunk(arg[2])
