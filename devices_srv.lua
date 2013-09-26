@@ -416,7 +416,7 @@ function Tank:logic()
   local tlen=SHOTR
   local tx,ty,len
   for _,u in pairs(t) do
-    if u.pl~=pl and not a[u.pl] then
+    if u.pl~=self.pl and not a[u.pl] then
       tx,ty=u.x-self.x,u.y-self.y
       len=sqrt(tx*tx+ty*ty)
       if len<tlen then
