@@ -1,25 +1,29 @@
 -- vim:et
 
 local function spkeys(grid,x1,y1,x2,y2)
-  local sx=math.floor(x1/grid)
-  local sy=math.floor(y1/grid)
-  local mx=x2 and math.ceil(x2/grid) or sx
-  local my=y2 and math.ceil(y2/grid) or sy
-  local x,y
-  if mx<sx then
-    x=mx
+  local sx,sy
+  local mx,my
+  if not x2 then
+    sx=math.floor(x1/grid)
     mx=sx
-    sx=x
+  elseif x1<x2 then
+    sx=math.floor(x1/grid)
+    mx=math.ceil(x2/grid)
   else
-    x=sx
+    sx=math.floor(x2/grid)
+    mx=math.ceil(x1/grid)
   end
-  if my<sy then
-    y=my
+  if not y2 then
+    sy=math.floor(y1/grid)
     my=sy
-    sy=y
+  elseif y1<y2 then
+    sy=math.floor(y1/grid)
+    my=math.ceil(y2/grid)
   else
-    y=sy
+    sy=math.floor(y2/grid)
+    my=math.ceil(y1/grid)
   end
+  local x,y=sx,sy
   return function()
     if y>my then
       return nil
