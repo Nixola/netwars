@@ -554,7 +554,7 @@ function runqueue()
       self.tail=self.last
     end
     self.len=self.len-1
-    self.hash[o]=false
+    self.hash[o]=nil
     self.last=nil
   end
   function object:iter(_ts,_dt)
