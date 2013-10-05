@@ -10,6 +10,8 @@ require "chat"
 require "console"
 require "init"
 
+stipple = require 'stipple'
+
 CVER=1 -- config version
 
 graph=love.graphics
@@ -546,7 +548,6 @@ local function draw_scoreboard()
 end
 
 local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
-local lsi=1
 function main_draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
@@ -559,18 +560,14 @@ function main_draw()
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local hd=dhash:get(x1,y1,x2,y2)
   local hu=uhash:get(x1,y1,x2,y2)
-  if love._ver<=72 then
-    graph.setLineStipple(ls[lsi])
-  end
   -- draw links
+  graph.scale(1/eye.s)
   for _,o in pairs(links) do
     if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
   end
-  if love._ver<=72 then
-    graph.setLineStipple()
-  end
+  graph.scale(eye.s)
   -- draw packets
   if eye.s>0.4 then
     for _,o in pairs(packets) do
@@ -735,7 +732,7 @@ function main_update(dt)
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
-    lsi=lsi>7 and 1 or lsi+1
+    stipple:next()
     flow_dt=flow_dt-0.05
   end
   console.update(dt)
