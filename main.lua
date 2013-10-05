@@ -498,7 +498,9 @@ local function draw_hud()
   graph.line(0,eye.sy-50,eye.sx-1,eye.sy-50)
   if not replay then
     for _,v in ipairs(buydevs[buyidx]) do
+	  local tmp = eye.s; eye.s = 1
       v:draw_sym()
+	  eye.s = tmp
     end
     graph.setColor(255,255,255)
     graph.print(string.format("Cash: %d/%d",ME.cash,ME.maxcash),eye.sx-150,eye.sy-40)
@@ -593,9 +595,11 @@ function main_draw()
     end
   end
   -- draw units
+  graph.scale(1/eye.s)
   for _,o in pairs(hu) do
     o:draw()
   end
+  graph.scale(eye.s)
   -- draw shots
   if eye.s>0.4 then
     local ok1,ok2
@@ -637,16 +641,22 @@ function main_draw()
     if drag.deleted then
       drag=nil
     else
+	  --graph.scale(1/eye.s)
       drag:drag(mox,moy)
+	  --graph.scale(eye.s)
     end
   end
   if bdrag then
     cmd=true
-    bdrag:drag(mox,moy)
+	--graph.scale(1/eye.s)
+    bdrag:drag(mox/eye.s,moy/eye,s)
+	--graph.scale(eye.s)
   end
   if bdev then
     cmd=true
+	--graph.scale(1/eye.s)
     bdev:drag(mox,moy)
+	--graph.scale(eye.s)
   end
   if move then
     local tx,ty=mox-move.x,moy-move.y

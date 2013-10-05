@@ -414,7 +414,7 @@ function Unit:draw_bar()
   local gr=c<=24 and c*10 or 250
   if n>0 then
     graph.setColor(re,gr,0)
-    graph.rectangle("fill",x,y,n,3)
+    graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
   end
   if self.maxpkt then
     p=self.pkt/self.maxpkt
@@ -422,7 +422,7 @@ function Unit:draw_bar()
     x,y=self.x-self.r,self.y+self.r+3
     if n>0 then
       graph.setColor(255,255,255)
-      graph.rectangle("fill",x,y,n,3)
+      graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
     end
   end
 end
@@ -447,13 +447,14 @@ function Unit:draw_sym(_x,_y)
       graph.setColor(255,0,0)
     end
   end
-  graph.circle("fill",x,y,self.r,12)
+  graph.circle("fill",x*eye.s, y*eye.s, self.r*eye.s, 12)
   graph.setColor(255,255,255)
   graph.setLine(1,"rough")
-  graph.circle("line",x,y,self.r,12)
+  graph.circle("line",x*eye.s, y*eye.s, self.r*eye.s, 12)
   if self.hud or eye.s>0.9 then
     graph.setColorMode("replace")
-    graph.draw(self.img,x-4,y-4)
+    graph.draw(self.img,(x-4)*eye.s, (y-4)*eye.s)
+	
   end
 end
 
@@ -467,7 +468,7 @@ function Unit:draw_rng(_x,_y)
     else
       graph.setColor(255,0,0)
     end
-    graph.circle("line",x,y,SHOTR,24)
+    graph.circle("line",x*eye.s, y*eye.s, SHOTR*eye.s, 24)
   end
 end
 
@@ -479,7 +480,7 @@ function Unit:draw()
   if self.pl==ME and self.vx and self.vy then
     graph.setColor(192,192,192)
     graph.setLine(1,"rough")
-    graph.line(self.x,self.y,self.mx,self.my)
+    graph.line(self.x*eye.s,self.y*eye.s,self.mx*eye.s,self.my*eye.s)
   end
 end
 
