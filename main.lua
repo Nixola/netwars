@@ -579,6 +579,7 @@ function main_draw()
     end
   end
   -- draw devices
+  graph.scale(1/eye.s)
   for _,o in pairs(hd) do
     o:draw()
   end
@@ -594,6 +595,7 @@ function main_draw()
       d:draw_rng()
     end
   end
+  graph.scale(eye.s)
   -- draw units
   graph.scale(1/eye.s)
   for _,o in pairs(hu) do
@@ -641,22 +643,22 @@ function main_draw()
     if drag.deleted then
       drag=nil
     else
-	  --graph.scale(1/eye.s)
+	  graph.scale(1/eye.s)
       drag:drag(mox,moy)
-	  --graph.scale(eye.s)
+	  graph.scale(eye.s)
     end
   end
   if bdrag then
     cmd=true
-	--graph.scale(1/eye.s)
-    bdrag:drag(mox/eye.s,moy/eye,s)
-	--graph.scale(eye.s)
+	graph.scale(1/eye.s)
+    bdrag:drag(mox,moy)
+	graph.scale(eye.s)
   end
   if bdev then
     cmd=true
-	--graph.scale(1/eye.s)
+	graph.scale(1/eye.s)
     bdev:drag(mox,moy)
-	--graph.scale(eye.s)
+	graph.scale(eye.s)
   end
   if move then
     local tx,ty=mox-move.x,moy-move.y

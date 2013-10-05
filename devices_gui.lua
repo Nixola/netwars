@@ -198,7 +198,7 @@ function Device:draw_bar()
     else
       graph.setColor(160,160,160)
     end
-    graph.rectangle("fill",x,y,n,3)
+    graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
   end
 end
 
@@ -222,13 +222,13 @@ function Device:draw_sym(_x,_y)
       graph.setColor(255,0,0)
     end
   end
-  graph.circle("fill",x,y,self.r,24)
+  graph.circle("fill",x*eye.s, y*eye.s, self.r*eye.s, 24)
   graph.setColor(255,255,255)
   graph.setLine(1,"rough")
-  graph.circle("line",x,y,self.r,24)
+  graph.circle("line",x*eye.s, y*eye.s, self.r*eye.s, 24)
   if self.hud or eye.s>0.6 then
     graph.setColorMode("replace")
-    graph.draw(self.img,x-8,y-8)
+    graph.draw(self.img,(x-8)*eye.s,(y-8)*eye.s)
   end
 end
 
@@ -242,7 +242,7 @@ function Device:draw_cborder(_x,_y,ok)
       graph.setColor(255,0,0)
     end
     graph.setLine(1,"rough")
-    graph.circle("line",x,y,self.cr,24)
+    graph.circle("line",x*eye.s, y*eye.s, self.cr*eye.s, 24)
   end
 end
 
@@ -252,31 +252,31 @@ function Device:draw_rng(_x,_y,_drag)
   if _drag or self.hud then
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
-    graph.circle("line",x,y,LINK,24)
+    graph.circle("line",x*eye.s, y*eye.s, LINK*eye.s, 24)
     if self.cl=="R" then
       graph.setColor(0,0,255)
-      graph.circle("line",x,y,SHOTR,24)
+      graph.circle("line",x*eye.s, y*eye.s, SHOTR*eye.s, 24)
     end
     if self.cl=="T" then
       graph.setColor(255,0,0)
-      graph.circle("line",x,y,SHOTT,24)
+      graph.circle("line",x*eye.s, y*eye.s, SHOTT*eye.s,24)
     end
     return
   end
   if self.ec then
     graph.setLine(1,"rough")
     graph.setColor(0,255,0)
-    graph.circle("line",x,y,LINK,24)
+    graph.circle("line",x*eye.s, y*eye.s, LINK*eye.s, 24)
   end
   if self.cl=="R" then
     graph.setLine(1,"rough")
     graph.setColor(0,0,255)
-    graph.circle("line",x,y,SHOTR,24)
+    graph.circle("line",x*eye.s, y*eye.s, SHOTR*eye.s, 24)
   end
   if self.cl=="T" then
     graph.setLine(1,"rough")
     graph.setColor(255,0,0)
-    graph.circle("line",x,y,SHOTT,24)
+    graph.circle("line",x*eye.s, y*eye.s, SHOTT*eye.s, 24)
   end
 end
 
@@ -535,7 +535,7 @@ function Power:draw_st()
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,128,255)
-    graph.rectangle("fill",x,y,n,3)
+    graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
   end
 end
 
@@ -553,14 +553,14 @@ function Router:draw_st()
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,255,255)
-    graph.rectangle("fill",x,y,n,3)
+    graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
   end
   p=self.ec/self.em
   n=floor(w*p)
   x,y=self.x-self.r-6,self.y+self.r-n
   if n>0 then
     graph.setColor(128,192,240)
-    graph.rectangle("fill",x,y,3,n)
+    graph.rectangle("fill",x*eye.s, y*eye.s, 3*eye.s, n*eye.s)
   end
 end
 
@@ -578,7 +578,7 @@ function Tower:draw_st()
   local x,y=self.x-self.r,self.y+self.r+3
   if n>0 then
     graph.setColor(255,255,255)
-    graph.rectangle("fill",x,y,n,3)
+    graph.rectangle("fill",x*eye.s, y*eye.s, n*eye.s, 3*eye.s)
   end
 end
 
