@@ -614,11 +614,12 @@ function main_draw()
   -- draw commands
   local cmd=false
   if conn then
+    graph.scale(1/eye.s)
     cmd=true
     if kshift then
       graph.setColor(255,0,0)
       graph.setLine(1,"rough")
-      graph.line(conn.x,conn.y,mox,moy)
+      graph.line(conn.x*eye.s,conn.y*eye.s,mox*eye.s,moy*eye.s)
     else
       local tx,ty=mox-conn.x,moy-conn.y
       local len=floor(sqrt(tx*tx+ty*ty))
@@ -629,8 +630,9 @@ function main_draw()
         graph.setColor(255,255,255)
       end
       graph.setLine(1,"rough")
-      graph.line(conn.x,conn.y,mox,moy)
+      graph.line(conn.x*eye.s,conn.y*eye.s,mox*eye.s,moy*eye.s)
     end
+	graph.scale(eye.s)
   end
   if drag then
     cmd=true
@@ -651,6 +653,7 @@ function main_draw()
 	graph.scale(eye.s)
   end
   if move then
+	graph.scale(1/eye.s)
     local tx,ty=mox-move.x,moy-move.y
     local len=floor(sqrt(tx*tx+ty*ty))
     if len>MOVER then
@@ -659,7 +662,8 @@ function main_draw()
       move:draw_rng(mox,moy)
       graph.setColor(192,192,192)
     end
-    graph.line(move.x,move.y,mox,moy)
+    graph.line(move.x*eye.s,move.y*eye.s,mox*eye.s,moy*eye.s)
+	graph.scale(eye.s)
   end
   if not cmd and hint and hint.pl==ME then
     hint:draw_rng()
