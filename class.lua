@@ -557,6 +557,13 @@ function runqueue()
     self.hash[o]=nil
     self.last=nil
   end
+  function object:clear()
+    self.len=0
+    self.hash={}
+    self.last=nil
+    self.head=nil
+    self.tail=nil
+  end
   function object:iter(_ts,_dt)
     local p=self.head
     local c=1

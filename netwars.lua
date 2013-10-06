@@ -261,6 +261,9 @@ end
 
 while true do
   if dirty and player_cnt<1 then
+    rq_d:clear()
+    rq_u:clear()
+    rq_um:clear()
     for _,o in pairs(devices) do
       o:del_links()
       devices:del(o)
