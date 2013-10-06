@@ -228,7 +228,7 @@ function Device:draw_sym(_x,_y)
   graph.circle("line",x*eye.s, y*eye.s, self.r*eye.s, 24)
   if self.hud or eye.s>0.6 then
     graph.setColorMode("replace")
-    graph.draw(self.img,(x-8)*eye.s,(y-8)*eye.s)
+    graph.draw(self.img,(x-8)*eye.s,(y-8)*eye.s, 0, eye.s, eye.s)
   end
 end
 
@@ -453,7 +453,7 @@ function Unit:draw_sym(_x,_y)
   graph.circle("line",x*eye.s, y*eye.s, self.r*eye.s, 12)
   if self.hud or eye.s>0.9 then
     graph.setColorMode("replace")
-    graph.draw(self.img,(x-4)*eye.s, (y-4)*eye.s)
+    graph.draw(self.img,(x-4)*eye.s, (y-4)*eye.s, 0, eye.s, eye.s)
 	
   end
 end
