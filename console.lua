@@ -131,8 +131,17 @@ function console.cmd(str)
       histq:push("graph: bad arguments")
       return
     end
-    conf.graph_width=tonumber(a[1])
-    conf.graph_height=tonumber(a[2])
+    local x,y=tonumber(a[1]),tonumber(a[2])
+    if not x or not y then
+      histq:push("graph: bad arguments")
+      return
+    end
+    if x<640 or y<480 then
+      histq:push("graph: minimal supported resolution is 640x480")
+      return
+    end
+    conf.graph_width=x
+    conf.graph_height=y
     save_conf()
     set_graph()
     init_graph()

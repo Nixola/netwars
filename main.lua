@@ -591,8 +591,6 @@ function main_draw()
           o:draw_cborder()
         end
       end
-    else
-      d:draw_rng()
     end
   end
   graph.scale(eye.s)
@@ -617,36 +615,28 @@ function main_draw()
   local cmd=false
   if conn then
     cmd=true
-    if conn.deleted then
-      conn=nil
+    if kshift then
+      graph.setColor(255,0,0)
+      graph.setLine(1,"rough")
+      graph.line(conn.x,conn.y,mox,moy)
     else
-      if kshift then
-        graph.setColor(255,0,0)
-        graph.setLine(1,"rough")
-        graph.line(conn.x,conn.y,mox,moy)
+      local tx,ty=mox-conn.x,moy-conn.y
+      local len=floor(sqrt(tx*tx+ty*ty))
+      conn:draw_rng()
+      if len>LINK then
+        graph.setColor(128,128,128)
       else
-        local tx,ty=mox-conn.x,moy-conn.y
-        local len=floor(sqrt(tx*tx+ty*ty))
-        conn:draw_rng()
-        if len>LINK then
-          graph.setColor(128,128,128)
-        else
-          graph.setColor(255,255,255)
-        end
-        graph.setLine(1,"rough")
-        graph.line(conn.x,conn.y,mox,moy)
+        graph.setColor(255,255,255)
       end
+      graph.setLine(1,"rough")
+      graph.line(conn.x,conn.y,mox,moy)
     end
   end
   if drag then
     cmd=true
-    if drag.deleted then
-      drag=nil
-    else
-	  graph.scale(1/eye.s)
-      drag:drag(mox,moy)
-	  graph.scale(eye.s)
-    end
+	graph.scale(1/eye.s)
+    drag:drag(mox,moy)
+	graph.scale(eye.s)
   end
   if bdrag then
     cmd=true
@@ -725,6 +715,18 @@ function main_update(dt)
       hint=get_unit(mox,moy)
       hint=hint or get_device(mox,moy)
     end
+  end
+  if hint and hint.deleted then
+    hint=nil
+  end
+  if conn and conn.deleted then
+    conn=nil
+  end
+  if drag and drag.deleted then
+    drag=nil
+  end
+  if move and move.deleted then
+    move=nil
   end
   for o,d in rq_um:iter(fakets,0.02) do
     if o.deleted or o:step(d) then
