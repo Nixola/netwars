@@ -11,6 +11,7 @@ require "console"
 require "init"
 
 stipple = require 'stipple'
+stipple:setStipple '11110000'
 
 CVER=1 -- config version
 
@@ -666,7 +667,9 @@ function main_draw()
 	graph.scale(eye.s)
   end
   if not cmd and hint and hint.pl==ME then
+    graph.scale(1/eye.s)
     hint:draw_rng()
+    graph.scale(eye.s)
   end
   -- hud display
   graph.pop()
