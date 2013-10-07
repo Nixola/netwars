@@ -65,7 +65,7 @@ function init_graph()
   graph.setBackgroundColor(0,0,0)
 end
 
-function init_gui()
+function init_gui(Nick, Host)
   local o
   local cl={"R","t","V"}
   local x=25
@@ -92,6 +92,14 @@ function init_gui()
     x=x+40
   end
   buydevs[2]=objs
+  if Nick then
+    nick = Nick
+    init_st = 2
+  end
+  if Host then
+    addr = Host
+    init_st = 3
+  end
 end
 
 local function init_enter()

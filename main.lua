@@ -792,7 +792,8 @@ local function set_cl_fonts(imgfont)
   u_cl.t.img=graph.newImage(img)
 end
 
-function love.load()
+function love.load(args)
+  local nick, host = args[2], args[3]
   -- determine love version hacks
   if type(love._version)=="string" then
     local tmp=str_split(love._version,".")
@@ -806,7 +807,7 @@ function love.load()
   init_graph()
   local imgfont=love.image.newImageData("imgs/font.png")
   set_cl_fonts(imgfont)
-  init_gui()
+  init_gui(nick, host)
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed
