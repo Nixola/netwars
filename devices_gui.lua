@@ -401,7 +401,11 @@ end
 function Link:draw()
   graph.setColor(200,200,200)
   graph.setLine(1,"rough")
-  graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
+  if love._ver >= 80 then
+    stipple:draw(self.dev1.x, self.dev1.y, self.dev2.x, self.dev2.y)
+  else
+    graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
+  end
 end
 
 function Unit:draw_bar()

@@ -738,6 +738,9 @@ function main_update(dt)
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
     lsi=lsi>7 and 1 or lsi+1
+    if love._ver >= 80 then 
+      stipple:next()
+    end
     flow_dt=flow_dt-0.05
   end
   console.update(dt)
@@ -783,6 +786,10 @@ function love.load()
     love._ver=tonumber(tmp[2])*10+tonumber(tmp[3])
   else
     love._ver=love._version
+  end
+  if love._ver >= 80 then
+    stipple = require 'stipple'
+    stipple:setStipple '11110000'
   end
   if load_conf() then
     set_graph()
