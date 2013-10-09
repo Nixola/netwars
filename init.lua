@@ -45,8 +45,8 @@ function load_conf()
   return false
 end
 
-function set_graph()
-  graph.setMode(conf.graph_width,conf.graph_height)
+function set_graph(fullscreen)
+  graph.setMode(conf.graph_width,conf.graph_height, fullscreen)
 end
 
 function init_graph()

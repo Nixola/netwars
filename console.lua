@@ -121,29 +121,37 @@ end
 
 function console.cmd(str)
   arg=split(str)
+  local f
   if arg[1]=="/graph" then
     if #arg<2 then
       histq:push("graph: not enough arguments")
       return
     end
-    a=str_split(arg[2],"x")
-    if a.n<2 then
-      histq:push("graph: bad arguments")
-      return
+    if arg[2] == 'true' then
+      f = true
+      graph.setMode(0,0)
+      conf.graph_width = graph.getWidth()
+      conf.graph_height = graph.getHeight()
+    else
+      a=str_split(arg[2],"x")
+      if a.n<2 then
+        histq:push("graph: bad arguments")
+        return
+      end
+      local x,y=tonumber(a[1]),tonumber(a[2])
+      if not x or not y then
+        histq:push("graph: bad arguments")
+        return
+      end
+      if x<640 or y<480 then
+        histq:push("graph: minimal supported resolution is 640x480")
+        return
+      end
+      conf.graph_width=x
+      conf.graph_height=y
     end
-    local x,y=tonumber(a[1]),tonumber(a[2])
-    if not x or not y then
-      histq:push("graph: bad arguments")
-      return
-    end
-    if x<640 or y<480 then
-      histq:push("graph: minimal supported resolution is 640x480")
-      return
-    end
-    conf.graph_width=x
-    conf.graph_height=y
     save_conf()
-    set_graph()
+    set_graph(f)
     init_graph()
     init_gui()
     return
