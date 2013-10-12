@@ -70,31 +70,31 @@ function Packet:draw()
   if self.tou then
     i=self.pl==ME and 3 or 1
   end
-  graph.setLine(2,"smooth")
+  graph.setLine(2*eye.s,"smooth")
   if self.cnt>=3 then
     col[i]=self.lt-40
     graph.setColor(col)
-    graph.line(self.x1,self.y1,self.x2,self.y2)
+    graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
     col[i]=self.lt-20
     graph.setColor(col)
-    graph.line(self.x2,self.y2,self.x3,self.y3)
+    graph.line(self.x2*eye.s,self.y2*eye.s,self.x3*eye.s,self.y3*eye.s)
     col[i]=self.lt
     graph.setColor(col)
-    graph.line(self.x3,self.y3,self.x4,self.y4)
+    graph.line(self.x3*eye.s,self.y3*eye.s,self.x4*eye.s,self.y4*eye.s)
     return
   end
   if self.cnt==2 then
     col[i]=self.lt-20
     graph.setColor(col)
-    graph.line(self.x1,self.y1,self.x2,self.y2)
+    graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
     col[i]=self.lt
     graph.setColor(col)
-    graph.line(self.x2,self.y2,self.x3,self.y3)
+    graph.line(self.x2*eye.s,self.y2*eye.s,self.x3*eye.s,self.y3*eye.s)
     return
   end
   col[i]=self.lt
   graph.setColor(col)
-  graph.line(self.x1,self.y1,self.x2,self.y2)
+  graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
 end
 
 class "Shot"
@@ -132,25 +132,25 @@ function Shot:draw()
   if self.pl==ME then
     local col={128,192,240}
     local r,g,b
-    graph.setLine(2,"smooth")
+    graph.setLine(2*eye.s,"smooth")
     if self.cnt>1 then
       r=col[1]-self.lt-32
       g=col[2]-self.lt-32
       b=col[3]-self.lt-32
       graph.setColor(r,g,b)
-      graph.line(self.x1,self.y1,self.x2,self.y2)
+      graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
       r=col[1]-self.lt
       g=col[2]-self.lt
       b=col[3]-self.lt
       graph.setColor(r,g,b)
-      graph.line(self.x2,self.y2,self.x3,self.y3)
+      graph.line(self.x2*eye.s,self.y2*eye.s,self.x3*eye.s,self.y3*eye.s)
       return
     end
     r=col[1]-self.lt
     g=col[2]-self.lt
     b=col[3]-self.lt
     graph.setColor(r,g,b)
-    graph.line(self.x1,self.y1,self.x2,self.y2)
+    graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
   else
     local col={255,96,64}
     local r,g,b
@@ -160,19 +160,19 @@ function Shot:draw()
       g=col[2]-self.lt-32
       b=col[3]-self.lt
       graph.setColor(r,g,b)
-      graph.line(self.x1,self.y1,self.x2,self.y2)
+      graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
       r=col[1]-self.lt
       g=col[2]-self.lt
       b=col[3]-self.lt
       graph.setColor(r,g,b)
-      graph.line(self.x2,self.y2,self.x3,self.y3)
+      graph.line(self.x2*eye.s,self.y2*eye.s,self.x3*eye.s,self.y3*eye.s)
       return
     end
     r=col[1]-self.lt
     g=col[2]-self.lt
     b=col[3]-self.lt
     graph.setColor(r,g,b)
-    graph.line(self.x1,self.y1,self.x2,self.y2)
+    graph.line(self.x1*eye.s,self.y1*eye.s,self.x2*eye.s,self.y2*eye.s)
   end
 end
 

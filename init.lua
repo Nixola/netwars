@@ -156,7 +156,6 @@ end
 
 function init_draw()
   graph.push()
-  graph.scale(2)
   graph.setColor(255,255,255)
   if init_st==1 then
     readline:draw(50,eye.cy/2-20,"Nick: ")

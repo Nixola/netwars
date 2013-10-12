@@ -554,8 +554,7 @@ local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
 function main_draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
-  graph.scale(eye.s)
-  graph.translate(eye.vx,eye.vy)
+  graph.translate(eye.vx*eye.s,eye.vy*eye.s)
   graph.setScissor(0,0,eye.sx-1,eye.sy-51)
   local sx=eye.cx/eye.s
   local sy=eye.cy/eye.s
@@ -564,13 +563,11 @@ function main_draw()
   local hd=dhash:get(x1,y1,x2,y2)
   local hu=uhash:get(x1,y1,x2,y2)
   -- draw links
-  graph.scale(1/eye.s)
   for _,o in pairs(links) do
     if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
   end
-  graph.scale(eye.s)
   -- draw packets
   if eye.s>0.4 then
     for _,o in pairs(packets) do
@@ -580,7 +577,6 @@ function main_draw()
     end
   end
   -- draw devices
-  graph.scale(1/eye.s)
   for _,o in pairs(hd) do
     o:draw()
   end
@@ -594,13 +590,10 @@ function main_draw()
       end
     end
   end
-  graph.scale(eye.s)
   -- draw units
-  graph.scale(1/eye.s)
   for _,o in pairs(hu) do
     o:draw()
   end
-  graph.scale(eye.s)
   -- draw shots
   if eye.s>0.4 then
     local ok1,ok2
@@ -615,7 +608,6 @@ function main_draw()
   -- draw commands
   local cmd=false
   if conn then
-    graph.scale(1/eye.s)
     cmd=true
     if kshift then
       graph.setColor(255,0,0)
@@ -633,28 +625,20 @@ function main_draw()
       graph.setLine(1,"rough")
       graph.line(conn.x*eye.s,conn.y*eye.s,mox*eye.s,moy*eye.s)
     end
-	graph.scale(eye.s)
   end
   if drag then
     cmd=true
-	graph.scale(1/eye.s)
     drag:drag(mox,moy)
-	graph.scale(eye.s)
   end
   if bdrag then
     cmd=true
-	graph.scale(1/eye.s)
     bdrag:drag(mox,moy)
-	graph.scale(eye.s)
   end
   if bdev then
     cmd=true
-	graph.scale(1/eye.s)
     bdev:drag(mox,moy)
-	graph.scale(eye.s)
   end
   if move then
-	graph.scale(1/eye.s)
     local tx,ty=mox-move.x,moy-move.y
     local len=floor(sqrt(tx*tx+ty*ty))
     if len>MOVER then
@@ -664,12 +648,9 @@ function main_draw()
       graph.setColor(192,192,192)
     end
     graph.line(move.x*eye.s,move.y*eye.s,mox*eye.s,moy*eye.s)
-	graph.scale(eye.s)
   end
   if not cmd and hint and hint.pl==ME then
-    graph.scale(1/eye.s)
     hint:draw_rng()
-    graph.scale(eye.s)
   end
   -- hud display
   graph.pop()
