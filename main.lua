@@ -13,6 +13,7 @@ require "init"
 CVER=1 -- config version
 
 graph=love.graphics
+indrawhud=false
 fakets=0
 msx,msy=0,0 -- mouse real (screen) position
 omsx,omsy=0,0 -- mouse old real (screen) position
@@ -545,8 +546,6 @@ local function draw_scoreboard()
   end
 end
 
-local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
-local lsi=1
 function main_draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
@@ -559,17 +558,11 @@ function main_draw()
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local hd=dhash:get(x1,y1,x2,y2)
   local hu=uhash:get(x1,y1,x2,y2)
-  if love._ver<=72 then
-    graph.setLineStipple(ls[lsi])
-  end
   -- draw links
   for _,o in pairs(links) do
     if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
-  end
-  if love._ver<=72 then
-    graph.setLineStipple()
   end
   -- draw packets
   if eye.s>0.4 then
@@ -658,6 +651,7 @@ function main_draw()
   -- hud display
   graph.pop()
   graph.setScissor()
+  indrawhud=true
   draw_hud()
   if menu then
     menu:draw()
@@ -666,6 +660,7 @@ function main_draw()
     draw_scoreboard()
   end
   console.draw()
+  indrawhud=false
 end
 
 local flow_dt=0
@@ -737,10 +732,7 @@ function main_update(dt)
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
-    lsi=lsi>7 and 1 or lsi+1
-    if love._ver >= 80 then 
-      stipple:next()
-    end
+    stipple:next()
     flow_dt=flow_dt-0.05
   end
   console.update(dt)
@@ -780,19 +772,14 @@ local function set_cl_fonts(imgfont)
 end
 
 function love.load()
-  -- determine love version hacks
-  if type(love._version)=="string" then
-    local tmp=str_split(love._version,".")
-    love._ver=tonumber(tmp[2])*10+tonumber(tmp[3])
-  else
-    love._ver=love._version
-  end
-  if love._ver >= 80 then
-    stipple = require 'stipple'
-    stipple:setStipple '11110000'
-    graph._setLine=graph.setLine
-    graph.setLine=function(s,t)
-      graph._setLine(s/eye.s,t)
+  stipple = require 'stipple'
+  stipple:setStipple '11110000'
+  graph._setLine=graph.setLine
+  graph.setLine=function(width,style)
+    if indrawhud then
+      graph._setLine(width,style)
+    else
+      graph._setLine(width/eye.s,style)
     end
   end
   if load_conf() then
