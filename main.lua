@@ -790,6 +790,10 @@ function love.load()
   if love._ver >= 80 then
     stipple = require 'stipple'
     stipple:setStipple '11110000'
+    graph._setLine=graph.setLine
+    graph.setLine=function(s,t)
+      graph._setLine(s/eye.s,t)
+    end
   end
   if load_conf() then
     set_graph()
