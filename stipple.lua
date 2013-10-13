@@ -53,11 +53,11 @@ stipple.line = function(self, x1,y1,x2,y2)
 	local lw, ls = line_w, line_s == 'rough' and 'nearest' or 'linear'
 	self.img:setFilter(ls, ls)
 
-	self.quad:setViewport(v[1], v[2], v[3], d)
+	self.quad:setViewport(v[1], v[2], v[3], d*eye.s)
 
 	local a = math.atan2(y2-y1, x2-x1)-math.pi/2
 
-	lg.drawq(self.img, self.quad, x1, y1, a, lw, 1)
+	lg.drawq(self.img, self.quad, x1, y1, a, lw, 1/eye.s)
 
 end
 
