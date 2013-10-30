@@ -16,8 +16,8 @@ function save_conf()
   f:open("w")
   f:write("return {\n")
   for k,v in pairs(conf) do
-    if type(v)=="number" then
-      f:write(string.format("%s=%s;\n",k,v))
+    if type(v)=="number" or type(v)=="boolean" then
+      f:write(string.format("%s=%s;\n",k,tostring(v)))
     end
     if type(v)=="string" then
       f:write(string.format("%s=\"%s\";\n",k,v))
@@ -40,6 +40,7 @@ function load_conf()
   conf.graph_width=graph.getWidth()
   conf.graph_height=graph.getHeight()
   conf.chat_timeout=5.0
+  conf.no_drag=false
   save_conf()
   chat.timeout=conf.chat_timeout
   return false

@@ -162,6 +162,17 @@ function console.cmd(str)
       save_conf()
       return
     end
+    if arg[2]=="no_drag" then
+      if #arg<3 then
+        local b=conf.no_drag and 1 or 0
+        histq:push(string.format("no_drag=%s",b))
+        return
+      end
+      conf.no_drag=tonumber(arg[3])==1
+      save_conf()
+      return
+    end
+    return
   end
   if arg[1]=="/replay" then
     if ME then

@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 16" -- network protocol version
+NVER="master 17" -- network protocol version
 
 TCK=3.0
 VCASH=3000 -- vault cash storage
@@ -316,6 +316,7 @@ function Unit:initialize(pl,x,y)
   self.isdev=false
   self.pkt=0 -- packets in queue
   self.health=self.maxhealth
+  self.blocked=true
 end
 
 function Unit:bound_box(_x,_y)
@@ -457,6 +458,8 @@ d_cl={B=Base,G=Generator,R=Router,V=Vault,T=Tower}
 
 class "Tank" : extends(Unit) {
 cl="t";
+uc=1;
+um=3;
 maxhealth=100;
 maxpkt=100; -- max queue
 speed=25;

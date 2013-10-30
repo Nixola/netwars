@@ -384,8 +384,9 @@ function Tank:shot(targ)
   if targ.deleted or sqrt(tx*tx+ty*ty)>SHOTR then
     return
   end
-  self.pkt=self.pkt-3
-  targ.health=targ.health-10
+  self.blocked=false
+  self.pkt=self.pkt-(self.uc*3)
+  targ.health=targ.health-(self.uc*10)
   if targ.isdev then
     targ.pt=1.0
     if targ.health<1 then
@@ -407,21 +408,34 @@ function Tank:shot(targ)
 end
 
 function Tank:logic()
-  if self.pkt<3 then
+  if self.pkt<self.uc*3 then
+    if not self.blocked then
+      self.blocked=true
+      cput("Sb:%d:1",self.idx)
+    end
     return
   end
+  local cr=Tank.r*2
   local t=uhash:get(self.x-SHOTR,self.y-SHOTR,self.x+SHOTR,self.y+SHOTR)
   local a=ally[self.pl]
   local targ=nil
   local tlen=SHOTR
   local tx,ty,len
   for _,u in pairs(t) do
+    tx,ty=u.x-self.x,u.y-self.y
+    len=sqrt(tx*tx+ty*ty)
     if u.pl~=self.pl and not a[u.pl] then
-      tx,ty=u.x-self.x,u.y-self.y
-      len=sqrt(tx*tx+ty*ty)
       if len<tlen then
         targ=u
         tlen=len
+      end
+    else
+      if u~=self and len<=cr then
+        if not self.blocked then
+          self.blocked=true
+          cput("Sb:%d:1",self.idx)
+        end
+        return
       end
     end
   end
@@ -444,5 +458,10 @@ function Tank:logic()
   end
   if targ then
     self:shot(targ)
+    return
+  end
+  if self.blocked then
+    self.blocked=false
+    cput("Sb:%d:0",self.idx)
   end
 end

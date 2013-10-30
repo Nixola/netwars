@@ -10,7 +10,7 @@ require "chat"
 require "console"
 require "init"
 
-CVER=1 -- config version
+CVER=2 -- config version
 
 graph=love.graphics
 fakets=0
@@ -122,6 +122,7 @@ local hint=nil
 local hover_dt=0
 local conn=nil
 local menu=nil
+local unit=nil
 local kshift=false
 local kctrl=false
 local scoreboard=false
@@ -247,7 +248,11 @@ function main_mousepressed(mx,my,b)
     if not replay then
       local obj=get_my_unit(x,y)
       if obj then
-        move=obj
+        if kctrl then
+          obj:net_upgrade()
+        else
+          move=obj
+        end
         return
       end
       obj=get_my_dev(x,y)
@@ -266,7 +271,9 @@ function main_mousepressed(mx,my,b)
         return
       end
     end
-    eye.set_drag()
+    if not conf.no_drag then
+      eye.set_drag()
+    end
     return
   end
   if b=="r" then
@@ -274,6 +281,12 @@ function main_mousepressed(mx,my,b)
       local obj=get_device(x,y)
       if obj and (obj.pl==ME or obj.cl=="G") then
         conn=obj
+        return
+      end
+      local obj=get_my_unit(x,y)
+      if obj then
+        unit=obj
+        return
       end
     end
     return
@@ -324,6 +337,16 @@ function main_mousereleased(mx,my,b)
         conn:net_connect(dev)
       end
       conn=nil
+    end
+    return
+  end
+  if unit then
+    if b=="r" then
+      local obj=get_my_unit(x,y)
+      if unit==obj then
+        menu=unit.menu
+      end
+      unit=nil
     end
     return
   end
@@ -705,6 +728,9 @@ function main_update(dt)
   end
   if hint and hint.deleted then
     hint=nil
+  end
+  if unit and unit.deleted then
+    unit=nil
   end
   if conn and conn.deleted then
     conn=nil

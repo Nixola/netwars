@@ -254,7 +254,6 @@ cmd["Da"]=function(a,ts) -- Add:pl:cl:idx:health:online:x:y:...
   end
   o.idx=idx
   o.health=tonumber(a[5])
-  o:init_gui()
   o.online=b
   devices[idx]=o
   dhash:add(o)
@@ -279,7 +278,9 @@ cmd["Dn"]=function(a,ts) -- New:pl:cl:idx:x:y:...
     o.pwr=tonumber(a[7])
   end
   o.idx=idx
-  o:init_gui()
+  if pl==ME then
+    o:init_gui()
+  end
   devices[idx]=o
   dhash:add(o)
   if o.cl=="B" and pl==ME then
@@ -296,7 +297,7 @@ cmd["Dm"]=function(a,ts) -- Move:idx:x,y
   o:move(x,y)
 end
 
-cmd["Ds"]=function(a,ts) -- Switch:idx:online
+cmd["Ds"]=function(a,ts) -- Switch:idx:bool
   if a.n<3 then
     return
   end
@@ -483,6 +484,9 @@ cmd["Un"]=function(a,ts) -- New:pl:cl:idx:x:y:...
   end
   local o=cl:new(pl,x,y)
   o.idx=idx
+  if pl==ME then
+    o:init_gui()
+  end
   units[idx]=o
   uhash:add(o)
 end
@@ -513,6 +517,14 @@ cmd["Up"]=function(a,ts) -- Move:idx:x,y
   uhash:add(o)
   o.vx=nil
   o.vy=nil
+end
+
+cmd["Uu"]=function(a,ts) -- Upgrade:idx:v
+  if a.n<3 then
+    return
+  end
+  local o=units[tonumber(a[2])]
+  o.uc=tonumber(a[3])
 end
 
 cmd["Ps"]=function(a,ts) -- Support:d1:u2:pkt:pkt
@@ -550,6 +562,7 @@ cmd["Sh"]=function(a,ts) -- Hit:u1:u2:pkt:health
   local u1=units[tonumber(a[2])]
   local u2=units[tonumber(a[3])]
   if u1 and u2 then
+    u1.blocked=false
     u1.pkt=tonumber(a[4])
     u2.health=tonumber(a[5])
     local s=Shot:new(u1,u2)
@@ -565,6 +578,7 @@ cmd["SH"]=function(a,ts) -- Hit:u1:d2:pkt:health
   local u1=units[tonumber(a[2])]
   local d2=devices[tonumber(a[3])]
   if u1 and d2 then
+    u1.blocked=false
     u1.pkt=tonumber(a[4])
     d2.health=tonumber(a[5])
     local s=Shot:new(u1,d2)
@@ -579,6 +593,7 @@ cmd["Sd"]=function(a,ts) -- Destroy:u1:u2:pkt
   local idx=tonumber(a[3])
   local u1=units[tonumber(a[2])]
   local u2=units[idx]
+  u1.blocked=false
   u1.pkt=tonumber(a[4])
   u2:delete()
   units[idx]=nil
@@ -593,6 +608,7 @@ cmd["SD"]=function(a,ts) -- Destroy:u1:d2:pkt
   local idx=tonumber(a[3])
   local u1=units[tonumber(a[2])]
   local d2=devices[idx]
+  u1.blocked=false
   u1.pkt=tonumber(a[4])
   d2:delete()
   devices[idx]=nil
@@ -600,6 +616,14 @@ cmd["SD"]=function(a,ts) -- Destroy:u1:d2:pkt
   shots:add(s)
 end
 
+cmd["Sb"]=function(a,ts) -- Blocked:idx:bool
+  if a.n<3 then
+    return
+  end
+  local o=units[tonumber(a[2])]
+  local b=tonumber(a[3])==1
+  o.blocked=b
+end
 
 local function parse_server(msg,ts)
   local a=str_split(msg,":")

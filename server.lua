@@ -90,7 +90,7 @@ cmd["B"]=function(pl,a,ts)
   end
 end
 
-cmd["S"]=function(pl,a,ts) -- Switch:idx:online
+cmd["S"]=function(pl,a,ts) -- Switch:idx:bool
   if a.n<3 then
     return
   end
@@ -107,23 +107,40 @@ cmd["S"]=function(pl,a,ts) -- Switch:idx:online
   end
 end
 
-cmd["U"]=function(pl,a,ts) -- Upgrade:idx
-  if a.n<2 then
+cmd["U"]=function(pl,a,ts) -- Upgrade:isdev:idx
+  if a.n<3 then
     return
   end
-  local idx=tonumber(a[2])
-  local o=devices[idx]
-  if o and o.initok and o.gotpwr and o.pl==pl then
+  local isdev=tonumber(a[2])==1
+  local idx=tonumber(a[3])
+  if isdev then
+    local o=devices[idx]
+    if o and o.initok and o.gotpwr and o.pl==pl then
+      if pl.cash<o.price then
+        return
+      end
+      if o.ec>=o.em then
+        return
+      end
+      o.ec=o.ec+1
+      pl.cash=pl.cash-o.price
+      cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
+      cput("Du:%d:%d",idx,o.ec)
+    end
+    return
+  end
+  local o=units[idx]
+  if o and o.pl==pl then
     if pl.cash<o.price then
       return
     end
-    if o.ec>=o.em then
+    if o.uc>=o.um then
       return
     end
-    o.ec=o.ec+1
+    o.uc=o.uc+1
     pl.cash=pl.cash-o.price
     cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
-    cput("Du:%d:%d",idx,o.ec)
+    cput("Uu:%d:%d",idx,o.uc)
   end
 end
 
