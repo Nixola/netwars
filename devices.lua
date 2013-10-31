@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 17" -- network protocol version
+NVER="master 18" -- network protocol version
 
 TCK=3.0
 VCASH=3000 -- vault cash storage

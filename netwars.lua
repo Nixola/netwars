@@ -94,8 +94,8 @@ local function new_client(str,ts,ip,port)
   end
   local b,i
   for _,o in pairs(devices) do
-    b=o.online and 1 or 0
     i=o.pl and o.pl.idx or 0
+    b=o.online and 1 or 0
     if o.cl=="G" then
       m:put(string.format("Da:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pwr))
     elseif o.ec then
@@ -111,7 +111,12 @@ local function new_client(str,ts,ip,port)
   end
   for _,o in pairs(units) do
     i=o.pl and o.pl.idx or 0
-    m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,o.pkt,o.x,o.y))
+    b=o.blocked and 1 or 0
+    if o.uc then
+      m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt,o.uc))
+    else
+      m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt))
+    end
   end
   m:put("DONE")
   enqueue(pl.syncq,m)

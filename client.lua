@@ -452,8 +452,8 @@ cmd["Pc"]=function(a,ts) -- Cash:d1:d2:cash:pkt
   end
 end
 
-cmd["Ua"]=function(a,ts) -- Add:pl:cl:idx:health:pkt:x:y
-  if a.n<8 then
+cmd["Ua"]=function(a,ts) -- Add:pl:cl:idx:health:blocked:x:y:pkt:...
+  if a.n<9 then
     return
   end
   local pl=players[tonumber(a[2])]
@@ -464,9 +464,16 @@ cmd["Ua"]=function(a,ts) -- Add:pl:cl:idx:health:pkt:x:y
     return
   end
   local o=cl:new(pl,x,y)
+  if o.uc then
+    if a.n<10 then
+      return
+    end
+    o.uc=tonumber(a[10])
+  end
   o.idx=idx
   o.health=tonumber(a[5])
-  o.pkt=tonumber(a[6])
+  o.blocked=tonumber(a[6])==1
+  o.pkt=tonumber(a[9])
   units[idx]=o
   uhash:add(o)
 end
