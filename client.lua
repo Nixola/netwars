@@ -505,8 +505,10 @@ cmd["Um"]=function(a,ts) -- Move:idx:ts:x:y:x:y
   local o=units[tonumber(a[2])]
   local dt=tonumber(a[3])
   local x,y=tonumber(a[6]),tonumber(a[7])
+  uhash:del(o)
   o.x=tonumber(a[4])
   o.y=tonumber(a[5])
+  uhash:add(o)
   o:move(x,y)
   rq_um:add(o,fakets,0.01)
   o:step(dt)
