@@ -287,6 +287,7 @@ while true do
   end
   dt=ts-tm
   tm=ts
+  scheduler(ts,dt)
   for _,o in pairs(players) do
     if ts>=o.ts then
       del_client(o)
@@ -301,7 +302,6 @@ while true do
       end
     end
   end
-  scheduler(ts,dt)
   if ts>=pts then
     pts=ts+2.0-(ts-pts)
     local t={}

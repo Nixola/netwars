@@ -238,7 +238,7 @@ cmd["TS"]=function(pl,a,ts) -- Shot:d1:d2
   end
 end
 
-cmd["Um"]=function(pl,a,ts) -- Move:idx:x:y:x:y
+cmd["Um"]=function(pl,a,ts) -- Move:idx:dt:x:y:x:y
   if a.n<4 then
     return
   end
@@ -246,7 +246,7 @@ cmd["Um"]=function(pl,a,ts) -- Move:idx:x:y:x:y
   local x,y=tonumber(a[3]),tonumber(a[4])
   if o and o.pl==pl then
     if o:move(x,y) then
-      rq_um:add(o,ts,0.02)
+      rq_um:add(o,ts,0.1)
       cput("Um:%d:%s:%d:%d:%d:%d",o.idx,pl.ping,o.x,o.y,o.mx,o.my)
     else
       cput("Up:%d:%d:%d",o.idx,o.x,o.y)

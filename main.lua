@@ -741,7 +741,7 @@ function main_update(dt)
   if move and move.deleted then
     move=nil
   end
-  for o,d in rq_um:iter(fakets,0.02) do
+  for o,d in rq_um:iter(fakets,0.04) do
     if o.deleted or o:step(d) then
       rq_um:del()
     end

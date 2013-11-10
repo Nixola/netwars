@@ -498,7 +498,7 @@ cmd["Un"]=function(a,ts) -- New:pl:cl:idx:x:y:...
   uhash:add(o)
 end
 
-cmd["Um"]=function(a,ts) -- Move:idx:ts:x:y:x:y
+cmd["Um"]=function(a,ts) -- Move:idx:dt:x:y:x:y
   if a.n<7 then
     return
   end
@@ -508,10 +508,10 @@ cmd["Um"]=function(a,ts) -- Move:idx:ts:x:y:x:y
   uhash:del(o)
   o.x=tonumber(a[4])
   o.y=tonumber(a[5])
-  uhash:add(o)
   o:move(x,y)
-  rq_um:add(o,fakets,0.01)
-  o:step(dt)
+  rq_um:add(o,fakets,0.04)
+  o:_step(dt)
+  uhash:add(o)
 end
 
 cmd["Up"]=function(a,ts) -- Move:idx:x,y
