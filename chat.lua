@@ -11,7 +11,7 @@ timeout=5.0;
 }
 
 function chat.send(str)
-  if ME and sendq then
+  if ME and not replay then
     net_send("MSG:~%s",str)
   end
 end
