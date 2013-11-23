@@ -11,7 +11,7 @@ timeout=5.0;
 }
 
 function chat.send(str)
-  if ME then
+  if ME and sendq then
     net_send("MSG:~%s",str)
   end
 end

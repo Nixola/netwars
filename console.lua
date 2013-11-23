@@ -200,6 +200,10 @@ function console.cmd(str)
     return
   end
   if arg[1]=="/ally" or arg[1]=="/enemy" then
+    if replay then
+      histq:push("replay in progress")
+      return
+    end
     if #arg<2 then
       histq:push("not enough arguments")
       return
