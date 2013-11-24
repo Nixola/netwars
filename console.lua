@@ -183,6 +183,10 @@ function console.cmd(str)
       histq:push("replay: not enough arguments")
       return
     end
+    if arg[2]:match("[%a%d_%-]*")~=arg[2] then
+      histq:push("replay: invalid filename")
+      return
+    end
     local fn=string.format("replays/%s",arg[2])
     if not love.filesystem.exists(fn) then
       histq:push("replay: file not found")
@@ -197,6 +201,45 @@ function console.cmd(str)
     for _,fn in pairs(files) do
       histq:push(fn)
     end
+    return
+  end
+  if arg[1]=="/copy" then
+    if ME then
+      histq:push("copy: game in progress")
+      return
+    end
+    if #arg<2 then
+      histq:push("copy: not enough arguments")
+      return
+    end
+    if not love.filesystem.exists("replays/lastreplay") then
+      histq:push("copy: file not found: lastreplay")
+      return
+    end
+    if arg[2]:match("[%a%d_%-]*")~=arg[2] then
+      histq:push("copy: invalid filename")
+      return
+    end
+    local fn=string.format("replays/%s",arg[2])
+    if love.filesystem.exists(fn) then
+      histq:push("copy: file already exist")
+      return
+    end
+    local fs=love.filesystem.newFile("replays/lastreplay")
+    local fd=love.filesystem.newFile(fn)
+    fs:open("r")
+    fd:open("w")
+    local len=fs:getSize()
+    local buf
+    while len>0 do
+      sz=len>8192 and 8192 or len
+      buf=fs:read(sz)
+      fd:write(buf)
+      len=len-sz
+    end
+    fd:close()
+    fs:close()
+    histq:push("lastreplay copied")
     return
   end
   if arg[1]=="/ally" or arg[1]=="/enemy" then
