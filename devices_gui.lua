@@ -397,7 +397,7 @@ end
 
 function Device:net_upgrade()
   if self.em then
-    net_send("U:1:%d",self.idx)
+    net_send("U:%d",self.idx)
   end
 end
 
@@ -430,15 +430,6 @@ function Unit:draw_bar()
     if n>0 then
       graph.setColor(255,255,255)
       graph.rectangle("fill",x,y,n,3)
-    end
-  end
-  if self.uc then
-    p=self.uc/self.um
-    n=floor(w*p)
-    x,y=self.x-self.r-6,self.y+self.r-n
-    if n>0 then
-      graph.setColor(128,192,240)
-      graph.rectangle("fill",x,y,3,n)
     end
   end
 end
@@ -543,12 +534,6 @@ function Unit:net_move(x,y)
   net_send("Um:%d:%d:%d",self.idx,x,y)
 end
 
-function Unit:net_upgrade()
-  if self.um then
-    net_send("U:0:%d",self.idx)
-  end
-end
-
 function Power:draw_st()
   local w=self.r*2
   local p=self.pwr/10
@@ -633,9 +618,4 @@ function Tower:init_gui()
   self.menu=Menu:new(self)
   self.menu:add("Online",Device.net_switch)
   self.menu:add("Unlink",Device.net_unlink_all)
-end
-
-function Tank:init_gui()
-  self.menu=Menu:new(self)
-  self.menu:add("Upgrade",Unit.net_upgrade)
 end

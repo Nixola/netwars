@@ -498,7 +498,7 @@ function runqueue()
     t.tm=ts
     t.ts=ts+dt
     self.len=self.len+1
-    self.hash[o]=true
+    self.hash[o]=t
     if not self.tail then
       self.head=t
       self.tail=t
@@ -532,7 +532,7 @@ function runqueue()
     t.tm=ts
     t.ts=ts+dt
     self.len=self.len+1
-    self.hash[o]=true
+    self.hash[o]=t
     if not self.tail then
       self.head=t
       self.tail=t
@@ -556,6 +556,15 @@ function runqueue()
     self.len=self.len-1
     self.hash[o]=nil
     self.last=nil
+  end
+  function object:dt(o,ts)
+    local t=self.hash[o]
+    if not t then
+      return nil
+    end
+    local d=ts-t.tm
+    t.tm=ts
+    return d
   end
   function object:clear()
     self.len=0

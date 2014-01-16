@@ -112,11 +112,7 @@ local function new_client(str,ts,ip,port)
   for _,o in pairs(units) do
     i=o.pl and o.pl.idx or 0
     b=o.blocked and 1 or 0
-    if o.uc then
-      m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt,o.uc))
-    else
-      m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt))
-    end
+    m:put(string.format("Ua:%d:%s:%d:%d:%d:%d:%d:%d",i,o.cl,o.idx,o.health,b,o.x,o.y,o.pkt))
   end
   m:put("DONE")
   enqueue(pl.syncq,m)

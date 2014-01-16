@@ -107,41 +107,25 @@ cmd["S"]=function(pl,a,ts) -- Switch:idx:bool
   end
 end
 
-cmd["U"]=function(pl,a,ts) -- Upgrade:isdev:idx
-  if a.n<3 then
+cmd["U"]=function(pl,a,ts) -- Upgrade:idx
+  if a.n<2 then
     return
   end
-  local isdev=tonumber(a[2])==1
-  local idx=tonumber(a[3])
-  if isdev then
-    local o=devices[idx]
-    if o and o.initok and o.gotpwr and o.pl==pl then
-      if pl.cash<o.price then
-        return
-      end
-      if o.ec>=o.em then
-        return
-      end
-      o.ec=o.ec+1
-      pl.cash=pl.cash-o.price
-      cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
-      cput("Du:%d:%d",idx,o.ec)
-    end
-    return
-  end
-  local o=units[idx]
-  if o and o.pl==pl then
+  local idx=tonumber(a[2])
+  local o=devices[idx]
+  if o and o.initok and o.gotpwr and o.pl==pl then
     if pl.cash<o.price then
       return
     end
-    if o.uc>=o.um then
+    if o.ec>=o.em then
       return
     end
-    o.uc=o.uc+1
+    o.ec=o.ec+1
     pl.cash=pl.cash-o.price
     cput("PC:%d:%d:%d",pl.idx,pl.cash,pl.maxcash)
-    cput("Uu:%d:%d",idx,o.uc)
+    cput("Du:%d:%d",idx,o.ec)
   end
+  return
 end
 
 cmd["D"]=function(pl,a,ts) -- Del:idx
@@ -245,6 +229,10 @@ cmd["Um"]=function(pl,a,ts) -- Move:idx:dt:x:y:x:y
   local o=units[tonumber(a[2])]
   local x,y=tonumber(a[3]),tonumber(a[4])
   if o and o.pl==pl then
+    local dt=rq_um:dt(self,ts)
+    if dt then
+      self:step(dt)
+    end
     if o:move(x,y) then
       rq_um:add(o,ts,0.1)
       cput("Um:%d:%s:%d:%d:%d:%d",o.idx,pl.ping,o.x,o.y,o.mx,o.my)

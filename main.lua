@@ -248,11 +248,7 @@ function main_mousepressed(mx,my,b)
     if not replay then
       local obj=get_my_unit(x,y)
       if obj then
-        if kctrl then
-          obj:net_upgrade()
-        else
-          move=obj
-        end
+        move=obj
         return
       end
       obj=get_my_dev(x,y)

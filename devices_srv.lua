@@ -385,8 +385,8 @@ function Tank:shot(targ)
     return
   end
   self.blocked=false
-  self.pkt=self.pkt-(self.uc*3)
-  targ.health=targ.health-(self.uc*10)
+  self.pkt=self.pkt-3
+  targ.health=targ.health-10
   if targ.isdev then
     targ.pt=1.0
     if targ.health<1 then
@@ -408,7 +408,7 @@ function Tank:shot(targ)
 end
 
 function Tank:logic()
-  if self.pkt<self.uc*3 then
+  if self.pkt<3 then
     if not self.blocked then
       self.blocked=true
       cput("Sb:%d:1",self.idx)

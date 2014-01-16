@@ -464,12 +464,6 @@ cmd["Ua"]=function(a,ts) -- Add:pl:cl:idx:health:blocked:x:y:pkt:...
     return
   end
   local o=cl:new(pl,x,y)
-  if o.uc then
-    if a.n<10 then
-      return
-    end
-    o.uc=tonumber(a[10])
-  end
   o.idx=idx
   o.health=tonumber(a[5])
   o.blocked=tonumber(a[6])==1
@@ -491,9 +485,6 @@ cmd["Un"]=function(a,ts) -- New:pl:cl:idx:x:y:...
   end
   local o=cl:new(pl,x,y)
   o.idx=idx
-  if pl==ME then
-    o:init_gui()
-  end
   units[idx]=o
   uhash:add(o)
 end
@@ -526,14 +517,6 @@ cmd["Up"]=function(a,ts) -- Move:idx:x,y
   uhash:add(o)
   o.vx=nil
   o.vy=nil
-end
-
-cmd["Uu"]=function(a,ts) -- Upgrade:idx:v
-  if a.n<3 then
-    return
-  end
-  local o=units[tonumber(a[2])]
-  o.uc=tonumber(a[3])
 end
 
 cmd["Ps"]=function(a,ts) -- Support:d1:u2:pkt:pkt

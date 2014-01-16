@@ -1,6 +1,6 @@
 -- vim:et
 
-NVER="master 18" -- network protocol version
+NVER="master 19" -- network protocol version
 
 TCK=3.0
 VCASH=3000 -- vault cash storage
@@ -458,8 +458,6 @@ d_cl={B=Base,G=Generator,R=Router,V=Vault,T=Tower}
 
 class "Tank" : extends(Unit) {
 cl="t";
-uc=1;
-um=3;
 maxhealth=100;
 maxpkt=100; -- max queue
 speed=25;
