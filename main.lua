@@ -363,7 +363,7 @@ function main_mousereleased(mx,my,b)
   end
 end
 
-function main_keypressed(key)
+function main_keypressed(key, isRepeat)
   local s={0.2,0.3,0.45,0.67,1.0,1.5}
   if chat.input then
     chat.input=chat.keypressed(key)
@@ -373,6 +373,9 @@ function main_keypressed(key)
   if console.input then
     console.input=console.keypressed(key)
     love.keyboard.setTextInput(console.input)
+    return
+  end
+  if isRepeat then
     return
   end
   if key=="lshift" or key=="rshift" then
