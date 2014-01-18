@@ -25,6 +25,8 @@ dt=0,run=false;drag=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
 }
 
+love.keyboard.setKeyRepeat(.25, .025)
+
 graph.setLine=function(width,style)
   graph.setLineWidth(width)
   graph.setLineStyle(style)
