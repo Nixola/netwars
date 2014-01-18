@@ -566,6 +566,7 @@ local function draw_scoreboard()
   graph.setColor(0,0,120,192)
   graph.rectangle("fill",x,y,600,padding*(4+player_count))
 
+  graph.setColor(255,255,255)
   graph.print("Idx",x+40,y+padding)
   graph.print("Name",x+100,y+padding)
   graph.print("Ping",x+300,y+padding)
