@@ -227,7 +227,6 @@ function Device:draw_sym(_x,_y)
   graph.setLine(1,"rough")
   graph.circle("line",x,y,self.r,24)
   if self.hud or eye.s>0.6 then
-    graph.setColorMode("replace")
     graph.draw(self.img,x-8,y-8)
   end
 end
@@ -403,8 +402,8 @@ end
 
 function Link:draw()
   graph.setColor(200,200,200)
-  graph.setLine(1,"rough")
-  graph.line(self.dev1.x,self.dev1.y,self.dev2.x,self.dev2.y)
+  stipple.setLine(1,"rough")
+  stipple:draw(self.dev1.x, self.dev1.y, self.dev2.x, self.dev2.y)
 end
 
 function Unit:draw_bar()
@@ -459,7 +458,6 @@ function Unit:draw_sym(_x,_y)
   graph.setLine(1,"rough")
   graph.circle("line",x,y,self.r,12)
   if self.hud or eye.s>0.9 then
-    graph.setColorMode("replace")
     graph.draw(self.img,x-4,y-4)
   end
 end

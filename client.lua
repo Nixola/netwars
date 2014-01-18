@@ -9,7 +9,7 @@ local seq=0
 local allsocks
 local insync=false
 local timeout=0
-love.filesystem.mkdir("replays")
+love.filesystem.createDirectory("replays")
 local rep=love.filesystem.newFile("replays/lastreplay")
 
 local function init_vars()

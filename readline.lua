@@ -107,7 +107,7 @@ function Readline:key(key,ch)
     end
     return
   end
-  if ch<32 or ch>127 then
+  if not ch or ch==96 or ch<32 or ch>125 then
     return
   end
   if self.len<self.sz then

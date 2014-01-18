@@ -47,11 +47,12 @@ function load_conf()
 end
 
 function set_graph()
-  graph.setMode(conf.graph_width,conf.graph_height)
+  love.window.setMode(conf.graph_width,conf.graph_height)
 end
 
 function init_graph()
-  graph.setFont(12)
+  local font=graph.newFont(12)
+  graph.setFont(font)
   eye.sx=graph.getWidth()
   eye.sy=graph.getHeight()
   eye.cx=eye.sx/2
@@ -123,13 +124,13 @@ local function init_enter()
   end
 end
 
-function init_keypressed(key,ch)
+function init_keypressed(key)
   if console.input then
-    console.input=console.keypressed(key,ch)
+    console.input=console.keypressed(key)
     return
   end
   if key=="escape" then
-    love.event.push("q")
+    love.event.quit()
     return
   end
   if key=="return" then
@@ -139,7 +140,19 @@ function init_keypressed(key,ch)
     console.input=true
     return
   end
-  readline:key(key,ch)
+  readline:key(key)
+end
+
+function init_textinput(str)
+  local l=str:len()
+  local tmp={str:byte(1,l)}
+  for _,ch in ipairs(tmp) do
+    if console.input then
+      console.input=console.keypressed(nil,ch)
+    else
+      readline:key(nil,ch)
+    end
+  end
 end
 
 function init_draw()
@@ -174,6 +187,7 @@ function init_update(dt)
     readline.cr=not readline.cr
   end
   if init_st==3 then
+    love.keyboard.setTextInput(false)
     net_conn(addr,nick)
     init_st=9
   end
@@ -185,12 +199,14 @@ function init_update(dt)
         love.quit=main_quit
         love.keypressed=main_keypressed
         love.keyreleased=main_keyreleased
+        love.textinput=main_textinput
         love.mousepressed=main_mousepressed
         love.mousereleased=main_mousereleased
       end
     end
     if net_err then
       net_abort()
+      love.keyboard.setTextInput(true)
       init_st=1
     end
   end

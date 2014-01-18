@@ -13,6 +13,7 @@ require "init"
 CVER=2 -- config version
 
 graph=love.graphics
+indrawhud=false
 fakets=0
 msx,msy=0,0 -- mouse real (screen) position
 omsx,omsy=0,0 -- mouse old real (screen) position
@@ -23,6 +24,11 @@ scroll={
 dt=0,run=false;drag=false;
 x=0,y=0,s=3,ks=0,dx=0,dy=0,kx=0,ky=0;
 }
+
+graph.setLine=function(width,style)
+  graph.setLineWidth(width)
+  graph.setLineStyle(style)
+end
 
 function eye.in_view(x,y,...)
   local arg={...}
@@ -355,14 +361,16 @@ function main_mousereleased(mx,my,b)
   end
 end
 
-function main_keypressed(key,ch)
+function main_keypressed(key)
   local s={0.2,0.3,0.45,0.67,1.0,1.5}
   if chat.input then
-    chat.input=chat.keypressed(key,ch)
+    chat.input=chat.keypressed(key)
+    love.keyboard.setTextInput(chat.input)
     return
   end
   if console.input then
-    console.input=console.keypressed(key,ch)
+    console.input=console.keypressed(key)
+    love.keyboard.setTextInput(console.input)
     return
   end
   if key=="lshift" or key=="rshift" then
@@ -383,10 +391,12 @@ function main_keypressed(key,ch)
   end
   if key=="return" then
     chat.input=true
+    love.keyboard.setTextInput(true)
     return
   end
   if key=="`" or key=="f1" then
     console.input=true
+    love.keyboard.setTextInput(true)
     return
   end
   if key==" " then
@@ -502,6 +512,18 @@ function main_keyreleased(key)
   end
 end
 
+function main_textinput(str)
+  local l=str:len()
+  local tmp={str:byte(1,l)}
+  for _,ch in ipairs(tmp) do
+    if chat.input then
+      chat.input=chat.keypressed(nil,ch)
+    elseif console.input then
+      console.input=console.keypressed(nil,ch)
+    end
+  end
+end
+
 function main_started()
   ME.started=true
   buyidx=1
@@ -564,8 +586,6 @@ local function draw_scoreboard()
   end
 end
 
-local ls={0x0f0f,0x1e1e,0x3c3c,0x7878,0xf0f0,0xe1e1,0xc3c3,0x8787}
-local lsi=1
 function main_draw()
   graph.push()
   graph.translate(eye.cx,eye.cy)
@@ -578,14 +598,12 @@ function main_draw()
   local x2,y2=-eye.vx+sx,-eye.vy+sy
   local hd=dhash:get(x1,y1,x2,y2)
   local hu=uhash:get(x1,y1,x2,y2)
-  graph.setLineStipple(ls[lsi])
   -- draw links
   for _,o in pairs(links) do
     if hd[o.dev1] or hd[o.dev2] then
       o:draw()
     end
   end
-  graph.setLineStipple()
   -- draw packets
   if eye.s>0.4 then
     for _,o in pairs(packets) do
@@ -673,6 +691,7 @@ function main_draw()
   -- hud display
   graph.pop()
   graph.setScissor()
+  indrawhud=true
   draw_hud()
   if menu then
     menu:draw()
@@ -681,6 +700,7 @@ function main_draw()
     draw_scoreboard()
   end
   console.draw()
+  indrawhud=false
 end
 
 local flow_dt=0
@@ -755,7 +775,7 @@ function main_update(dt)
   end
   flow_dt=flow_dt+dt
   if flow_dt>=0.05 then
-    lsi=lsi>7 and 1 or lsi+1
+    stipple:next()
     flow_dt=flow_dt-0.05
   end
   console.update(dt)
@@ -795,6 +815,16 @@ local function set_cl_fonts(imgfont)
 end
 
 function love.load()
+  stipple = require 'stipple'
+  stipple:setStipple '11110000'
+  graph._setLine=graph.setLine
+  graph.setLine=function(width,style)
+    if indrawhud then
+      graph._setLine(width,style)
+    else
+      graph._setLine(width/eye.s,style)
+    end
+  end
   if load_conf() then
     set_graph()
   end
@@ -805,4 +835,5 @@ function love.load()
   love.draw=init_draw
   love.update=init_update
   love.keypressed=init_keypressed
+  love.textinput=init_textinput
 end

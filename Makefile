@@ -1,7 +1,7 @@
 LIBS = class.lua sphash.lua
 COMMON = LICENSE devices.lua
 SRCS = conf.lua readline.lua main.lua menu.lua console.lua chat.lua init.lua \
-	client.lua devices_gui.lua
+	client.lua devices_gui.lua stipple.lua
 IMGS = imgs
 EXCL = imgs/.gitattributes
 SRVS = netwars.lua server.lua devices_srv.lua
